@@ -1,0 +1,177 @@
+.bisection-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.9fr;
+  gap: 1rem;
+}
+
+/* En pantallas medianas/pequeñas, todo apilado vertical */
+@media (max-width: 900px) {
+  .bisection-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bisection-form,
+  .bisection-results {
+    width: 100%;
+  }
+}
+
+/* Columna izquierda: formulario */
+
+.bisection-form {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+}
+
+.bisection-form h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.bisection-hint {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+
+.bisection-form-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.8fr;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.bisection-form-row label {
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+.bisection-form-row input {
+  padding: 0.3rem 0.45rem;
+  border-radius: 0.35rem;
+  border: 1px solid #d1d5db;
+  font-size: 0.9rem;
+}
+
+/* En móvil, label arriba e input abajo para que no se aplaste */
+@media (max-width: 640px) {
+  .bisection-form-row {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+}
+
+.bisection-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  border: none;
+  border-radius: 999px;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.btn-primary {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.btn-secondary {
+  background: #facc15;
+  color: #111827;
+}
+
+.btn-primary:hover,
+.btn-secondary:hover {
+  opacity: 0.9;
+}
+
+.bisection-message {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #065f46;
+}
+
+.bisection-error {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: #b91c1c;
+  background: #fee2e2;
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.6rem;
+}
+
+/* Columna derecha: resultados */
+
+.bisection-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bisection-table-wrapper {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+  margin-bottom: 0.25rem;
+  overflow-x: auto;
+}
+
+.bisection-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  min-width: 600px;
+}
+
+.bisection-table th,
+.bisection-table td {
+  border: 1px solid #e5e7eb;
+  padding: 0.25rem 0.4rem;
+  text-align: right;
+}
+
+.bisection-table th {
+  background: #f3f4f6;
+  font-weight: 600;
+}
+
+.bisection-table tbody tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+/* En móvil, ligeramente más grande para legibilidad */
+@media (max-width: 640px) {
+  .bisection-table {
+    font-size: 0.78rem;
+  }
+}
+
+.graph-card {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+}
+
+.graph-title {
+  font-size: 0.9rem;
+  margin-top: 0;
+  margin-bottom: 0.4rem;
+}
+
+.graph-svg {
+  width: 100%;
+  height: 240px;
+}
