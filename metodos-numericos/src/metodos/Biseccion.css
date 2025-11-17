@@ -175,3 +175,51 @@
   width: 100%;
   height: 240px;
 }
+.bisection-download {
+  margin-top: 0.5rem;
+  text-align: right;
+}
+
+.btn-download {
+  border: none;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.8rem;
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.btn-download:hover {
+  opacity: 0.9;
+}
+.bisection-download,
+.graph-download {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.btn-download {
+  border: none;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.8rem;
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.btn-download-secondary {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+}
+
+.btn-download:hover,
+.btn-download-secondary:hover {
+  opacity: 0.9;
+}

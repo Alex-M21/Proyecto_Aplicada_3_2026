@@ -1,1 +1,0 @@
-# Proyecto_Aplicada_3_2026

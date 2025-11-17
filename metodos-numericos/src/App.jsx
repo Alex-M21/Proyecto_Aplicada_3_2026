@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Biseccion from "./metodos/Biseccion";
+import ManualExpresiones from "./Manual";
+
 //import PuntoFijo from "./metodos/PuntoFijo";
 //import Newton from "./metodos/Newton";
 //import Secante from "./metodos/Secante";
@@ -139,7 +141,15 @@ const METHODS = [
     unit: "Unidad 5",
     description:
       "Generalización de Newton para sistemas no lineales usando la matriz Jacobiana."
+  },
+    {
+    id: "manual-expresiones",
+    name: "Manual de expresiones",
+    unit: "Ayuda",
+    description:
+      "Guía rápida para escribir funciones f(x) con la sintaxis de la calculadora."
   }
+
 ];
 
 const UNITS = [...new Set(METHODS.map((m) => m.unit))];
@@ -331,7 +341,7 @@ function NewtonNoLineal() {
 // =====================
 
 const METHOD_COMPONENTS = {
-  biseccion: Biseccion, // 👈 este viene del archivo ./metodos/Biseccion
+  biseccion: Biseccion,
   "punto-fijo": PuntoFijo,
   newton: Newton,
   secante: Secante,
@@ -346,7 +356,8 @@ const METHOD_COMPONENTS = {
   jacobi: JacobiComponent,
   "gauss-seidel": GaussSeidelComponent,
   "punto-fijo-no-lineal": PuntoFijoNoLineal,
-  "newton-no-lineal": NewtonNoLineal
+  "newton-no-lineal": NewtonNoLineal,
+  "manual-expresiones": ManualExpresiones   // 👈 nueva línea
 };
 
 // =====================

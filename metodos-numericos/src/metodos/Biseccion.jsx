@@ -1,5 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { create, all } from "mathjs";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import "./Biseccion.css";
 
 const math = create(all, {});
@@ -15,6 +17,10 @@ export default function Biseccion() {
   const [rows, setRows] = useState([]);
   const [message, setMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Refs para exportar tabla y gráfica
+  const tableRef = useRef(null);
+  const svgRef = useRef(null);
 
   // Compila la expresión de f(x) que escribe el usuario
   const buildCompiled = (expr) => {
@@ -199,6 +205,98 @@ export default function Biseccion() {
     setErrorMsg("");
   };
 
+  // ----- descarga de tabla en CSV -----
+  const handleDownloadTableCsv = () => {
+    if (!rows.length) return;
+
+    const headers = [
+      "n",
+      "a",
+      "b",
+      "p",
+      "f(a)",
+      "f(b)",
+      "f(p)",
+      "f(a)*f(p)",
+      "error"
+    ];
+
+    const csvRows = [];
+    csvRows.push(headers.join(","));
+
+    rows.forEach((row) => {
+      const values = [
+        row.n,
+        formatNumber(row.a),
+        formatNumber(row.b),
+        formatNumber(row.p),
+        formatNumber(row.fa),
+        formatNumber(row.fb),
+        formatNumber(row.fp),
+        formatNumber(row.fa_fp),
+        formatNumber(row.error)
+      ];
+      csvRows.push(values.join(","));
+    });
+
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;"
+    });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "biseccion_iteraciones.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // ----- descarga de tabla en PDF -----
+  const handleDownloadTablePdf = async () => {
+    if (!rows.length || !tableRef.current) return;
+
+    try {
+      const element = tableRef.current;
+      const canvas = await html2canvas(element, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      // Ajustar imagen al ancho del PDF manteniendo proporción
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgRatio = imgProps.height / imgProps.width;
+      const imgPdfHeight = pdfWidth * imgRatio;
+
+      const yMargin = 10;
+      const finalHeight =
+        imgPdfHeight + 2 * yMargin > pdfHeight
+          ? pdfHeight - 2 * yMargin
+          : imgPdfHeight;
+
+      pdf.text("Método de Bisección - Tabla de iteraciones", 10, 10);
+      pdf.addImage(
+        imgData,
+        "PNG",
+        10,
+        16,
+        pdfWidth - 20,
+        finalHeight - 20
+      );
+
+      pdf.save("biseccion_iteraciones.pdf");
+    } catch (err) {
+      console.error(err);
+      alert(
+        "Ocurrió un problema al generar el PDF. Intenta de nuevo o verifica el tamaño de la tabla."
+      );
+    }
+  };
+
   // -----------------------
   // Datos para la gráfica
   // -----------------------
@@ -295,7 +393,7 @@ export default function Biseccion() {
     const yTicks = createTicks(yMin, yMax, 4);
 
     return { points, xMin, xMax, yMin, yMax, xTicks, yTicks };
-  }, [fxInput, aInput, bInput]);
+  }, [fxInput, aInput, bInput, decimalsInput]);
 
   const lastP = rows.length ? rows[rows.length - 1].p : null;
   const lastInterval = rows.length
@@ -343,6 +441,60 @@ export default function Biseccion() {
     graphData.xMin <= 0 && graphData.xMax >= 0
       ? xToSvg(0)
       : xToSvg(graphData.xMin);
+
+  // ----- descarga de gráfica como imagen (PNG / JPG) -----
+  const handleDownloadGraph = (format = "png") => {
+    if (!svgRef.current) return;
+
+    const svg = svgRef.current;
+    const serializer = new XMLSerializer();
+    const source = serializer.serializeToString(svg);
+
+    const svgBlob = new Blob([source], {
+      type: "image/svg+xml;charset=utf-8"
+    });
+    const url = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+
+      // Fondo blanco para JPG
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      URL.revokeObjectURL(url);
+
+      const mime =
+        format === "jpg" || format === "jpeg"
+          ? "image/jpeg"
+          : "image/png";
+
+      const imgURI = canvas.toDataURL(mime);
+      const link = document.createElement("a");
+      link.href = imgURI;
+      link.download =
+        format === "jpg" || format === "jpeg"
+          ? "biseccion_grafica.jpg"
+          : "biseccion_grafica.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      alert(
+        "No se pudo exportar la gráfica. Intenta de nuevo o revisa la compatibilidad del navegador."
+      );
+    };
+
+    img.src = url;
+  };
 
   return (
     <div className="bisection-grid">
@@ -433,7 +585,7 @@ export default function Biseccion() {
 
       {/* Columna: tabla + gráfica */}
       <div className="bisection-results">
-        <div className="bisection-table-wrapper">
+        <div className="bisection-table-wrapper" ref={tableRef}>
           <h4>Tabla de iteraciones</h4>
           {rows.length === 0 ? (
             <p className="bisection-hint">
@@ -474,6 +626,25 @@ export default function Biseccion() {
           )}
         </div>
 
+        {rows.length > 0 && (
+          <div className="bisection-download">
+            <button
+              type="button"
+              className="btn-download"
+              onClick={handleDownloadTableCsv}
+            >
+              Tabla (CSV)
+            </button>
+            <button
+              type="button"
+              className="btn-download btn-download-secondary"
+              onClick={handleDownloadTablePdf}
+            >
+              Tabla (PDF)
+            </button>
+          </div>
+        )}
+
         <div className="graph-card">
           <h4 className="graph-title">Gráfica de f(x)</h4>
           {graphData.points.length === 0 ? (
@@ -481,111 +652,131 @@ export default function Biseccion() {
               No se pudo generar la gráfica. Revisa la función y el intervalo.
             </p>
           ) : (
-            <svg
-              className="graph-svg"
-              viewBox={`0 0 ${width} ${height}`}
-              preserveAspectRatio="none"
-            >
-              {/* Zona del intervalo actual [a, b] */}
-              {lastInterval && (
-                <rect
-                  x={xToSvg(lastInterval.a)}
-                  y={paddingTop}
-                  width={Math.abs(
-                    xToSvg(lastInterval.b) - xToSvg(lastInterval.a)
-                  )}
-                  height={height - paddingTop - paddingBottom}
-                  fill="#fee2e2"
-                />
-              )}
-
-              {/* Eje X */}
-              <line
-                x1={paddingLeft}
-                x2={width - paddingRight}
-                y1={xAxisY}
-                y2={xAxisY}
-                stroke="#9ca3af"
-                strokeWidth="1"
-              />
-
-              {/* Eje Y */}
-              <line
-                x1={yAxisX}
-                x2={yAxisX}
-                y1={paddingTop}
-                y2={height - paddingBottom}
-                stroke="#9ca3af"
-                strokeWidth="1"
-              />
-
-              {/* Ticks y etiquetas en X */}
-              {graphData.xTicks.map((xt, idx) => (
-                <g key={`xtick-${idx}`}>
-                  <line
-                    x1={xToSvg(xt)}
-                    x2={xToSvg(xt)}
-                    y1={xAxisY - 3}
-                    y2={xAxisY + 3}
-                    stroke="#9ca3af"
-                    strokeWidth="1"
+            <>
+              <svg
+                className="graph-svg"
+                viewBox={`0 0 ${width} ${height}`}
+                preserveAspectRatio="none"
+                ref={svgRef}
+              >
+                {/* Zona del intervalo actual [a, b] */}
+                {lastInterval && (
+                  <rect
+                    x={xToSvg(lastInterval.a)}
+                    y={paddingTop}
+                    width={Math.abs(
+                      xToSvg(lastInterval.b) - xToSvg(lastInterval.a)
+                    )}
+                    height={height - paddingTop - paddingBottom}
+                    fill="#fee2e2"
                   />
-                  <text
-                    x={xToSvg(xt)}
-                    y={height - 6}
-                    fontSize="9"
-                    textAnchor="middle"
-                    fill="#4b5563"
-                  >
-                    {xt.toFixed(2)}
-                  </text>
-                </g>
-              ))}
+                )}
 
-              {/* Ticks y etiquetas en Y */}
-              {graphData.yTicks.map((yt, idx) => (
-                <g key={`ytick-${idx}`}>
-                  <line
-                    x1={yAxisX - 3}
-                    x2={yAxisX + 3}
-                    y1={yToSvg(yt)}
-                    y2={yToSvg(yt)}
-                    stroke="#9ca3af"
-                    strokeWidth="1"
-                  />
-                  <text
-                    x={paddingLeft - 6}
-                    y={yToSvg(yt) + 3}
-                    fontSize="9"
-                    textAnchor="end"
-                    fill="#4b5563"
-                  >
-                    {yt.toFixed(2)}
-                  </text>
-                </g>
-              ))}
-
-              {/* Curva de f(x) */}
-              <path
-                d={pathD}
-                fill="none"
-                stroke="#2563eb"
-                strokeWidth="1.5"
-              />
-
-              {/* Última aproximación p */}
-              {lastP != null && (
+                {/* Eje X */}
                 <line
-                  x1={xToSvg(lastP)}
-                  x2={xToSvg(lastP)}
+                  x1={paddingLeft}
+                  x2={width - paddingRight}
+                  y1={xAxisY}
+                  y2={xAxisY}
+                  stroke="#9ca3af"
+                  strokeWidth="1"
+                />
+
+                {/* Eje Y */}
+                <line
+                  x1={yAxisX}
+                  x2={yAxisX}
                   y1={paddingTop}
                   y2={height - paddingBottom}
-                  stroke="#ef4444"
-                  strokeWidth="1.3"
-                  strokeDasharray="4 3"
+                  stroke="#9ca3af"
+                  strokeWidth="1"
                 />
-              )}
-            </svg>
+
+                {/* Ticks y etiquetas en X */}
+                {graphData.xTicks.map((xt, idx) => (
+                  <g key={`xtick-${idx}`}>
+                    <line
+                      x1={xToSvg(xt)}
+                      x2={xToSvg(xt)}
+                      y1={xAxisY - 3}
+                      y2={xAxisY + 3}
+                      stroke="#9ca3af"
+                      strokeWidth="1"
+                    />
+                    <text
+                      x={xToSvg(xt)}
+                      y={height - 6}
+                      fontSize="9"
+                      textAnchor="middle"
+                      fill="#4b5563"
+                    >
+                      {xt.toFixed(2)}
+                    </text>
+                  </g>
+                ))}
+
+                {/* Ticks y etiquetas en Y */}
+                {graphData.yTicks.map((yt, idx) => (
+                  <g key={`ytick-${idx}`}>
+                    <line
+                      x1={yAxisX - 3}
+                      x2={yAxisX + 3}
+                      y1={yToSvg(yt)}
+                      y2={yToSvg(yt)}
+                      stroke="#9ca3af"
+                      strokeWidth="1"
+                    />
+                    <text
+                      x={paddingLeft - 6}
+                      y={yToSvg(yt) + 3}
+                      fontSize="9"
+                      textAnchor="end"
+                      fill="#4b5563"
+                    >
+                      {yt.toFixed(2)}
+                    </text>
+                  </g>
+                ))}
+
+                {/* Curva de f(x) */}
+                <path
+                  d={pathD}
+                  fill="none"
+                  stroke="#2563eb"
+                  strokeWidth="1.5"
+                />
+
+                {/* Última aproximación p */}
+                {lastP != null && (
+                  <line
+                    x1={xToSvg(lastP)}
+                    x2={xToSvg(lastP)}
+                    y1={paddingTop}
+                    y2={height - paddingBottom}
+                    stroke="#ef4444"
+                    strokeWidth="1.3"
+                    strokeDasharray="4 3"
+                  />
+                )}
+              </svg>
+
+              <div className="graph-download">
+                <button
+                  type="button"
+                  className="btn-download"
+                  onClick={() => handleDownloadGraph("png")}
+                >
+                  Gráfica (PNG)
+                </button>
+                <button
+                  type="button"
+                  className="btn-download btn-download-secondary"
+                  onClick={() => handleDownloadGraph("jpg")}
+                >
+                  Gráfica (JPG)
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
