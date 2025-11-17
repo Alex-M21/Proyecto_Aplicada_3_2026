@@ -1,4 +1,57 @@
+/**
+ *  Desarrollador : Alexander Mejia
+ *  GitHub        : Alex-M21
+ *  Email         : b.alex.mejia@gmail.com
+ *
+ *  ADVERTENCIA:
+ *  Estás modificando código protegido. DO NOT COPY AND PASTE.
+ *  Para cualquier cambio comunícate con: b.alex.mejia@gmail.com
+ *
+ *  
+."-,.__
+                 `.     `.  ,
+              .--'  .._,'"-' `.
+             .    .'         `'
+             `.   /          ,'
+               `  '--.   ,-"'
+                `"`   |  \
+                   -. \, |
+                    `--Y.'      ___.
+                         \     L._, \
+               _.,        `.   <  <\                _
+             ,' '           `, `.   | \            ( `
+          ../, `.            `  |    .\`.           \ \_
+         ,' ,..  .           _.,'    ||\l            )  '".
+        , ,'   \           ,'.-.`-._,'  |           .  _._`.
+      ,' /      \ \        `' ' `--/   | \          / /   ..\
+    .'  /        \ .         |\__ - _ ,'` `        / /     `.`.
+    |  '          ..         `-...-"  |  `-'      / /        . `.
+    | /           |L__           |    |          / /          `. `.
+   , /            .   .          |    |         / /             ` `
+  / /          ,. ,`._ `-_       |    |  _   ,-' /               ` \
+ / .           \"`_/. `-_ \_,.  ,'    +-' `-'  _,        ..,-.    \`.
+.  '         .-f    ,'   `    '.       \__.---'     _   .'   '     \ \
+' /          `.'    l     .' /          \..      ,_|/   `.  ,'`     L`
+|'      _.-""` `.    \ _,'  `            \ `.___`.'"`-.  , |   |    | \
+||    ,'      `. `.   '       _,...._        `  |    `/ '  |   '     .|
+||  ,'          `. ;.,.---' ,'       `.   `.. `-'  .-' /_ .'    ;_   ||
+|| '              V      / /           `   | `   ,'   ,' '.    !  `. ||
+||/            _,-------7 '              . |  `-'    l         /    `||
+. |          ,' .-   ,' ||               | .-.        `.      .'     ||
+ `'        ,'    `".'    |               |    `.        '. -.'       `'
+          /      ,'      |               |,'    \-.._,.'/'
+          .     /        .               .       \    .''
+        .`.    |         `.             /         :_,'.'
+          \ `...\   _     ,'-.        .'         /_.-'
+           `-.__ `,  `'   .  _.>----''.  _  __  /
+                .'        /"'          |  "'   '_
+               /_|.-'\ ,".             '.'`__'-( \
+                 / ,"'"\,'               `/  `-.|"
+ */
+
+
 import { useState } from "react";
+import logoImage from "./assets/escudo-color-USAC-2022.png"
 import Biseccion from "./metodos/Biseccion";
 import ManualExpresiones from "./Manual";
 
@@ -374,6 +427,12 @@ function App() {
       {/* Menú lateral */}
       <aside className="sidebar">
         <h1 className="app-title">Métodos numéricos</h1>
+        <h5>Universidad de San Carlos de Guatemala</h5>
+        <h5>Fascultad de Ingenieria</h5>
+        <h5>Escuela de Ciencias</h5>
+        <h5>Departamento de matematicas</h5>
+        <h5>Desarrollador: Alexander Mejia</h5>
+
         {UNITS.map((unit) => (
           <div key={unit} className="method-category">
             <h2 className="method-category-title">{unit}</h2>
