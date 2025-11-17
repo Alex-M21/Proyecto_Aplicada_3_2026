@@ -5,11 +5,13 @@
   "type": "module",
   "homepage": "https://Alex-M21.github.io/Proyecto_Aplicada_3_2026",
   "scripts": {
-  "start": "react-scripts start",
-  "build": "react-scripts build",
+  "dev": "vite",
+  "build": "vite build",
+  "preview": "vite preview",
   "predeploy": "npm run build",
-  "deploy": "gh-pages -d build"
+  "deploy": "gh-pages -d dist"
 }
+
 ,
   "dependencies": {
     "html2canvas": "^1.4.1",
