@@ -55,10 +55,11 @@ import logoImage from "./assets/escudo-color-USAC-2022.png"
 import Biseccion from "./metodos/Biseccion";
 import ManualExpresiones from "./Manual";
 
-//import PuntoFijo from "./metodos/PuntoFijo";
-//import Newton from "./metodos/Newton";
-//import Secante from "./metodos/Secante";
-//import PosicionFalsa1 from "./metodos/PosicionFalsa1";
+import PuntoFijo from "./metodos/PuntoFijo";
+
+import Newton from "./metodos/Newton";
+import Secante from "./metodos/Secante";
+import PosicionFalsa1 from "./metodos/PosicionFalsa1";
 //import PosicionFalsa2 from "./metodos/PosicionFalsa2";
 //import Stefensen from "./metodos/Stefensen";
 //import MullerReal from "./metodos/MullerReal";
@@ -82,7 +83,7 @@ const METHODS = [
     name: "Bisección",
     unit: "Unidad 2",
     description:
-      "Método de raíces que usa un intervalo [a, b] con cambio de signo en f(x)."
+      "Para encontrar una solución a f(x) = 0 dada la función continua determinada f en el interval [a, b], donde f(a) y f(b) tienen signos opuestos"
   },
   {
     id: "punto-fijo",
@@ -213,53 +214,12 @@ const UNITS = [...new Set(METHODS.map((m) => m.unit))];
 // los demás son placeholders internos)
 // =====================
 
-function PuntoFijo() {
-  return (
-    <div>
-      <h3>Configuración: Punto fijo</h3>
-      <p>
-        Más adelante agregaremos el ingreso de g(x), valor inicial, tolerancia y
-        la tabla con x<sub>n</sub>.
-      </p>
-    </div>
-  );
-}
 
-function Newton() {
-  return (
-    <div>
-      <h3>Configuración: Newton</h3>
-      <p>
-        Aquí irá el formulario para f(x), f&apos;(x), valor inicial y la tabla de
-        iteraciones.
-      </p>
-    </div>
-  );
-}
 
-function Secante() {
-  return (
-    <div>
-      <h3>Configuración: Secante</h3>
-      <p>
-        Recibirá dos valores iniciales y mostraremos la tabla con las
-        aproximaciones sucesivas.
-      </p>
-    </div>
-  );
-}
 
-function PosicionFalsa1() {
-  return (
-    <div>
-      <h3>Configuración: Posición falsa I</h3>
-      <p>
-        Implementaremos la primera variante del método de falsa posición con sus
-        iteraciones.
-      </p>
-    </div>
-  );
-}
+
+
+
 
 function PosicionFalsa2() {
   return (
