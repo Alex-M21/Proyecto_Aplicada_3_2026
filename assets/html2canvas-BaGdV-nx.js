@@ -1,0 +1,1 @@
+import{t as e}from"./index-CSpOB5NR.js";export default e();
