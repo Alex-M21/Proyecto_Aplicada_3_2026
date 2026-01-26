@@ -7,8 +7,8 @@ const math = create(all, {});
 
 export default function PosicionFalsa1() {
   const [fxInput, setFxInput] = useState("x^5-7*x^2-1");
-  const [xPrevInput, setXPrevInput] = useState("1");   // x_{n-1}
-  const [xCurrInput, setXCurrInput] = useState("2");   // x_n
+  const [xPrevInput, setXPrevInput] = useState("1"); // x_{n-1}
+  const [xCurrInput, setXCurrInput] = useState("2"); // x_n
   const [tolInput, setTolInput] = useState("0.001");
   const [maxIterInput, setMaxIterInput] = useState("30");
   const [decimalsInput, setDecimalsInput] = useState("5");
@@ -20,12 +20,8 @@ export default function PosicionFalsa1() {
   // -------------------------
   // Utilidades
   // -------------------------
-
   const normalizeExpr = (expr) =>
-    expr
-      .trim()
-      .replace(/ln/gi, "log") // ln -> log
-      .replace(/sen/gi, "sin"); // sen -> sin
+    expr.trim().replace(/ln/gi, "log").replace(/sen/gi, "sin");
 
   const buildCompiled = (expr) => {
     const trimmed = expr.trim();
@@ -48,9 +44,10 @@ export default function PosicionFalsa1() {
   };
 
   // -------------------------
-  // Cálculo del método
+  // Cálculo del método (como en tu imagen)
+  // - Tabla muestra: n, x_{n-1}, x_n, x_{n+1}, f(x_{n-1}), f(x_{n+1}), producto, Error
+  // - Error (como en tu Excel/imagen): |x_{n+1} - x_{n-1}|
   // -------------------------
-
   const handleCalculate = (e) => {
     e.preventDefault();
     setMessage("");
@@ -62,8 +59,8 @@ export default function PosicionFalsa1() {
       return;
     }
 
-    let xPrev = parseFloat(xPrevInput);
-    let xCurr = parseFloat(xCurrInput);
+    let xPrev = parseFloat(xPrevInput); // x_{n-1}
+    let xCurr = parseFloat(xCurrInput); // x_n
     const tol = parseFloat(tolInput);
     const maxIter = parseInt(maxIterInput, 10);
 
@@ -76,12 +73,10 @@ export default function PosicionFalsa1() {
       setErrorMsg("Por favor ingresa valores numéricos válidos.");
       return;
     }
-
     if (tol <= 0) {
       setErrorMsg("La tolerancia debe ser un número positivo.");
       return;
     }
-
     if (maxIter <= 0) {
       setErrorMsg("El número de iteraciones debe ser mayor que cero.");
       return;
@@ -105,19 +100,18 @@ export default function PosicionFalsa1() {
     };
 
     // Validar cambio de signo inicial
-    let fPrev = evalF(xPrev);
-    let fCurr = evalF(xCurr);
+    const fPrev0 = evalF(xPrev);
+    const fCurr0 = evalF(xCurr);
 
-    if (!Number.isFinite(fPrev) || !Number.isFinite(fCurr)) {
+    if (!Number.isFinite(fPrev0) || !Number.isFinite(fCurr0)) {
       setErrorMsg(
         "No se pudo evaluar f(x) en los extremos iniciales. Revisa que estén en el dominio de la función."
       );
       return;
     }
-
-    if (fPrev * fCurr > 0) {
+    if (fPrev0 * fCurr0 > 0) {
       setErrorMsg(
-        "f(x_{n-1}) y f(x_n) tienen el mismo signo. La posición falsa requiere un cambio de signo en [x_{n-1}, x_n]."
+        "f(xₙ₋₁) y f(xₙ) tienen el mismo signo. La posición falsa requiere un cambio de signo en [xₙ₋₁, xₙ]."
       );
       return;
     }
@@ -128,8 +122,12 @@ export default function PosicionFalsa1() {
 
     try {
       for (let n = 1; n <= maxIter; n++) {
-        fPrev = evalF(xPrev);
-        fCurr = evalF(xCurr);
+        // congelar extremos de ESTA iteración
+        const xPrev_i = xPrev;
+        const xCurr_i = xCurr;
+
+        const fPrev = evalF(xPrev_i); // f(x_{n-1})
+        const fCurr = evalF(xCurr_i); // f(x_n)
 
         if (!Number.isFinite(fPrev) || !Number.isFinite(fCurr)) {
           setErrorMsg(
@@ -142,31 +140,36 @@ export default function PosicionFalsa1() {
         const denom = fCurr - fPrev;
         if (denom === 0) {
           setErrorMsg(
-            "En alguna iteración f(x_n) - f(x_{n-1}) = 0. El método de posición falsa no puede continuar (división entre cero)."
+            "En alguna iteración f(xₙ) - f(xₙ₋₁) = 0. El método no puede continuar (división entre cero)."
           );
           hadError = true;
           break;
         }
 
-        // Fórmula de posición falsa (regula falsi)
-        const xNext = xCurr - fCurr * (xCurr - xPrev) / denom;
-        const fNext = evalF(xNext);
+        // Regula falsi:
+        // x_{n+1} = x_n - f(x_n) * (x_n - x_{n-1}) / (f(x_n) - f(x_{n-1}))
+        const xNext = xCurr_i - (fCurr * (xCurr_i - xPrev_i)) / denom;
+        const fNext = evalF(xNext); // f(x_{n+1})
 
         if (!Number.isFinite(fNext)) {
           setErrorMsg(
-            "No se pudo evaluar f(x_{n+1}) en alguna iteración. Revisa el dominio de la función."
+            "No se pudo evaluar f(xₙ₊₁) en alguna iteración. Revisa el dominio de la función."
           );
           hadError = true;
           break;
         }
 
         const prod = fPrev * fNext;
-        const error = Math.abs(xNext - xCurr); // error como |x_{n+1} - x_n|
+
+        // ✅ COMO EN LA IMAGEN:
+        // Error = |x_{n+1} - x_{n-1}|
+        // (por eso en la primera iteración: |1.7 - 1| = 0.7)
+        const error = Math.abs(xNext - xPrev_i);
 
         newRows.push({
           n,
-          xPrev,
-          xCurr,
+          xPrev: xPrev_i,
+          xCurr: xCurr_i,
           xNext,
           fPrev,
           fNext,
@@ -174,17 +177,19 @@ export default function PosicionFalsa1() {
           error
         });
 
+        // criterio de paro (en tu imagen se detiene por error)
         if (Math.abs(fNext) < tol || error < tol) {
           found = true;
           break;
         }
 
-        // Actualizamos el intervalo según el signo de f(x_{n-1}) * f(x_{n+1})
+        // actualizar intervalo manteniendo cambio de signo
+        // usando el criterio de tu tabla: signo de f(x_{n-1})*f(x_{n+1})
         if (prod < 0) {
-          // La raíz está entre x_{n-1} y x_{n+1}  → movemos x_n
+          // raíz entre x_{n-1} y x_{n+1} -> mover x_n a x_{n+1}
           xCurr = xNext;
         } else {
-          // La raíz está entre x_{n+1} y x_n → movemos x_{n-1}
+          // raíz entre x_{n+1} y x_n -> mover x_{n-1} a x_{n+1}
           xPrev = xNext;
         }
       }
@@ -197,21 +202,14 @@ export default function PosicionFalsa1() {
 
     setRows(newRows);
 
-    if (newRows.length === 0 || hadError) return;
+    if (!newRows.length || hadError) return;
 
     const last = newRows[newRows.length - 1];
-
-    if (found) {
-      setMessage(
-        `Se encontró una aproximación a la solución: x ≈ ${formatNumber(
-          last.xNext
-        )}`
-      );
-    } else {
-      setMessage(
-        "Se alcanzó el número máximo de iteraciones sin cumplir la tolerancia."
-      );
-    }
+    setMessage(
+      found
+        ? `Se encontró una aproximación a la solución: x ≈ ${formatNumber(last.xNext)}`
+        : "Se alcanzó el número máximo de iteraciones sin cumplir la tolerancia."
+    );
   };
 
   const handleClear = () => {
@@ -229,7 +227,6 @@ export default function PosicionFalsa1() {
   // -------------------------
   // Descarga tabla (CSV)
   // -------------------------
-
   const handleDownloadTable = () => {
     if (!rows.length) return;
 
@@ -260,9 +257,7 @@ export default function PosicionFalsa1() {
     });
 
     const csvContent = csvRows.join("\n");
-    const blob = new Blob([csvContent], {
-      type: "text/csv;charset=utf-8;"
-    });
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
@@ -277,7 +272,6 @@ export default function PosicionFalsa1() {
   // -------------------------
   // Gráfica de f(x)
   // -------------------------
-
   const graphData = useMemo(() => {
     const compiledF = buildCompiled(fxInput);
     if (!compiledF) {
@@ -304,9 +298,7 @@ export default function PosicionFalsa1() {
     const x0 = parseFloat(xPrevInput);
     const x1 = parseFloat(xCurrInput);
 
-    let xMin;
-    let xMax;
-
+    let xMin, xMax;
     if (Number.isFinite(x0) && Number.isFinite(x1)) {
       xMin = Math.min(x0, x1);
       xMax = Math.max(x0, x1);
@@ -330,21 +322,11 @@ export default function PosicionFalsa1() {
     for (let i = 0; i <= steps; i++) {
       const x = xMin + i * step;
       const y = evalF(x);
-      if (Number.isFinite(y)) {
-        points.push({ x, y });
-      }
+      if (Number.isFinite(y)) points.push({ x, y });
     }
 
     if (!points.length) {
-      return {
-        points: [],
-        xMin,
-        xMax,
-        yMin: -1,
-        yMax: 1,
-        xTicks: [],
-        yTicks: []
-      };
+      return { points: [], xMin, xMax, yMin: -1, yMax: 1, xTicks: [], yTicks: [] };
     }
 
     const ys = points.map((p) => p.y);
@@ -361,16 +343,19 @@ export default function PosicionFalsa1() {
 
     const createTicks = (min, max, count = 4) => {
       const ticks = [];
-      for (let i = 0; i <= count; i++) {
-        ticks.push(min + (i * (max - min)) / count);
-      }
+      for (let i = 0; i <= count; i++) ticks.push(min + (i * (max - min)) / count);
       return ticks;
     };
 
-    const xTicks = createTicks(xMin, xMax, 4);
-    const yTicks = createTicks(yMin, yMax, 4);
-
-    return { points, xMin, xMax, yMin, yMax, xTicks, yTicks };
+    return {
+      points,
+      xMin,
+      xMax,
+      yMin,
+      yMax,
+      xTicks: createTicks(xMin, xMax, 4),
+      yTicks: createTicks(yMin, yMax, 4)
+    };
   }, [fxInput, xPrevInput, xCurrInput, decimalsInput]);
 
   const lastRow = rows.length ? rows[rows.length - 1] : null;
@@ -408,14 +393,10 @@ export default function PosicionFalsa1() {
       : "";
 
   const xAxisY =
-    graphData.yMin <= 0 && graphData.yMax >= 0
-      ? yToSvg(0)
-      : yToSvg(graphData.yMin);
+    graphData.yMin <= 0 && graphData.yMax >= 0 ? yToSvg(0) : yToSvg(graphData.yMin);
 
   const yAxisX =
-    graphData.xMin <= 0 && graphData.xMax >= 0
-      ? xToSvg(0)
-      : xToSvg(graphData.xMin);
+    graphData.xMin <= 0 && graphData.xMax >= 0 ? xToSvg(0) : xToSvg(graphData.xMin);
 
   return (
     <div className="bisection-grid">
@@ -491,11 +472,7 @@ export default function PosicionFalsa1() {
             <button type="submit" className="btn-primary">
               CALCULAR
             </button>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={handleClear}
-            >
+            <button type="button" className="btn-secondary" onClick={handleClear}>
               BORRAR CELDAS
             </button>
           </div>
@@ -511,8 +488,7 @@ export default function PosicionFalsa1() {
           <h4>Tabla de iteraciones</h4>
           {rows.length === 0 ? (
             <p className="bisection-hint">
-              Ingresa los datos y presiona <strong>CALCULAR</strong> para ver
-              las iteraciones.
+              Ingresa los datos y presiona <strong>CALCULAR</strong> para ver las iteraciones.
             </p>
           ) : (
             <>
@@ -546,11 +522,7 @@ export default function PosicionFalsa1() {
               </table>
 
               <div className="bisection-download">
-                <button
-                  type="button"
-                  className="btn-download"
-                  onClick={handleDownloadTable}
-                >
+                <button type="button" className="btn-download" onClick={handleDownloadTable}>
                   Descargar tabla (CSV)
                 </button>
               </div>
@@ -562,35 +534,24 @@ export default function PosicionFalsa1() {
           <h4 className="graph-title">Gráfica de f(x)</h4>
           {graphData.points.length === 0 ? (
             <p className="bisection-hint">
-              No se pudo generar la gráfica. Revisa la función y el intervalo
-              inicial.
+              No se pudo generar la gráfica. Revisa la función y el intervalo inicial.
             </p>
           ) : (
-            <svg
-              className="graph-svg"
-              viewBox={`0 0 ${width} ${height}`}
-              preserveAspectRatio="none"
-            >
+            <svg className="graph-svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
               {/* Intervalo actual sombreado */}
               {rows.length > 0 && (
                 <rect
-                  x={xToSvg(
-                    Math.min(
-                      rows[rows.length - 1].xPrev,
-                      rows[rows.length - 1].xCurr
-                    )
-                  )}
+                  x={xToSvg(Math.min(rows[rows.length - 1].xPrev, rows[rows.length - 1].xCurr))}
                   y={paddingTop}
                   width={Math.abs(
-                    xToSvg(rows[rows.length - 1].xCurr) -
-                      xToSvg(rows[rows.length - 1].xPrev)
+                    xToSvg(rows[rows.length - 1].xCurr) - xToSvg(rows[rows.length - 1].xPrev)
                   )}
                   height={height - paddingTop - paddingBottom}
                   fill="#fee2e2"
                 />
               )}
 
-              {/* Eje X */}
+              {/* Ejes */}
               <line
                 x1={paddingLeft}
                 x2={width - paddingRight}
@@ -599,8 +560,6 @@ export default function PosicionFalsa1() {
                 stroke="#9ca3af"
                 strokeWidth="1"
               />
-
-              {/* Eje Y */}
               <line
                 x1={yAxisX}
                 x2={yAxisX}
@@ -657,12 +616,7 @@ export default function PosicionFalsa1() {
               ))}
 
               {/* Curva f(x) */}
-              <path
-                d={pathF}
-                fill="none"
-                stroke="#2563eb"
-                strokeWidth="1.5"
-              />
+              <path d={pathF} fill="none" stroke="#2563eb" strokeWidth="1.5" />
 
               {/* Última aproximación x_{n+1} */}
               {lastRow && (

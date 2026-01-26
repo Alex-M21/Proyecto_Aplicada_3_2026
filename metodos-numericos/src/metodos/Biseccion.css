@@ -223,3 +223,19 @@
 .btn-download-secondary:hover {
   opacity: 0.9;
 }
+.graph-svg{
+  touch-action: none;
+}
+.cell-green {
+  background: #22c55e !important;
+  color: #000 !important;
+  font-weight: 700;
+}
+
+.cell-red {
+  background: #ef4444 !important;
+  color: #000 !important;
+  font-weight: 700;
+}
+
+

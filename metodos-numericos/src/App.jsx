@@ -60,10 +60,10 @@ import PuntoFijo from "./metodos/PuntoFijo";
 import Newton from "./metodos/Newton";
 import Secante from "./metodos/Secante";
 import PosicionFalsa1 from "./metodos/PosicionFalsa1";
-//import PosicionFalsa2 from "./metodos/PosicionFalsa2";
-//import Stefensen from "./metodos/Stefensen";
-//import MullerReal from "./metodos/MullerReal";
-//import MullerImaginario from "./metodos/MullerImaginario";
+import PosicionFalsa2 from "./metodos/PosicionFalsa2";
+import Stefensen from "./metodos/Stefensen";
+import MullerReal from "./metodos/MullerReal";
+import MullerImaginario from "./metodos/MullerImaginario";
 //import Lagrange from "./metodos/Lagrange";
 //import Neville from "./metodos/Neville";
 //import NewtonDiferenciasDivididas from "./metodos/NewtonDiferenciasDivididas";
@@ -216,55 +216,6 @@ const UNITS = [...new Set(METHODS.map((m) => m.unit))];
 
 
 
-
-
-
-
-
-function PosicionFalsa2() {
-  return (
-    <div>
-      <h3>Configuración: Posición falsa II</h3>
-      <p>
-        Aquí irá la segunda variante con su propio criterio de actualización.
-      </p>
-    </div>
-  );
-}
-
-function Stefensen() {
-  return (
-    <div>
-      <h3>Configuración: Steffensen</h3>
-      <p>
-        Usaremos este componente para acelerar un punto fijo y mostrar la
-        mejora en las iteraciones.
-      </p>
-    </div>
-  );
-}
-
-function MullerReal() {
-  return (
-    <div>
-      <h3>Configuración: Müller (real)</h3>
-      <p>
-        Configuración para el método de Müller enfocado en raíces reales.
-      </p>
-    </div>
-  );
-}
-
-function MullerImaginario() {
-  return (
-    <div>
-      <h3>Configuración: Müller (imaginario)</h3>
-      <p>
-        Versión del método pensada para raíces complejas (parte imaginaria).
-      </p>
-    </div>
-  );
-}
 
 function Lagrange() {
   return (
