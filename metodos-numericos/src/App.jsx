@@ -64,9 +64,9 @@ import PosicionFalsa2 from "./metodos/PosicionFalsa2";
 import Stefensen from "./metodos/Stefensen";
 import MullerReal from "./metodos/MullerReal";
 import MullerImaginario from "./metodos/MullerImaginario";
-//import Lagrange from "./metodos/Lagrange";
-//import Neville from "./metodos/Neville";
-//import NewtonDiferenciasDivididas from "./metodos/NewtonDiferenciasDivididas";
+import Lagrange from "./metodos/Lagrange";
+import Neville from "./metodos/Neville";
+import NewtonDiferenciasDivididas from "./metodos/NewtonDiferenciasDivididas";
 //import Jacobi from "./metodos/Jacobi";
 //import GaussSeidel from "./metodos/GaussSeidel";
 //import PuntoFijoNoLineal from "./metodos/PuntoFijoNoLineal";
@@ -217,41 +217,8 @@ const UNITS = [...new Set(METHODS.map((m) => m.unit))];
 
 
 
-function Lagrange() {
-  return (
-    <div>
-      <h3>Configuración: Polinomio de Lagrange</h3>
-      <p>
-        Permitirá ingresar puntos (x, y) y generaremos la tabla/interpolación en
-        un x objetivo.
-      </p>
-    </div>
-  );
-}
 
-function Neville() {
-  return (
-    <div>
-      <h3>Configuración: Aproximación de Neville</h3>
-      <p>
-        Aquí construiremos la tabla de Neville para aproximar el valor en un
-        punto.
-      </p>
-    </div>
-  );
-}
 
-function NewtonDiferenciasDivididas() {
-  return (
-    <div>
-      <h3>Configuración: Diferencias divididas de Newton</h3>
-      <p>
-        Mostraremos la tabla de diferencias divididas y la evaluación del
-        polinomio.
-      </p>
-    </div>
-  );
-}
 
 function JacobiComponent() {
   return (

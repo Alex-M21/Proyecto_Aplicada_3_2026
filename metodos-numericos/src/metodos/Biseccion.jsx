@@ -137,7 +137,12 @@ export default function Biseccion() {
     const tol = parseFloat(tolInput);
     const maxIter = parseInt(maxIterInput, 10);
 
-    if (!Number.isFinite(a0) || !Number.isFinite(b0) || !Number.isFinite(tol) || !Number.isFinite(maxIter)) {
+    if (
+      !Number.isFinite(a0) ||
+      !Number.isFinite(b0) ||
+      !Number.isFinite(tol) ||
+      !Number.isFinite(maxIter)
+    ) {
       setErrorMsg("Por favor ingresa valores numéricos válidos.");
       return;
     }
@@ -203,6 +208,8 @@ export default function Biseccion() {
           hadError = true;
           break;
         }
+
+        // ✅ criterio de parada correcto
         if (Math.abs(fp) === 0 || error < tol) {
           found = true;
           break;
@@ -242,6 +249,14 @@ export default function Biseccion() {
     setMessage("");
     setErrorMsg("");
   };
+
+  // ✅ Detectar fila final para pintar (p verde, error rojo)
+  const lastIndex = rows.length - 1;
+  const tolNum = parseFloat(tolInput);
+  const foundFinal =
+    rows.length > 0 &&
+    (Number.isFinite(rows[lastIndex]?.error) && Number.isFinite(tolNum)) &&
+    (rows[lastIndex].error < tolNum || Math.abs(rows[lastIndex]?.fp ?? NaN) === 0);
 
   // ----- descarga de tabla en CSV -----
   const handleDownloadTableCsv = () => {
@@ -296,7 +311,8 @@ export default function Biseccion() {
       const imgPdfHeight = pdfWidth * imgRatio;
 
       const yMargin = 10;
-      const finalHeight = imgPdfHeight + 2 * yMargin > pdfHeight ? pdfHeight - 2 * yMargin : imgPdfHeight;
+      const finalHeight =
+        imgPdfHeight + 2 * yMargin > pdfHeight ? pdfHeight - 2 * yMargin : imgPdfHeight;
 
       pdf.text("Método de Bisección - Tabla de iteraciones", 10, 10);
       pdf.addImage(imgData, "PNG", 10, 16, pdfWidth - 20, finalHeight - 20);
@@ -309,9 +325,6 @@ export default function Biseccion() {
 
   // =========================
   // Gráfica dinámica con pan/zoom
-  // - X = rangeX (interactivo)
-  // - Y auto en función del rango X
-  // - interval/p cambian por iterView (slider)
   // =========================
   const width = 400;
   const height = 240;
@@ -326,7 +339,7 @@ export default function Biseccion() {
 
   const [rangeX, setRangeX] = useState({ xMin: -5, xMax: 5 });
 
-  // Auto-ajuste del rango X cuando cambia a/b o f(x) (sin recalcular)
+  // Auto-ajuste del rango X cuando cambia a/b o f(x)
   useEffect(() => {
     const a = parseFloat(aInput);
     const b = parseFloat(bInput);
@@ -441,7 +454,7 @@ export default function Biseccion() {
     setRangeX({ xMin, xMax });
   };
 
-  // ----- descarga de gráfica (igual a tu versión) -----
+  // ----- descarga de gráfica -----
   const handleDownloadGraph = (format = "png") => {
     if (!svgRef.current) return;
 
@@ -497,7 +510,12 @@ export default function Biseccion() {
         <form onSubmit={handleCalculate}>
           <div className="bisection-form-row">
             <label>Ingrese la función f(x) =</label>
-            <input type="text" value={fxInput} onChange={(e) => setFxInput(e.target.value)} placeholder="Ej: x^3 - x - 1" />
+            <input
+              type="text"
+              value={fxInput}
+              onChange={(e) => setFxInput(e.target.value)}
+              placeholder="Ej: x^3 - x - 1"
+            />
           </div>
 
           <div className="bisection-form-row">
@@ -547,23 +565,35 @@ export default function Biseccion() {
             <table className="bisection-table">
               <thead>
                 <tr>
-                  <th>n</th><th>a</th><th>b</th><th>p</th><th>f(a)</th><th>f(b)</th><th>f(p)</th><th>f(a)·f(p)</th><th>Error</th>
+                  <th>n</th>
+                  <th>a</th>
+                  <th>b</th>
+                  <th>p</th>
+                  <th>f(a)</th>
+                  <th>f(b)</th>
+                  <th>f(p)</th>
+                  <th>f(a)·f(p)</th>
+                  <th>Error</th>
                 </tr>
               </thead>
+
               <tbody>
-                {rows.map((row) => (
-                  <tr key={row.n}>
-                    <td>{row.n}</td>
-                    <td>{formatNumber(row.a)}</td>
-                    <td>{formatNumber(row.b)}</td>
-                    <td>{formatNumber(row.p)}</td>
-                    <td>{formatNumber(row.fa)}</td>
-                    <td>{formatNumber(row.fb)}</td>
-                    <td>{formatNumber(row.fp)}</td>
-                    <td>{formatNumber(row.fa_fp)}</td>
-                    <td>{formatNumber(row.error)}</td>
-                  </tr>
-                ))}
+                {rows.map((row, idx) => {
+                  const isLast = idx === lastIndex && foundFinal;
+                  return (
+                    <tr key={row.n}>
+                      <td>{row.n}</td>
+                      <td>{formatNumber(row.a)}</td>
+                      <td>{formatNumber(row.b)}</td>
+                      <td className={isLast ? "cell-green" : ""}>{formatNumber(row.p)}</td>
+                      <td>{formatNumber(row.fa)}</td>
+                      <td>{formatNumber(row.fb)}</td>
+                      <td>{formatNumber(row.fp)}</td>
+                      <td>{formatNumber(row.fa_fp)}</td>
+                      <td className={isLast ? "cell-red" : ""}>{formatNumber(row.error)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -577,9 +607,9 @@ export default function Biseccion() {
         )}
 
         <div className="graph-card">
-          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h4 className="graph-title">Gráfica de f(x) (zoom y pan)</h4>
-            <div style={{display:"flex", gap:8}}>
+            <div style={{ display: "flex", gap: 8 }}>
               <button type="button" className="btn-download" onClick={zoomIn}>Zoom +</button>
               <button type="button" className="btn-download btn-download-secondary" onClick={zoomOut}>Zoom −</button>
               <button type="button" className="btn-secondary" onClick={autoRange}>Auto</button>
@@ -588,8 +618,8 @@ export default function Biseccion() {
 
           {/* Slider: elegir iteración */}
           {rows.length > 0 && (
-            <div style={{margin:"8px 0"}}>
-              <div style={{display:"flex", justifyContent:"space-between", fontSize:12}}>
+            <div style={{ margin: "8px 0" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
                 <span>Iteración: <strong>{rows[iterView]?.n}</strong></span>
                 <span>
                   p: <strong>{pToShow != null ? formatNumber(pToShow) : "-"}</strong>
@@ -601,7 +631,7 @@ export default function Biseccion() {
                 max={Math.max(0, rows.length - 1)}
                 value={iterView}
                 onChange={(e) => setIterView(parseInt(e.target.value, 10))}
-                style={{width:"100%"}}
+                style={{ width: "100%" }}
               />
             </div>
           )}

@@ -1,9 +1,74 @@
 // src/metodos/PosicionFalsa1.jsx
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { create, all } from "mathjs";
-import "./Biseccion.css"; // reutilizamos los estilos
+import "./Biseccion.css";
 
 const math = create(all, {});
+
+// === Pan & Zoom genéricos (solo eje X) ===
+const makePanZoomHandlers = (range, setRange, width, padL, padR) => {
+  let dragging = false;
+  let lastClientX = 0;
+  const innerW = width - padL - padR;
+
+  const clientXToX = (svg, clientX, xMin, xMax) => {
+    const rect = svg.getBoundingClientRect();
+    let px = clientX - rect.left;
+    px = Math.max(padL, Math.min(width - padR, px));
+    const t = (px - padL) / innerW;
+    return xMin + t * (xMax - xMin);
+  };
+
+  const onWheel = (e) => {
+    e.preventDefault();
+    const svg = e.currentTarget;
+    const { xMin, xMax } = range;
+    if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
+
+    const mouseX = clientXToX(svg, e.clientX, xMin, xMax);
+    const k = e.deltaY < 0 ? 1 / 1.2 : 1.2;
+    const span = Math.max(1e-9, (xMax - xMin) * k);
+
+    const t = (mouseX - xMin) / (xMax - xMin);
+    const newXMin = mouseX - t * span;
+    const newXMax = newXMin + span;
+
+    setRange({ xMin: newXMin, xMax: newXMax });
+  };
+
+  const onMouseDown = (e) => {
+    dragging = true;
+    lastClientX = e.clientX;
+    e.currentTarget.style.cursor = "grabbing";
+  };
+
+  const onMouseMove = (e) => {
+    if (!dragging) return;
+
+    const dxPx = e.clientX - lastClientX;
+    lastClientX = e.clientX;
+
+    const { xMin, xMax } = range;
+    if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
+
+    const dxX = (-dxPx * (xMax - xMin)) / innerW;
+    setRange({ xMin: xMin + dxX, xMax: xMax + dxX });
+  };
+
+  const finish = (e) => {
+    dragging = false;
+    if (e?.currentTarget) e.currentTarget.style.cursor = "grab";
+  };
+
+  return {
+    onWheel,
+    onMouseDown,
+    onMouseMove,
+    onMouseUp: finish,
+    onMouseLeave: finish,
+    style: { cursor: "grab", touchAction: "none" },
+  };
+};
 
 export default function PosicionFalsa1() {
   const [fxInput, setFxInput] = useState("x^5-7*x^2-1");
@@ -20,8 +85,7 @@ export default function PosicionFalsa1() {
   // -------------------------
   // Utilidades
   // -------------------------
-  const normalizeExpr = (expr) =>
-    expr.trim().replace(/ln/gi, "log").replace(/sen/gi, "sin");
+  const normalizeExpr = (expr) => expr.trim().replace(/ln/gi, "log").replace(/sen/gi, "sin");
 
   const buildCompiled = (expr) => {
     const trimmed = expr.trim();
@@ -35,18 +99,18 @@ export default function PosicionFalsa1() {
 
   const getDecimals = () => {
     const d = parseInt(decimalsInput, 10);
-    return Number.isNaN(d) || d < 0 ? 6 : d;
+    return Number.isNaN(d) || d < 0 ? 6 : Math.min(12, d);
   };
 
-  const formatNumber = (value) => {
-    const decimals = getDecimals();
-    return Number.isFinite(value) ? value.toFixed(decimals) : "NaN";
-  };
+  const formatNumber = (value) => (Number.isFinite(value) ? value.toFixed(getDecimals()) : "NaN");
+
+  const tolNum = useMemo(() => {
+    const t = parseFloat(tolInput);
+    return Number.isFinite(t) ? t : NaN;
+  }, [tolInput]);
 
   // -------------------------
-  // Cálculo del método (como en tu imagen)
-  // - Tabla muestra: n, x_{n-1}, x_n, x_{n+1}, f(x_{n-1}), f(x_{n+1}), producto, Error
-  // - Error (como en tu Excel/imagen): |x_{n+1} - x_{n-1}|
+  // Cálculo del método
   // -------------------------
   const handleCalculate = (e) => {
     e.preventDefault();
@@ -59,17 +123,12 @@ export default function PosicionFalsa1() {
       return;
     }
 
-    let xPrev = parseFloat(xPrevInput); // x_{n-1}
-    let xCurr = parseFloat(xCurrInput); // x_n
+    let xPrev = parseFloat(xPrevInput);
+    let xCurr = parseFloat(xCurrInput);
     const tol = parseFloat(tolInput);
     const maxIter = parseInt(maxIterInput, 10);
 
-    if (
-      !Number.isFinite(xPrev) ||
-      !Number.isFinite(xCurr) ||
-      !Number.isFinite(tol) ||
-      !Number.isFinite(maxIter)
-    ) {
+    if (!Number.isFinite(xPrev) || !Number.isFinite(xCurr) || !Number.isFinite(tol) || !Number.isFinite(maxIter)) {
       setErrorMsg("Por favor ingresa valores numéricos válidos.");
       return;
     }
@@ -84,9 +143,7 @@ export default function PosicionFalsa1() {
 
     const compiledF = buildCompiled(fxInput);
     if (!compiledF) {
-      setErrorMsg(
-        "La función f(x) no se pudo interpretar. Revisa la sintaxis. Ejemplos: x^5-7*x^2-1, sin(x), exp(-x)."
-      );
+      setErrorMsg("La función f(x) no se pudo interpretar. Revisa la sintaxis.");
       return;
     }
 
@@ -99,20 +156,14 @@ export default function PosicionFalsa1() {
       }
     };
 
-    // Validar cambio de signo inicial
     const fPrev0 = evalF(xPrev);
     const fCurr0 = evalF(xCurr);
-
     if (!Number.isFinite(fPrev0) || !Number.isFinite(fCurr0)) {
-      setErrorMsg(
-        "No se pudo evaluar f(x) en los extremos iniciales. Revisa que estén en el dominio de la función."
-      );
+      setErrorMsg("No se pudo evaluar f(x) en los extremos iniciales. Revisa dominio.");
       return;
     }
     if (fPrev0 * fCurr0 > 0) {
-      setErrorMsg(
-        "f(xₙ₋₁) y f(xₙ) tienen el mismo signo. La posición falsa requiere un cambio de signo en [xₙ₋₁, xₙ]."
-      );
+      setErrorMsg("f(xₙ₋₁) y f(xₙ) tienen el mismo signo. Se requiere cambio de signo en [xₙ₋₁, xₙ].");
       return;
     }
 
@@ -122,49 +173,36 @@ export default function PosicionFalsa1() {
 
     try {
       for (let n = 1; n <= maxIter; n++) {
-        // congelar extremos de ESTA iteración
         const xPrev_i = xPrev;
         const xCurr_i = xCurr;
 
-        const fPrev = evalF(xPrev_i); // f(x_{n-1})
-        const fCurr = evalF(xCurr_i); // f(x_n)
+        const fPrev = evalF(xPrev_i);
+        const fCurr = evalF(xCurr_i); // ✅ lo guardamos para graficar recta secante
 
         if (!Number.isFinite(fPrev) || !Number.isFinite(fCurr)) {
-          setErrorMsg(
-            "No se pudo evaluar f(x) en alguna iteración. Revisa la función y el intervalo."
-          );
+          setErrorMsg("No se pudo evaluar f(x) en alguna iteración. Revisa la función y el intervalo.");
           hadError = true;
           break;
         }
 
         const denom = fCurr - fPrev;
         if (denom === 0) {
-          setErrorMsg(
-            "En alguna iteración f(xₙ) - f(xₙ₋₁) = 0. El método no puede continuar (división entre cero)."
-          );
+          setErrorMsg("En alguna iteración f(xₙ) - f(xₙ₋₁) = 0. No se puede continuar.");
           hadError = true;
           break;
         }
 
-        // Regula falsi:
-        // x_{n+1} = x_n - f(x_n) * (x_n - x_{n-1}) / (f(x_n) - f(x_{n-1}))
         const xNext = xCurr_i - (fCurr * (xCurr_i - xPrev_i)) / denom;
-        const fNext = evalF(xNext); // f(x_{n+1})
+        const fNext = evalF(xNext);
 
         if (!Number.isFinite(fNext)) {
-          setErrorMsg(
-            "No se pudo evaluar f(xₙ₊₁) en alguna iteración. Revisa el dominio de la función."
-          );
+          setErrorMsg("No se pudo evaluar f(xₙ₊₁) en alguna iteración. Revisa dominio.");
           hadError = true;
           break;
         }
 
         const prod = fPrev * fNext;
-
-        // ✅ COMO EN LA IMAGEN:
-        // Error = |x_{n+1} - x_{n-1}|
-        // (por eso en la primera iteración: |1.7 - 1| = 0.7)
-        const error = Math.abs(xNext - xPrev_i);
+        const error = Math.abs(xNext - xPrev_i); // como tu tabla
 
         newRows.push({
           n,
@@ -172,36 +210,27 @@ export default function PosicionFalsa1() {
           xCurr: xCurr_i,
           xNext,
           fPrev,
+          fCurr, // ✅ nuevo
           fNext,
           prod,
-          error
+          error,
         });
 
-        // criterio de paro (en tu imagen se detiene por error)
         if (Math.abs(fNext) < tol || error < tol) {
           found = true;
           break;
         }
 
         // actualizar intervalo manteniendo cambio de signo
-        // usando el criterio de tu tabla: signo de f(x_{n-1})*f(x_{n+1})
-        if (prod < 0) {
-          // raíz entre x_{n-1} y x_{n+1} -> mover x_n a x_{n+1}
-          xCurr = xNext;
-        } else {
-          // raíz entre x_{n+1} y x_n -> mover x_{n-1} a x_{n+1}
-          xPrev = xNext;
-        }
+        if (prod < 0) xCurr = xNext;
+        else xPrev = xNext;
       }
     } catch {
-      setErrorMsg(
-        "Ocurrió un error inesperado durante las iteraciones. Revisa los datos ingresados."
-      );
+      setErrorMsg("Ocurrió un error inesperado durante las iteraciones.");
       hadError = true;
     }
 
     setRows(newRows);
-
     if (!newRows.length || hadError) return;
 
     const last = newRows[newRows.length - 1];
@@ -236,9 +265,10 @@ export default function PosicionFalsa1() {
       "x_n",
       "x_{n+1}",
       "f(x_{n-1})",
+      "f(x_n)",
       "f(x_{n+1})",
       "f(x_{n-1})*f(x_{n+1})",
-      "Error"
+      "Error",
     ];
     const csvRows = [headers.join(",")];
 
@@ -249,9 +279,10 @@ export default function PosicionFalsa1() {
         formatNumber(row.xCurr),
         formatNumber(row.xNext),
         formatNumber(row.fPrev),
+        formatNumber(row.fCurr),
         formatNumber(row.fNext),
         formatNumber(row.prod),
-        formatNumber(row.error)
+        formatNumber(row.error),
       ];
       csvRows.push(values.join(","));
     });
@@ -270,23 +301,80 @@ export default function PosicionFalsa1() {
   };
 
   // -------------------------
-  // Gráfica de f(x)
+  // Rango "auto" inicial para la vista (x)
   // -------------------------
+  const baseRange = useMemo(() => {
+    const x0 = parseFloat(xPrevInput);
+    const x1 = parseFloat(xCurrInput);
+
+    if (Number.isFinite(x0) && Number.isFinite(x1)) {
+      let xMin = Math.min(x0, x1);
+      let xMax = Math.max(x0, x1);
+      const m = (xMax - xMin) * 0.2 || 2;
+      xMin -= m;
+      xMax += m;
+      if (xMin === xMax) {
+        xMin -= 2;
+        xMax += 2;
+      }
+      return { xMin, xMax };
+    }
+    return { xMin: -5, xMax: 5 };
+  }, [xPrevInput, xCurrInput, fxInput]);
+
+  // ✅ RANGO INTERACTIVO (zoom/pan)
+  const [rangeMain, setRangeMain] = useState({ xMin: -5, xMax: 5 });
+  useEffect(() => {
+    setRangeMain({ xMin: baseRange.xMin, xMax: baseRange.xMax });
+  }, [baseRange.xMin, baseRange.xMax]);
+
+  const width = 420;
+  const height = 260;
+  const padL = 50;
+  const padR = 10;
+  const padT = 12;
+  const padB = 30;
+
+  // botones de zoom
+  const zoomInMain = () => {
+    const { xMin, xMax } = rangeMain;
+    if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
+    const c = (xMin + xMax) / 2;
+    const s = (xMax - xMin) / 2 / 1.8;
+    setRangeMain({ xMin: c - s, xMax: c + s });
+  };
+  const zoomOutMain = () => {
+    const { xMin, xMax } = rangeMain;
+    if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
+    const c = (xMin + xMax) / 2;
+    const s = ((xMax - xMin) / 2) * 1.8;
+    setRangeMain({ xMin: c - s, xMax: c + s });
+  };
+  const autoMain = () => setRangeMain({ xMin: baseRange.xMin, xMax: baseRange.xMax });
+
+  const buildTicks = (min, max, count = 6) => {
+    if (!Number.isFinite(min) || !Number.isFinite(max) || min === max) return [];
+    const ticks = [];
+    for (let i = 0; i <= count; i++) ticks.push(min + (i * (max - min)) / count);
+    return ticks;
+  };
+
+  const toXY = (xMin, xMax, yMin, yMax) => {
+    const xTo = (x) => padL + ((x - xMin) / (xMax - xMin)) * (width - padL - padR);
+    const yTo = (y) => padT + (1 - (y - yMin) / (yMax - yMin)) * (height - padT - padB);
+    return { xTo, yTo };
+  };
+
+  const pathFromPts = (pts, xTo, yTo) => (pts.length ? pts.map((p, i) => `${i ? "L" : "M"} ${xTo(p.x)} ${yTo(p.y)}`).join(" ") : "");
+
+  // =========================
+  // Gráfica principal f(x)
+  // =========================
   const graphData = useMemo(() => {
     const compiledF = buildCompiled(fxInput);
-    if (!compiledF) {
-      return {
-        points: [],
-        xMin: -5,
-        xMax: 5,
-        yMin: -1,
-        yMax: 1,
-        xTicks: [],
-        yTicks: []
-      };
-    }
+    if (!compiledF) return null;
 
-    const evalF = (x) => {
+    const f = (x) => {
       try {
         const r = compiledF.evaluate({ x });
         return Number.isFinite(r) ? r : NaN;
@@ -295,177 +383,249 @@ export default function PosicionFalsa1() {
       }
     };
 
-    const x0 = parseFloat(xPrevInput);
-    const x1 = parseFloat(xCurrInput);
+    const xMin = rangeMain.xMin;
+    const xMax = rangeMain.xMax;
 
-    let xMin, xMax;
-    if (Number.isFinite(x0) && Number.isFinite(x1)) {
-      xMin = Math.min(x0, x1);
-      xMax = Math.max(x0, x1);
-      if (xMin === xMax) {
-        xMin -= 2;
-        xMax += 2;
-      } else {
-        const margin = (xMax - xMin) * 0.2;
-        xMin -= margin;
-        xMax += margin;
-      }
-    } else {
-      xMin = -5;
-      xMax = 5;
-    }
-
-    const steps = 120;
+    const steps = 240;
     const step = (xMax - xMin) / steps;
-    const points = [];
-
+    const pts = [];
     for (let i = 0; i <= steps; i++) {
       const x = xMin + i * step;
-      const y = evalF(x);
-      if (Number.isFinite(y)) points.push({ x, y });
+      const y = f(x);
+      if (Number.isFinite(y)) pts.push({ x, y });
     }
 
-    if (!points.length) {
-      return { points: [], xMin, xMax, yMin: -1, yMax: 1, xTicks: [], yTicks: [] };
-    }
+    let yMin = Infinity,
+      yMax = -Infinity;
+    pts.forEach((p) => {
+      yMin = Math.min(yMin, p.y);
+      yMax = Math.max(yMax, p.y);
+    });
 
-    const ys = points.map((p) => p.y);
-    let yMin = Math.min(...ys);
-    let yMax = Math.max(...ys);
-    if (yMin === yMax) {
-      yMin -= 1;
-      yMax += 1;
+    if (!Number.isFinite(yMin) || !Number.isFinite(yMax) || yMin === yMax) {
+      yMin = -1;
+      yMax = 1;
     } else {
-      const margin = (yMax - yMin) * 0.2;
-      yMin -= margin;
-      yMax += margin;
+      const m = (yMax - yMin) * 0.15;
+      yMin -= m;
+      yMax += m;
     }
 
-    const createTicks = (min, max, count = 4) => {
-      const ticks = [];
-      for (let i = 0; i <= count; i++) ticks.push(min + (i * (max - min)) / count);
-      return ticks;
-    };
+    const xTicks = buildTicks(xMin, xMax, 6);
+    const yTicks = buildTicks(yMin, yMax, 6);
+    const { xTo, yTo } = toXY(xMin, xMax, yMin, yMax);
+    const path = pathFromPts(pts, xTo, yTo);
+
+    const xAxisY = yMin <= 0 && yMax >= 0 ? yTo(0) : yTo(yMin);
+    const yAxisX = xMin <= 0 && xMax >= 0 ? xTo(0) : xTo(xMin);
 
     return {
-      points,
       xMin,
       xMax,
       yMin,
       yMax,
-      xTicks: createTicks(xMin, xMax, 4),
-      yTicks: createTicks(yMin, yMax, 4)
+      xTicks: xTicks.map((x) => ({ x, X: xTo(x) })),
+      yTicks: yTicks.map((y) => ({ y, Y: yTo(y) })),
+      xAxisY,
+      yAxisX,
+      path,
+      xTo,
+      yTo,
     };
-  }, [fxInput, xPrevInput, xCurrInput, decimalsInput]);
+  }, [fxInput, rangeMain.xMin, rangeMain.xMax, decimalsInput]);
 
-  const lastRow = rows.length ? rows[rows.length - 1] : null;
+  const panZoomMain = makePanZoomHandlers(rangeMain, setRangeMain, width, padL, padR);
 
-  const width = 400;
-  const height = 240;
-  const paddingLeft = 46;
-  const paddingRight = 10;
-  const paddingTop = 10;
-  const paddingBottom = 28;
+  // =========================
+  // ✅ Primeras 3 y últimas 3 secantes (como Secante.jsx)
+  // =========================
+  const first3 = rows.slice(0, 3);
+  const last3 = rows.slice(-3);
 
-  const xToSvg = (x) => {
-    const { xMin, xMax } = graphData;
-    const w = width - paddingLeft - paddingRight;
-    if (xMax === xMin) return paddingLeft + w / 2;
-    return paddingLeft + ((x - xMin) / (xMax - xMin)) * w;
+  const autoRangeFor = (items) => {
+    const xs = items.length ? items.flatMap((r) => [r.xPrev, r.xCurr]) : [parseFloat(xPrevInput) || 0, parseFloat(xCurrInput) || 0];
+    const xmin = Math.min(...xs);
+    const xmax = Math.max(...xs);
+    let span = Math.max(1e-6, xmax - xmin);
+    if (span < 0.2) span = 0.2;
+    return { xMin: xmin - span, xMax: xmax + span };
   };
 
-  const yToSvg = (y) => {
-    const { yMin, yMax } = graphData;
-    const h = height - paddingTop - paddingBottom;
-    if (yMax === yMin) return paddingTop + h / 2;
-    return paddingTop + (1 - (y - yMin) / (yMax - yMin)) * h;
+  const [rangeA, setRangeA] = useState(() => autoRangeFor(first3));
+  const [rangeB, setRangeB] = useState(() => autoRangeFor(last3));
+
+  useEffect(() => {
+    setRangeA(autoRangeFor(first3));
+    setRangeB(autoRangeFor(last3));
+  }, [rows.length]); // re-auto al recalcular
+
+  const zoomIn = (range, setRange) => {
+    const c = (range.xMin + range.xMax) / 2;
+    const s = (range.xMax - range.xMin) / 2 / 1.8;
+    setRange({ xMin: c - s, xMax: c + s });
+  };
+  const zoomOut = (range, setRange) => {
+    const c = (range.xMin + range.xMax) / 2;
+    const s = ((range.xMax - range.xMin) / 2) * 1.8;
+    setRange({ xMin: c - s, xMax: c + s });
   };
 
-  const pathF =
-    graphData.points.length > 0
-      ? graphData.points
-          .map((pt, idx) => {
-            const x = xToSvg(pt.x);
-            const y = yToSvg(pt.y);
-            return `${idx === 0 ? "M" : "L"} ${x} ${y}`;
-          })
-          .join(" ")
-      : "";
+  const makeLinePath = (m, b, xMin, xMax, xTo, yTo) => {
+    const y1 = m * xMin + b;
+    const y2 = m * xMax + b;
+    return `M ${xTo(xMin)} ${yTo(y1)} L ${xTo(xMax)} ${yTo(y2)}`;
+  };
 
-  const xAxisY =
-    graphData.yMin <= 0 && graphData.yMax >= 0 ? yToSvg(0) : yToSvg(graphData.yMin);
+  const lineEq = (m, b) => {
+    if (!Number.isFinite(m) || !Number.isFinite(b)) return "No válida";
+    const mm = parseFloat(m.toFixed(getDecimals()));
+    const bb = parseFloat(b.toFixed(getDecimals()));
+    const sign = bb >= 0 ? "+" : "-";
+    return `y = ${mm}x ${sign} ${Math.abs(bb)}`;
+  };
 
-  const yAxisX =
-    graphData.xMin <= 0 && graphData.xMax >= 0 ? xToSvg(0) : xToSvg(graphData.xMin);
+  const buildSecantView = (items, rangeX) => {
+    const { xMin, xMax } = rangeX;
+    const cF = buildCompiled(fxInput);
+    if (!cF) return null;
 
+    const f = (x) => {
+      try {
+        const r = cF.evaluate({ x });
+        return Number.isFinite(r) ? r : NaN;
+      } catch {
+        return NaN;
+      }
+    };
+
+    // curva base
+    const steps = 180;
+    const step = (xMax - xMin) / steps;
+    const pts = [];
+    for (let i = 0; i <= steps; i++) {
+      const x = xMin + i * step;
+      const y = f(x);
+      if (Number.isFinite(y)) pts.push({ x, y });
+    }
+
+    // yMin/yMax considerando curva + rectas
+    let yMin = Infinity,
+      yMax = -Infinity;
+    pts.forEach((p) => {
+      yMin = Math.min(yMin, p.y);
+      yMax = Math.max(yMax, p.y);
+    });
+
+    const secantsInfo = items.map((r) => {
+      const x1 = r.xPrev;
+      const x2 = r.xCurr;
+      const y1 = r.fPrev; // ya guardado
+      const y2 = r.fCurr; // ✅ ya guardado
+
+      if (!Number.isFinite(x1) || !Number.isFinite(x2) || x1 === x2 || !Number.isFinite(y1) || !Number.isFinite(y2)) {
+        return { n: r.n, ok: false, m: NaN, b: NaN, path: "" };
+      }
+
+      const m = (y2 - y1) / (x2 - x1);
+      const b = y1 - m * x1;
+
+      yMin = Math.min(yMin, y1, y2, m * xMin + b, m * xMax + b);
+      yMax = Math.max(yMax, y1, y2, m * xMin + b, m * xMax + b);
+
+      return { n: r.n, ok: true, m, b };
+    });
+
+    if (!Number.isFinite(yMin) || !Number.isFinite(yMax) || yMin === yMax) {
+      yMin = -1;
+      yMax = 1;
+    } else {
+      const margin = (yMax - yMin) * 0.15;
+      yMin -= margin;
+      yMax += margin;
+    }
+
+    const xTicks = buildTicks(xMin, xMax, 6);
+    const yTicks = buildTicks(yMin, yMax, 6);
+    const { xTo, yTo } = toXY(xMin, xMax, yMin, yMax);
+
+    const basePath = pathFromPts(pts, xTo, yTo);
+
+    const secants = secantsInfo.map((s) => ({
+      ...s,
+      path: s.ok ? makeLinePath(s.m, s.b, xMin, xMax, xTo, yTo) : "",
+    }));
+
+    const xAxisY = yMin <= 0 && yMax >= 0 ? yTo(0) : yTo(yMin);
+    const yAxisX = xMin <= 0 && xMax >= 0 ? xTo(0) : xTo(xMin);
+
+    return {
+      basePath,
+      secants,
+      axis: {
+        xAxisY,
+        yAxisX,
+        xTicks: xTicks.map((x) => ({ x, X: xTo(x) })),
+        yTicks: yTicks.map((y) => ({ y, Y: yTo(y) })),
+      },
+    };
+  };
+
+  const viewA = rows.length ? buildSecantView(first3, rangeA) : null;
+  const viewB = rows.length ? buildSecantView(last3, rangeB) : null;
+
+  const panZoomA = makePanZoomHandlers(rangeA, setRangeA, width, padL, padR);
+  const panZoomB = makePanZoomHandlers(rangeB, setRangeB, width, padL, padR);
+
+  const colorA = ["#DC2626", "#F59E0B", "#10B981"];
+  const colorB = ["#7C3AED", "#0EA5E9", "#EF4444"];
+
+  // =========================
+  // Convergencia (marcar como Secante)
+  // =========================
+  const lastIndex = rows.length - 1;
+  const converged =
+    rows.length > 0 &&
+    Number.isFinite(tolNum) &&
+    (Math.abs(rows[lastIndex]?.fNext) < tolNum || rows[lastIndex]?.error < tolNum);
+
+  // ========= RENDER =========
   return (
     <div className="bisection-grid">
-      {/* Columna: formulario */}
       <div className="bisection-form">
         <h3>Método de la Posición Falsa I</h3>
         <p className="bisection-hint">
-          Ingresa f(x) y un intervalo inicial [xₙ₋₁, xₙ] con cambio de signo.
-          Ejemplo: <code>x^5-7*x^2-1</code>, xₙ₋₁ = 1, xₙ = 2. Acepta{" "}
-          <code>ln(x)</code> y <code>sen(x)</code>.
+          Ingresa f(x) y un intervalo inicial [xₙ₋₁, xₙ] con cambio de signo. Acepta <code>ln(x)</code> y <code>sen(x)</code>.
         </p>
 
         <form onSubmit={handleCalculate}>
           <div className="bisection-form-row">
             <label>Ingrese la función f(x) =</label>
-            <input
-              type="text"
-              value={fxInput}
-              onChange={(e) => setFxInput(e.target.value)}
-              placeholder="Ej: x^5-7*x^2-1"
-            />
+            <input type="text" value={fxInput} onChange={(e) => setFxInput(e.target.value)} />
           </div>
 
           <div className="bisection-form-row">
             <label>Ingrese el valor xₙ₋₁ =</label>
-            <input
-              type="number"
-              step="any"
-              value={xPrevInput}
-              onChange={(e) => setXPrevInput(e.target.value)}
-            />
+            <input type="number" step="any" value={xPrevInput} onChange={(e) => setXPrevInput(e.target.value)} />
           </div>
 
           <div className="bisection-form-row">
             <label>Ingrese el valor xₙ =</label>
-            <input
-              type="number"
-              step="any"
-              value={xCurrInput}
-              onChange={(e) => setXCurrInput(e.target.value)}
-            />
+            <input type="number" step="any" value={xCurrInput} onChange={(e) => setXCurrInput(e.target.value)} />
           </div>
 
           <div className="bisection-form-row">
             <label>Ingrese tolerancia o exactitud =</label>
-            <input
-              type="number"
-              step="any"
-              value={tolInput}
-              onChange={(e) => setTolInput(e.target.value)}
-            />
+            <input type="number" step="any" value={tolInput} onChange={(e) => setTolInput(e.target.value)} />
           </div>
 
           <div className="bisection-form-row">
             <label>Ingrese número de iteraciones =</label>
-            <input
-              type="number"
-              value={maxIterInput}
-              onChange={(e) => setMaxIterInput(e.target.value)}
-            />
+            <input type="number" value={maxIterInput} onChange={(e) => setMaxIterInput(e.target.value)} />
           </div>
 
           <div className="bisection-form-row">
             <label>Ingrese número de decimales =</label>
-            <input
-              type="number"
-              value={decimalsInput}
-              onChange={(e) => setDecimalsInput(e.target.value)}
-            />
+            <input type="number" value={decimalsInput} onChange={(e) => setDecimalsInput(e.target.value)} />
           </div>
 
           <div className="bisection-buttons">
@@ -482,13 +642,13 @@ export default function PosicionFalsa1() {
         {errorMsg && <p className="bisection-error">{errorMsg}</p>}
       </div>
 
-      {/* Columna: tabla + gráfica */}
       <div className="bisection-results">
+        {/* Tabla */}
         <div className="bisection-table-wrapper">
           <h4>Tabla de iteraciones</h4>
           {rows.length === 0 ? (
             <p className="bisection-hint">
-              Ingresa los datos y presiona <strong>CALCULAR</strong> para ver las iteraciones.
+              Ingresa los datos y presiona <strong>CALCULAR</strong>.
             </p>
           ) : (
             <>
@@ -500,24 +660,31 @@ export default function PosicionFalsa1() {
                     <th>xₙ</th>
                     <th>xₙ₊₁</th>
                     <th>f(xₙ₋₁)</th>
+                    <th>f(xₙ)</th>
                     <th>f(xₙ₊₁)</th>
                     <th>f(xₙ₋₁)·f(xₙ₊₁)</th>
                     <th>Error</th>
                   </tr>
                 </thead>
+
                 <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.n}>
-                      <td>{row.n}</td>
-                      <td>{formatNumber(row.xPrev)}</td>
-                      <td>{formatNumber(row.xCurr)}</td>
-                      <td>{formatNumber(row.xNext)}</td>
-                      <td>{formatNumber(row.fPrev)}</td>
-                      <td>{formatNumber(row.fNext)}</td>
-                      <td>{formatNumber(row.prod)}</td>
-                      <td>{formatNumber(row.error)}</td>
-                    </tr>
-                  ))}
+                  {rows.map((row, idx) => {
+                    const isLastOk = converged && idx === lastIndex;
+
+                    return (
+                      <tr key={row.n}>
+                        <td>{row.n}</td>
+                        <td>{formatNumber(row.xPrev)}</td>
+                        <td>{formatNumber(row.xCurr)}</td>
+                        <td className={isLastOk ? "cell-green" : ""}>{formatNumber(row.xNext)}</td>
+                        <td>{formatNumber(row.fPrev)}</td>
+                        <td>{formatNumber(row.fCurr)}</td>
+                        <td>{formatNumber(row.fNext)}</td>
+                        <td>{formatNumber(row.prod)}</td>
+                        <td className={isLastOk ? "cell-red" : ""}>{formatNumber(row.error)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
 
@@ -530,109 +697,174 @@ export default function PosicionFalsa1() {
           )}
         </div>
 
+        {/* Vista general */}
         <div className="graph-card">
-          <h4 className="graph-title">Gráfica de f(x)</h4>
-          {graphData.points.length === 0 ? (
-            <p className="bisection-hint">
-              No se pudo generar la gráfica. Revisa la función y el intervalo inicial.
-            </p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h4 className="graph-title">f(x) — vista general (zoom y pan)</h4>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="button" className="btn-download" onClick={zoomInMain}>
+                Zoom +
+              </button>
+              <button type="button" className="btn-download btn-download-secondary" onClick={zoomOutMain}>
+                Zoom −
+              </button>
+              <button type="button" className="btn-secondary" onClick={autoMain}>
+                Auto
+              </button>
+            </div>
+          </div>
+
+          {!graphData ? (
+            <p className="bisection-hint">No se pudo graficar f(x).</p>
           ) : (
-            <svg className="graph-svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-              {/* Intervalo actual sombreado */}
-              {rows.length > 0 && (
-                <rect
-                  x={xToSvg(Math.min(rows[rows.length - 1].xPrev, rows[rows.length - 1].xCurr))}
-                  y={paddingTop}
-                  width={Math.abs(
-                    xToSvg(rows[rows.length - 1].xCurr) - xToSvg(rows[rows.length - 1].xPrev)
-                  )}
-                  height={height - paddingTop - paddingBottom}
-                  fill="#fee2e2"
-                />
-              )}
+            <>
+              <svg className="graph-svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" {...panZoomMain} style={{ touchAction: "none" }}>
+                {/* grid */}
+                {graphData.xTicks.map((t, i) => (
+                  <line key={`gx${i}`} x1={t.X} x2={t.X} y1={padT} y2={height - padB} stroke="#e5e7eb" />
+                ))}
+                {graphData.yTicks.map((t, i) => (
+                  <line key={`gy${i}`} x1={padL} x2={width - padR} y1={t.Y} y2={t.Y} stroke="#e5e7eb" />
+                ))}
 
-              {/* Ejes */}
-              <line
-                x1={paddingLeft}
-                x2={width - paddingRight}
-                y1={xAxisY}
-                y2={xAxisY}
-                stroke="#9ca3af"
-                strokeWidth="1"
-              />
-              <line
-                x1={yAxisX}
-                x2={yAxisX}
-                y1={paddingTop}
-                y2={height - paddingBottom}
-                stroke="#9ca3af"
-                strokeWidth="1"
-              />
+                {/* ejes */}
+                <line x1={padL} x2={width - padR} y1={graphData.xAxisY} y2={graphData.xAxisY} stroke="#9ca3af" />
+                <line x1={graphData.yAxisX} x2={graphData.yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" />
 
-              {/* Ticks X */}
-              {graphData.xTicks.map((xt, idx) => (
-                <g key={`xtick-${idx}`}>
-                  <line
-                    x1={xToSvg(xt)}
-                    x2={xToSvg(xt)}
-                    y1={xAxisY - 3}
-                    y2={xAxisY + 3}
-                    stroke="#9ca3af"
-                    strokeWidth="1"
-                  />
-                  <text
-                    x={xToSvg(xt)}
-                    y={height - 6}
-                    fontSize="9"
-                    textAnchor="middle"
-                    fill="#4b5563"
-                  >
-                    {xt.toFixed(2)}
-                  </text>
-                </g>
-              ))}
+                {/* ticks */}
+                {graphData.xTicks.map((t, i) => (
+                  <g key={`xt${i}`}>
+                    <line x1={t.X} x2={t.X} y1={graphData.xAxisY - 3} y2={graphData.xAxisY + 3} stroke="#6b7280" />
+                    <text x={t.X} y={height - 6} fontSize="9" textAnchor="middle" fill="#374151">
+                      {t.x.toFixed(2)}
+                    </text>
+                  </g>
+                ))}
+                {graphData.yTicks.map((t, i) => (
+                  <g key={`yt${i}`}>
+                    <line x1={graphData.yAxisX - 3} x2={graphData.yAxisX + 3} y1={t.Y} y2={t.Y} stroke="#6b7280" />
+                    <text x={padL - 6} y={t.Y + 3} fontSize="9" textAnchor="end" fill="#374151">
+                      {t.y.toFixed(2)}
+                    </text>
+                  </g>
+                ))}
 
-              {/* Ticks Y */}
-              {graphData.yTicks.map((yt, idx) => (
-                <g key={`ytick-${idx}`}>
-                  <line
-                    x1={yAxisX - 3}
-                    x2={yAxisX + 3}
-                    y1={yToSvg(yt)}
-                    y2={yToSvg(yt)}
-                    stroke="#9ca3af"
-                    strokeWidth="1"
-                  />
-                  <text
-                    x={paddingLeft - 6}
-                    y={yToSvg(yt) + 3}
-                    fontSize="9"
-                    textAnchor="end"
-                    fill="#4b5563"
-                  >
-                    {yt.toFixed(2)}
-                  </text>
-                </g>
-              ))}
+                {/* f(x) */}
+                <path d={graphData.path} fill="none" stroke="#2563eb" strokeWidth="1.7" />
+              </svg>
 
-              {/* Curva f(x) */}
-              <path d={pathF} fill="none" stroke="#2563eb" strokeWidth="1.5" />
-
-              {/* Última aproximación x_{n+1} */}
-              {lastRow && (
-                <line
-                  x1={xToSvg(lastRow.xNext)}
-                  x2={xToSvg(lastRow.xNext)}
-                  y1={paddingTop}
-                  y2={height - paddingBottom}
-                  stroke="#ef4444"
-                  strokeWidth="1.3"
-                  strokeDasharray="4 3"
-                />
-              )}
-            </svg>
+              <p className="bisection-hint" style={{ marginTop: 6 }}>
+                Rueda: zoom • Arrastrar: mover
+              </p>
+            </>
           )}
         </div>
+
+        {/* ✅ Primeras 3 rectas secantes */}
+        {rows.length > 0 && viewA && (
+          <div className="graph-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h4 className="graph-title">Primeras 3 rectas secantes</h4>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <button className="btn-download" onClick={() => zoomIn(rangeA, setRangeA)}>
+                  Zoom +
+                </button>
+                <button className="btn-download btn-download-secondary" onClick={() => zoomOut(rangeA, setRangeA)}>
+                  Zoom −
+                </button>
+                <button className="btn-secondary" onClick={() => setRangeA(autoRangeFor(first3))}>
+                  Auto
+                </button>
+              </div>
+            </div>
+
+            <div style={{ margin: "6px 0 10px", fontSize: 13 }}>
+              {viewA.secants.map((s, i) => (
+                <div key={`eqA-${s.n}`} style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <span style={{ width: 14, height: 14, background: colorA[i], display: "inline-block", borderRadius: 3 }} />
+                  <strong>Secante {s.n}:</strong> <code>{lineEq(s.m, s.b)}</code>
+                </div>
+              ))}
+            </div>
+
+            <svg className="graph-svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" {...panZoomA} style={{ touchAction: "none" }}>
+              {(() => {
+                const v = viewA;
+                const { xAxisY, yAxisX, xTicks, yTicks } = v.axis;
+                return (
+                  <>
+                    {xTicks.map((t, i) => (
+                      <line key={`a-gx-${i}`} x1={t.X} x2={t.X} y1={padT} y2={height - padB} stroke="#e5e7eb" />
+                    ))}
+                    {yTicks.map((t, i) => (
+                      <line key={`a-gy-${i}`} x1={padL} x2={width - padR} y1={t.Y} y2={t.Y} stroke="#e5e7eb" />
+                    ))}
+                    <line x1={padL} x2={width - padR} y1={xAxisY} y2={xAxisY} stroke="#9ca3af" />
+                    <line x1={yAxisX} x2={yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" />
+
+                    <path d={v.basePath} fill="none" stroke="#2563eb" strokeOpacity="0.5" strokeWidth="1.4" />
+                    {v.secants.map((sc, i) => (
+                      <path key={`a-sc-${sc.n}`} d={sc.path} fill="none" stroke={colorA[i]} strokeWidth="2" />
+                    ))}
+                  </>
+                );
+              })()}
+            </svg>
+          </div>
+        )}
+
+        {/* ✅ Últimas 3 rectas secantes */}
+        {rows.length > 0 && viewB && (
+          <div className="graph-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h4 className="graph-title">Últimas 3 rectas secantes</h4>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <button className="btn-download" onClick={() => zoomIn(rangeB, setRangeB)}>
+                  Zoom +
+                </button>
+                <button className="btn-download btn-download-secondary" onClick={() => zoomOut(rangeB, setRangeB)}>
+                  Zoom −
+                </button>
+                <button className="btn-secondary" onClick={() => setRangeB(autoRangeFor(last3))}>
+                  Auto
+                </button>
+              </div>
+            </div>
+
+            <div style={{ margin: "6px 0 10px", fontSize: 13 }}>
+              {viewB.secants.map((s, i) => (
+                <div key={`eqB-${s.n}`} style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <span style={{ width: 14, height: 14, background: colorB[i], display: "inline-block", borderRadius: 3 }} />
+                  <strong>Secante {s.n}:</strong> <code>{lineEq(s.m, s.b)}</code>
+                </div>
+              ))}
+            </div>
+
+            <svg className="graph-svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" {...panZoomB} style={{ touchAction: "none" }}>
+              {(() => {
+                const v = viewB;
+                const { xAxisY, yAxisX, xTicks, yTicks } = v.axis;
+                return (
+                  <>
+                    {xTicks.map((t, i) => (
+                      <line key={`b-gx-${i}`} x1={t.X} x2={t.X} y1={padT} y2={height - padB} stroke="#e5e7eb" />
+                    ))}
+                    {yTicks.map((t, i) => (
+                      <line key={`b-gy-${i}`} x1={padL} x2={width - padR} y1={t.Y} y2={t.Y} stroke="#e5e7eb" />
+                    ))}
+                    <line x1={padL} x2={width - padR} y1={xAxisY} y2={xAxisY} stroke="#9ca3af" />
+                    <line x1={yAxisX} x2={yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" />
+
+                    <path d={v.basePath} fill="none" stroke="#2563eb" strokeOpacity="0.5" strokeWidth="1.4" />
+                    {v.secants.map((sc, i) => (
+                      <path key={`b-sc-${sc.n}`} d={sc.path} fill="none" stroke={colorB[i]} strokeWidth="2" />
+                    ))}
+                  </>
+                );
+              })()}
+            </svg>
+          </div>
+        )}
       </div>
     </div>
   );

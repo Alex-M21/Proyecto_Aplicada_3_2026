@@ -1,14 +1,79 @@
-// src/metodos/PosicionFalsa2.jsx
-import { useState, useMemo } from "react";
+  // src/metodos/PosicionFalsa2.jsx
+import { useState, useMemo, useEffect } from "react";
 import { create, all } from "mathjs";
-import "./Biseccion.css"; // reutilizamos estilos
+import "./Biseccion.css";
 
 const math = create(all, {});
 
+// === Pan & Zoom genéricos (solo eje X) ===
+const makePanZoomHandlers = (range, setRange, width, padL, padR) => {
+  let dragging = false;
+  let lastClientX = 0;
+  const innerW = width - padL - padR;
+
+  const clientXToX = (svg, clientX, xMin, xMax) => {
+    const rect = svg.getBoundingClientRect();
+    let px = clientX - rect.left;
+    px = Math.max(padL, Math.min(width - padR, px));
+    const t = (px - padL) / innerW;
+    return xMin + t * (xMax - xMin);
+  };
+
+  const onWheel = (e) => {
+    e.preventDefault();
+    const svg = e.currentTarget;
+    const { xMin, xMax } = range;
+    if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
+
+    const mouseX = clientXToX(svg, e.clientX, xMin, xMax);
+    const k = e.deltaY < 0 ? 1 / 1.2 : 1.2;
+    const span = Math.max(1e-9, (xMax - xMin) * k);
+
+    const t = (mouseX - xMin) / (xMax - xMin);
+    const newXMin = mouseX - t * span;
+    const newXMax = newXMin + span;
+
+    setRange({ xMin: newXMin, xMax: newXMax });
+  };
+
+  const onMouseDown = (e) => {
+    dragging = true;
+    lastClientX = e.clientX;
+    e.currentTarget.style.cursor = "grabbing";
+  };
+
+  const onMouseMove = (e) => {
+    if (!dragging) return;
+
+    const dxPx = e.clientX - lastClientX;
+    lastClientX = e.clientX;
+
+    const { xMin, xMax } = range;
+    if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
+
+    const dxX = (-dxPx * (xMax - xMin)) / innerW;
+    setRange({ xMin: xMin + dxX, xMax: xMax + dxX });
+  };
+
+  const finish = (e) => {
+    dragging = false;
+    if (e?.currentTarget) e.currentTarget.style.cursor = "grab";
+  };
+
+  return {
+    onWheel,
+    onMouseDown,
+    onMouseMove,
+    onMouseUp: finish,
+    onMouseLeave: finish,
+    style: { cursor: "grab", touchAction: "none" },
+  };
+};
+
 export default function PosicionFalsa2() {
   const [fxInput, setFxInput] = useState("x^5-7*x^2-1");
-  const [xPrevInput, setXPrevInput] = useState("1"); // extremo izquierdo (a)
-  const [xCurrInput, setXCurrInput] = useState("2"); // extremo derecho (b)
+  const [xPrevInput, setXPrevInput] = useState("1"); // a (puede venir invertido)
+  const [xCurrInput, setXCurrInput] = useState("2"); // b (puede venir invertido)
   const [tolInput, setTolInput] = useState("0.001");
   const [maxIterInput, setMaxIterInput] = useState("30");
   const [decimalsInput, setDecimalsInput] = useState("5");
@@ -20,8 +85,7 @@ export default function PosicionFalsa2() {
   // -------------------------
   // Utilidades
   // -------------------------
-  const normalizeExpr = (expr) =>
-    expr.trim().replace(/ln/gi, "log").replace(/sen/gi, "sin");
+  const normalizeExpr = (expr) => expr.trim().replace(/ln/gi, "log").replace(/sen/gi, "sin");
 
   const buildCompiled = (expr) => {
     const trimmed = expr.trim();
@@ -35,7 +99,8 @@ export default function PosicionFalsa2() {
 
   const getDecimals = () => {
     const d = parseInt(decimalsInput, 10);
-    return Number.isNaN(d) || d < 0 ? 6 : d;
+    if (Number.isNaN(d) || d < 0) return 6;
+    return Math.min(12, d);
   };
 
   const roundTo = (v) => {
@@ -44,17 +109,20 @@ export default function PosicionFalsa2() {
     return Math.round(v * f) / f;
   };
 
-  const formatNumber = (value) => {
-    const d = getDecimals();
-    return Number.isFinite(value) ? value.toFixed(d) : "NaN";
-  };
+  const formatNumber = (value) => (Number.isFinite(value) ? value.toFixed(getDecimals()) : "NaN");
+
+  const tolNum = useMemo(() => {
+    const t = parseFloat(tolInput);
+    return Number.isFinite(t) ? t : NaN;
+  }, [tolInput]);
 
   // -------------------------
-  // Cálculo (Posición Falsa 2)
-  // - Mantiene el intervalo con cambio de signo.
-  // - Error COMO EN TU IMAGEN: |x_{n+1} - x_n|
-  //   donde para la 1a iteración x_n = b (xCurr).
-  //   Luego x_n = aproximación previa (c_prev).
+  // POSICIÓN FALSA II (b SIEMPRE FIJO)
+  // - Se permite ingresar el intervalo invertido: internamente se define
+  //     a = min(input1,input2)
+  //     b = max(input1,input2)   <-- ESTE b ES EL QUE QUEDA FIJO
+  // - Para evitar "división entre 0" por redondeos:
+  //   NO redondeamos a/b/c en el cálculo, solo al guardar en tabla.
   // -------------------------
   const handleCalculate = (e) => {
     e.preventDefault();
@@ -67,12 +135,12 @@ export default function PosicionFalsa2() {
       return;
     }
 
-    let a = parseFloat(xPrevInput);
-    let b = parseFloat(xCurrInput);
+    const x1 = parseFloat(xPrevInput);
+    const x2 = parseFloat(xCurrInput);
     const tol = parseFloat(tolInput);
     const maxIter = parseInt(maxIterInput, 10);
 
-    if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(tol) || !Number.isFinite(maxIter)) {
+    if (!Number.isFinite(x1) || !Number.isFinite(x2) || !Number.isFinite(tol) || !Number.isFinite(maxIter)) {
       setErrorMsg("Por favor ingresa valores numéricos válidos.");
       return;
     }
@@ -84,16 +152,9 @@ export default function PosicionFalsa2() {
       setErrorMsg("El número de iteraciones debe ser mayor que cero.");
       return;
     }
-    if (a === b) {
-      setErrorMsg('Los valores iniciales no pueden ser iguales. Debe haber un intervalo [a, b].');
+    if (x1 === x2) {
+      setErrorMsg("Los valores iniciales no pueden ser iguales. Debe haber un intervalo [a, b].");
       return;
-    }
-
-    // asegurar a < b (solo para orden visual; el método funciona igual)
-    if (a > b) {
-      const tmp = a;
-      a = b;
-      b = tmp;
     }
 
     const compiledF = buildCompiled(fxInput);
@@ -111,8 +172,12 @@ export default function PosicionFalsa2() {
       }
     };
 
+    // ✅ b SIEMPRE FIJO = el mayor
+    let a = Math.min(x1, x2);
+    const b = Math.max(x1, x2);
+
+    const fb = evalF(b);
     let fa = evalF(a);
-    let fb = evalF(b);
 
     if (!Number.isFinite(fa) || !Number.isFinite(fb)) {
       setErrorMsg("No se pudo evaluar f(x) en los extremos iniciales. Revisa dominio/intervalo.");
@@ -126,56 +191,52 @@ export default function PosicionFalsa2() {
 
     const newRows = [];
     let found = false;
-    let hadError = false;
+    let bad = false;
 
-    // para que la 1a fila dé 0.3 como tu imagen:
-    // cPrev inicia en b, así error1 = |c1 - b|
+    // para tu error: |c - cPrev| con cPrev iniciando en b
     let cPrev = b;
+
+    const EPS = 1e-15;
 
     try {
       for (let n = 1; n <= maxIter; n++) {
         fa = evalF(a);
-        fb = evalF(b);
 
-        if (!Number.isFinite(fa) || !Number.isFinite(fb)) {
-          setErrorMsg("No se pudo evaluar f(x) en alguna iteración.");
-          hadError = true;
+        if (!Number.isFinite(fa)) {
+          setErrorMsg("No se pudo evaluar f(a) en alguna iteración.");
+          bad = true;
           break;
         }
 
         const denom = fb - fa;
-        if (denom === 0) {
-          setErrorMsg("Apareció f(b) - f(a) = 0. No se puede continuar (división entre cero).");
-          hadError = true;
+        if (!Number.isFinite(denom) || Math.abs(denom) < EPS) {
+          setErrorMsg("Apareció f(b) - f(a) ≈ 0 (división entre 0). Cambia el intervalo.");
+          bad = true;
           break;
         }
 
-        // Regula falsi: c = b - f(b)*(b-a)/(f(b)-f(a))
-        let c = b - (fb * (b - a)) / denom;
-        let fc = evalF(c);
+        // Regula falsi con b fijo
+        const c = b - (fb * (b - a)) / denom;
+        const fc = evalF(c);
 
         if (!Number.isFinite(fc)) {
-          setErrorMsg("No se pudo evaluar f(x_{n+1}) en alguna iteración.");
-          hadError = true;
+          setErrorMsg("No se pudo evaluar f(c) en alguna iteración. Revisa dominio.");
+          bad = true;
           break;
         }
 
-        // redondeo tipo “Excel” para que coincidan las tablas
-        a = roundTo(a);
-        b = roundTo(b);
-        c = roundTo(c);
-        fc = roundTo(fc);
+        const error = Math.abs(c - cPrev);
 
-        // ERROR como en tu programa: |x_{n+1} - x_n|
-        // (x_n = cPrev; en la 1a iteración cPrev = b)
-        const error = roundTo(Math.abs(c - cPrev));
-
+        // guardar (solo display redondeado)
         newRows.push({
           n,
-          xPrev: a,
-          xCurr: b,
-          xNext: c,
-          error
+          xPrev: roundTo(a),
+          xCurr: roundTo(b), // fijo
+          xNext: roundTo(c),
+          fPrev: roundTo(fa),
+          fCurr: roundTo(fb),
+          fNext: roundTo(fc),
+          error: roundTo(error),
         });
 
         if (Math.abs(fc) < tol || error < tol) {
@@ -183,28 +244,17 @@ export default function PosicionFalsa2() {
           break;
         }
 
-        // Actualizar intervalo manteniendo cambio de signo
-        // fa * fc < 0 => raíz en [a, c]  -> b = c
-        // de lo contrario raíz en [c, b] -> a = c
-        if (fa * fc < 0) {
-          b = c;
-          fb = fc;
-        } else {
-          a = c;
-          fa = fc;
-        }
-
-        // para la próxima iteración, el “x_n” del error será la aproximación anterior
+        // ✅ PF2: b NO cambia. Solo se mueve a.
+        a = c;
         cPrev = c;
       }
     } catch {
       setErrorMsg("Ocurrió un error inesperado durante las iteraciones.");
-      hadError = true;
+      bad = true;
     }
 
     setRows(newRows);
-
-    if (!newRows.length || hadError) return;
+    if (!newRows.length || bad) return;
 
     const last = newRows[newRows.length - 1];
     setMessage(
@@ -232,24 +282,27 @@ export default function PosicionFalsa2() {
   const handleDownloadTable = () => {
     if (!rows.length) return;
 
-    const headers = ["n", "x_{n-1}", "x_n", "x_{n+1}", "Error"];
+    const headers = ["n", "x_{n-1}", "x_n (fijo)", "x_{n+1}", "f(x_{n-1})", "f(x_n)", "f(x_{n+1})", "Error"];
     const csvRows = [headers.join(",")];
 
     rows.forEach((row) => {
-      const values = [
-        row.n,
-        formatNumber(row.xPrev),
-        formatNumber(row.xCurr),
-        formatNumber(row.xNext),
-        formatNumber(row.error)
-      ];
-      csvRows.push(values.join(","));
+      csvRows.push(
+        [
+          row.n,
+          formatNumber(row.xPrev),
+          formatNumber(row.xCurr),
+          formatNumber(row.xNext),
+          formatNumber(row.fPrev),
+          formatNumber(row.fCurr),
+          formatNumber(row.fNext),
+          formatNumber(row.error),
+        ].join(",")
+      );
     });
 
     const csvContent = csvRows.join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute("download", "posicion_falsa_2_iteraciones.csv");
@@ -259,121 +312,147 @@ export default function PosicionFalsa2() {
     URL.revokeObjectURL(url);
   };
 
-  // -------------------------
-  // Gráfica de f(x) (opcional, igual estilo que los otros)
-  // -------------------------
-  const graphData = useMemo(() => {
-    const compiledF = buildCompiled(fxInput);
-    if (!compiledF) {
-      return { points: [], xMin: -5, xMax: 5, yMin: -1, yMax: 1, xTicks: [], yTicks: [] };
-    }
+  // =========================
+  // Gráfica principal f(x) con rango interactivo
+  // =========================
+  const baseRange = useMemo(() => {
+    const x0 = parseFloat(xPrevInput);
+    const x1 = parseFloat(xCurrInput);
 
-    const evalF = (x) => {
+    if (Number.isFinite(x0) && Number.isFinite(x1)) {
+      let xMin = Math.min(x0, x1);
+      let xMax = Math.max(x0, x1);
+      const m = (xMax - xMin) * 0.2 || 2;
+      xMin -= m;
+      xMax += m;
+      if (xMin === xMax) {
+        xMin -= 2;
+        xMax += 2;
+      }
+      return { xMin, xMax };
+    }
+    return { xMin: -5, xMax: 5 };
+  }, [xPrevInput, xCurrInput, fxInput]);
+
+  const width = 420,
+    height = 260,
+    padL = 50,
+    padR = 10,
+    padT = 12,
+    padB = 30;
+
+  const [rangeMain, setRangeMain] = useState({ xMin: -5, xMax: 5 });
+  useEffect(() => {
+    setRangeMain({ xMin: baseRange.xMin, xMax: baseRange.xMax });
+  }, [baseRange.xMin, baseRange.xMax]);
+
+  const zoomInMain = () => {
+    const { xMin, xMax } = rangeMain;
+    if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
+    const c = (xMin + xMax) / 2;
+    const s = (xMax - xMin) / 2 / 1.8;
+    setRangeMain({ xMin: c - s, xMax: c + s });
+  };
+  const zoomOutMain = () => {
+    const { xMin, xMax } = rangeMain;
+    if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
+    const c = (xMin + xMax) / 2;
+    const s = ((xMax - xMin) / 2) * 1.8;
+    setRangeMain({ xMin: c - s, xMax: c + s });
+  };
+  const autoMain = () => setRangeMain({ xMin: baseRange.xMin, xMax: baseRange.xMax });
+
+  const buildTicks = (min, max, count = 6) => {
+    if (!Number.isFinite(min) || !Number.isFinite(max) || min === max) return [];
+    const ticks = [];
+    for (let i = 0; i <= count; i++) ticks.push(min + (i * (max - min)) / count);
+    return ticks;
+  };
+
+  const toXY = (xMin, xMax, yMin, yMax) => {
+    const xTo = (x) => padL + ((x - xMin) / (xMax - xMin)) * (width - padL - padR);
+    const yTo = (y) => padT + (1 - (y - yMin) / (yMax - yMin)) * (height - padT - padB);
+    return { xTo, yTo };
+  };
+
+  const pathFromPts = (pts, xTo, yTo) =>
+    pts.length ? pts.map((p, i) => `${i ? "L" : "M"} ${xTo(p.x)} ${yTo(p.y)}`).join(" ") : "";
+
+  const graphData = useMemo(() => {
+    const cF = buildCompiled(fxInput);
+    if (!cF) return null;
+
+    const f = (x) => {
       try {
-        const r = compiledF.evaluate({ x });
+        const r = cF.evaluate({ x });
         return Number.isFinite(r) ? r : NaN;
       } catch {
         return NaN;
       }
     };
 
-    const x0 = parseFloat(xPrevInput);
-    const x1 = parseFloat(xCurrInput);
+    const xMin = rangeMain.xMin;
+    const xMax = rangeMain.xMax;
 
-    let xMin, xMax;
-    if (Number.isFinite(x0) && Number.isFinite(x1)) {
-      xMin = Math.min(x0, x1);
-      xMax = Math.max(x0, x1);
-      const span = Math.max(1e-6, xMax - xMin);
-      const m = span * 0.2;
-      xMin -= m;
-      xMax += m;
-    } else {
-      xMin = -5;
-      xMax = 5;
-    }
-
-    const steps = 140;
+    const steps = 240;
     const step = (xMax - xMin) / steps;
-    const points = [];
+    const pts = [];
     for (let i = 0; i <= steps; i++) {
       const x = xMin + i * step;
-      const y = evalF(x);
-      if (Number.isFinite(y)) points.push({ x, y });
+      const y = f(x);
+      if (Number.isFinite(y)) pts.push({ x, y });
     }
 
-    if (!points.length) {
-      return { points: [], xMin, xMax, yMin: -1, yMax: 1, xTicks: [], yTicks: [] };
-    }
+    let yMin = Infinity,
+      yMax = -Infinity;
+    pts.forEach((p) => {
+      yMin = Math.min(yMin, p.y);
+      yMax = Math.max(yMax, p.y);
+    });
 
-    const ys = points.map((p) => p.y);
-    let yMin = Math.min(...ys);
-    let yMax = Math.max(...ys);
-    if (yMin === yMax) {
-      yMin -= 1;
-      yMax += 1;
+    if (!Number.isFinite(yMin) || !Number.isFinite(yMax) || yMin === yMax) {
+      yMin = -1;
+      yMax = 1;
     } else {
-      const m = (yMax - yMin) * 0.2;
+      const m = (yMax - yMin) * 0.15;
       yMin -= m;
       yMax += m;
     }
 
-    const ticks = (min, max, count = 4) => {
-      const out = [];
-      for (let i = 0; i <= count; i++) out.push(min + (i * (max - min)) / count);
-      return out;
+    const xTicks = buildTicks(xMin, xMax, 6);
+    const yTicks = buildTicks(yMin, yMax, 6);
+    const { xTo, yTo } = toXY(xMin, xMax, yMin, yMax);
+    const path = pathFromPts(pts, xTo, yTo);
+
+    const xAxisY = yMin <= 0 && yMax >= 0 ? yTo(0) : yTo(yMin);
+    const yAxisX = xMin <= 0 && xMax >= 0 ? xTo(0) : xTo(xMin);
+
+    return {
+      xTicks: xTicks.map((x) => ({ x, X: xTo(x) })),
+      yTicks: yTicks.map((y) => ({ y, Y: yTo(y) })),
+      xAxisY,
+      yAxisX,
+      path,
     };
+  }, [fxInput, rangeMain.xMin, rangeMain.xMax, decimalsInput]);
 
-    return { points, xMin, xMax, yMin, yMax, xTicks: ticks(xMin, xMax, 4), yTicks: ticks(yMin, yMax, 4) };
-  }, [fxInput, xPrevInput, xCurrInput, decimalsInput]);
+  const panZoomMain = makePanZoomHandlers(rangeMain, setRangeMain, width, padL, padR);
 
-  const lastRow = rows.length ? rows[rows.length - 1] : null;
-
-  const width = 400;
-  const height = 240;
-  const paddingLeft = 46;
-  const paddingRight = 10;
-  const paddingTop = 10;
-  const paddingBottom = 28;
-
-  const xToSvg = (x) => {
-    const { xMin, xMax } = graphData;
-    const w = width - paddingLeft - paddingRight;
-    if (xMax === xMin) return paddingLeft + w / 2;
-    return paddingLeft + ((x - xMin) / (xMax - xMin)) * w;
-  };
-
-  const yToSvg = (y) => {
-    const { yMin, yMax } = graphData;
-    const h = height - paddingTop - paddingBottom;
-    if (yMax === yMin) return paddingTop + h / 2;
-    return paddingTop + (1 - (y - yMin) / (yMax - yMin)) * h;
-  };
-
-  const pathF =
-    graphData.points.length > 0
-      ? graphData.points
-          .map((pt, idx) => `${idx === 0 ? "M" : "L"} ${xToSvg(pt.x)} ${yToSvg(pt.y)}`)
-          .join(" ")
-      : "";
-
-  const xAxisY =
-    graphData.yMin <= 0 && graphData.yMax >= 0 ? yToSvg(0) : yToSvg(graphData.yMin);
-
-  const yAxisX =
-    graphData.xMin <= 0 && graphData.xMax >= 0 ? xToSvg(0) : xToSvg(graphData.xMin);
+  const lastIndex = rows.length - 1;
+  const converged =
+    rows.length > 0 &&
+    Number.isFinite(tolNum) &&
+    (Math.abs(rows[lastIndex]?.fNext) < tolNum || rows[lastIndex]?.error < tolNum);
 
   // -------------------------
   // Render
   // -------------------------
   return (
     <div className="bisection-grid">
-      {/* Formulario */}
       <div className="bisection-form">
         <h3>Método de la Posición Falsa II</h3>
         <p className="bisection-hint">
-          Ingresa f(x) y un intervalo inicial [xₙ₋₁, xₙ] con cambio de signo.
-          Ejemplo: <code>x^5-7*x^2-1</code>, xₙ₋₁=1, xₙ=2. Acepta <code>ln(x)</code> y <code>sen(x)</code>.
+           En Posicion Falsa 2 el que queda fijo es <strong>b</strong> (el mayor de los dos valores). Puedes ingresar el intervalo en cualquier orden.
         </p>
 
         <form onSubmit={handleCalculate}>
@@ -383,12 +462,12 @@ export default function PosicionFalsa2() {
           </div>
 
           <div className="bisection-form-row">
-            <label>Ingrese el valor xₙ₋₁ =</label>
+            <label>Ingrese el valor 1 (a o b) =</label>
             <input type="number" step="any" value={xPrevInput} onChange={(e) => setXPrevInput(e.target.value)} />
           </div>
 
           <div className="bisection-form-row">
-            <label>Ingrese el valor xₙ =</label>
+            <label>Ingrese el valor 2 (a o b) =</label>
             <input type="number" step="any" value={xCurrInput} onChange={(e) => setXCurrInput(e.target.value)} />
           </div>
 
@@ -408,8 +487,12 @@ export default function PosicionFalsa2() {
           </div>
 
           <div className="bisection-buttons">
-            <button type="submit" className="btn-primary">CALCULAR</button>
-            <button type="button" className="btn-secondary" onClick={handleClear}>BORRAR CELDAS</button>
+            <button type="submit" className="btn-primary">
+              CALCULAR
+            </button>
+            <button type="button" className="btn-secondary" onClick={handleClear}>
+              BORRAR CELDAS
+            </button>
           </div>
         </form>
 
@@ -417,13 +500,12 @@ export default function PosicionFalsa2() {
         {errorMsg && <p className="bisection-error">{errorMsg}</p>}
       </div>
 
-      {/* Resultados */}
       <div className="bisection-results">
         <div className="bisection-table-wrapper">
           <h4>Tabla de iteraciones</h4>
           {rows.length === 0 ? (
             <p className="bisection-hint">
-              Ingresa los datos y presiona <strong>CALCULAR</strong> para ver las iteraciones.
+              Ingresa los datos y presiona <strong>CALCULAR</strong>.
             </p>
           ) : (
             <>
@@ -431,22 +513,31 @@ export default function PosicionFalsa2() {
                 <thead>
                   <tr>
                     <th>n</th>
-                    <th>xₙ₋₁</th>
-                    <th>xₙ</th>
+                    <th>xₙ₋₁ (a)</th>
+                    <th>xₙ (b fijo)</th>
                     <th>xₙ₊₁</th>
+                    <th>f(a)</th>
+                    <th>f(b)</th>
+                    <th>f(xₙ₊₁)</th>
                     <th>Error</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.n}>
-                      <td>{row.n}</td>
-                      <td>{formatNumber(row.xPrev)}</td>
-                      <td>{formatNumber(row.xCurr)}</td>
-                      <td>{formatNumber(row.xNext)}</td>
-                      <td>{formatNumber(row.error)}</td>
-                    </tr>
-                  ))}
+                  {rows.map((r, idx) => {
+                    const isLastOk = converged && idx === lastIndex;
+                    return (
+                      <tr key={r.n}>
+                        <td>{r.n}</td>
+                        <td>{formatNumber(r.xPrev)}</td>
+                        <td>{formatNumber(r.xCurr)}</td>
+                        <td className={isLastOk ? "cell-green" : ""}>{formatNumber(r.xNext)}</td>
+                        <td>{formatNumber(r.fPrev)}</td>
+                        <td>{formatNumber(r.fCurr)}</td>
+                        <td>{formatNumber(r.fNext)}</td>
+                        <td className={isLastOk ? "cell-red" : ""}>{formatNumber(r.error)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
 
@@ -460,64 +551,41 @@ export default function PosicionFalsa2() {
         </div>
 
         <div className="graph-card">
-          <h4 className="graph-title">Gráfica de f(x)</h4>
-          {graphData.points.length === 0 ? (
-            <p className="bisection-hint">No se pudo generar la gráfica. Revisa la función y el intervalo.</p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h4 className="graph-title">f(x) — vista general (zoom y pan)</h4>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="button" className="btn-download" onClick={zoomInMain}>
+                Zoom +
+              </button>
+              <button type="button" className="btn-download btn-download-secondary" onClick={zoomOutMain}>
+                Zoom −
+              </button>
+              <button type="button" className="btn-secondary" onClick={autoMain}>
+                Auto
+              </button>
+            </div>
+          </div>
+
+          {!graphData ? (
+            <p className="bisection-hint">No se pudo graficar f(x).</p>
           ) : (
-            <svg className="graph-svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-              {/* sombrear intervalo actual (últimos a,b) */}
-              {rows.length > 0 && (
-                <rect
-                  x={xToSvg(Math.min(rows[rows.length - 1].xPrev, rows[rows.length - 1].xCurr))}
-                  y={paddingTop}
-                  width={Math.abs(
-                    xToSvg(rows[rows.length - 1].xCurr) - xToSvg(rows[rows.length - 1].xPrev)
-                  )}
-                  height={height - paddingTop - paddingBottom}
-                  fill="#fee2e2"
-                />
-              )}
+            <>
+              <svg className="graph-svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" {...panZoomMain} style={{ touchAction: "none" }}>
+                {graphData.xTicks.map((t, i) => (
+                  <line key={`gx${i}`} x1={t.X} x2={t.X} y1={padT} y2={height - padB} stroke="#e5e7eb" />
+                ))}
+                {graphData.yTicks.map((t, i) => (
+                  <line key={`gy${i}`} x1={padL} x2={width - padR} y1={t.Y} y2={t.Y} stroke="#e5e7eb" />
+                ))}
+                <line x1={padL} x2={width - padR} y1={graphData.xAxisY} y2={graphData.xAxisY} stroke="#9ca3af" />
+                <line x1={graphData.yAxisX} x2={graphData.yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" />
+                <path d={graphData.path} fill="none" stroke="#2563eb" strokeWidth="1.7" />
+              </svg>
 
-              {/* ejes */}
-              <line x1={paddingLeft} x2={width - paddingRight} y1={xAxisY} y2={xAxisY} stroke="#9ca3af" strokeWidth="1" />
-              <line x1={yAxisX} x2={yAxisX} y1={paddingTop} y2={height - paddingBottom} stroke="#9ca3af" strokeWidth="1" />
-
-              {/* ticks X */}
-              {graphData.xTicks.map((xt, idx) => (
-                <g key={`xt-${idx}`}>
-                  <line x1={xToSvg(xt)} x2={xToSvg(xt)} y1={xAxisY - 3} y2={xAxisY + 3} stroke="#9ca3af" strokeWidth="1" />
-                  <text x={xToSvg(xt)} y={height - 6} fontSize="9" textAnchor="middle" fill="#4b5563">
-                    {xt.toFixed(2)}
-                  </text>
-                </g>
-              ))}
-
-              {/* ticks Y */}
-              {graphData.yTicks.map((yt, idx) => (
-                <g key={`yt-${idx}`}>
-                  <line x1={yAxisX - 3} x2={yAxisX + 3} y1={yToSvg(yt)} y2={yToSvg(yt)} stroke="#9ca3af" strokeWidth="1" />
-                  <text x={paddingLeft - 6} y={yToSvg(yt) + 3} fontSize="9" textAnchor="end" fill="#4b5563">
-                    {yt.toFixed(2)}
-                  </text>
-                </g>
-              ))}
-
-              {/* curva */}
-              <path d={pathF} fill="none" stroke="#2563eb" strokeWidth="1.5" />
-
-              {/* última aproximación */}
-              {lastRow && (
-                <line
-                  x1={xToSvg(lastRow.xNext)}
-                  x2={xToSvg(lastRow.xNext)}
-                  y1={paddingTop}
-                  y2={height - paddingBottom}
-                  stroke="#ef4444"
-                  strokeWidth="1.3"
-                  strokeDasharray="4 3"
-                />
-              )}
-            </svg>
+              <p className="bisection-hint" style={{ marginTop: 6 }}>
+                Rueda: zoom • Arrastrar: mover • Auto: regresa al rango inicial
+              </p>
+            </>
           )}
         </div>
       </div>

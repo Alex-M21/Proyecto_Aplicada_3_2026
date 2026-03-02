@@ -86,8 +86,7 @@ export default function PuntoFijo() {
   // -------------------------
   // Utilidades
   // -------------------------
-  const normalizeExpr = (expr) =>
-    expr.trim().replace(/ln/gi, "log").replace(/sen/gi, "sin");
+  const normalizeExpr = (expr) => expr.trim().replace(/ln/gi, "log").replace(/sen/gi, "sin");
 
   const buildCompiled = (expr) => {
     const trimmed = expr.trim();
@@ -109,6 +108,11 @@ export default function PuntoFijo() {
     const decimals = getDecimals();
     return Number.isFinite(value) ? value.toFixed(decimals) : "NaN";
   };
+
+  const tolNum = useMemo(() => {
+    const t = parseFloat(tolInput);
+    return Number.isFinite(t) ? t : NaN;
+  }, [tolInput]);
 
   // -------------------------
   // Derivada g'(x) y evaluación en x0
@@ -204,10 +208,10 @@ export default function PuntoFijo() {
         }
 
         const error = Math.abs(gxn - xn);
-
         newRows.push({ n, xn, gxn, error });
 
-        if (error < tol) {
+        // ✅ criterio de paro (mismo que usabas)
+        if (error < tol || error === 0) {
           found = true;
           break;
         }
@@ -243,6 +247,14 @@ export default function PuntoFijo() {
     setMessage("");
     setErrorMsg("");
   };
+
+  // ✅ Determinar si la última fila cumple (para colorear)
+  const lastIndex = rows.length - 1;
+  const foundFinal =
+    rows.length > 0 &&
+    Number.isFinite(rows[lastIndex]?.error) &&
+    Number.isFinite(tolNum) &&
+    (rows[lastIndex].error < tolNum || rows[lastIndex].error === 0);
 
   // =========================
   // Gráfica dinámica (pan/zoom)
@@ -316,15 +328,13 @@ export default function PuntoFijo() {
       diagPts.push({ x, y: x });
     }
 
-    // Y auto: considerar g(x) y y=x dentro del rango
+    // Y auto
     let yMin = Infinity;
     let yMax = -Infinity;
-
     const consider = (y) => {
       yMin = Math.min(yMin, y);
       yMax = Math.max(yMax, y);
     };
-
     gPts.forEach((p) => consider(p.y));
     diagPts.forEach((p) => consider(p.y));
 
@@ -371,7 +381,7 @@ export default function PuntoFijo() {
 
     const k = Math.max(0, Math.min(iterView, rows.length - 1));
     const r0 = rows[0];
-    let x = r0.xn; // arranca en x0
+    let x = r0.xn;
     const segs = [];
 
     for (let i = 0; i <= k; i++) {
@@ -380,7 +390,6 @@ export default function PuntoFijo() {
 
       // vertical: (x, x) -> (x, g(x))
       segs.push({ x1: x, y1: x, x2: x, y2: gx });
-
       // horizontal: (x, g(x)) -> (g(x), g(x))
       segs.push({ x1: x, y1: gx, x2: gx, y2: gx });
 
@@ -457,9 +466,7 @@ export default function PuntoFijo() {
               </p>
 
               {derivativeInfo.valueAtX0 == null || !Number.isFinite(derivativeInfo.valueAtX0) ? (
-                <p className="bisection-hint">
-                  No se pudo evaluar g&apos;(x₀). Verifica x₀ y el dominio.
-                </p>
+                <p className="bisection-hint">No se pudo evaluar g&apos;(x₀). Verifica x₀ y el dominio.</p>
               ) : (
                 <>
                   <p>
@@ -501,14 +508,17 @@ export default function PuntoFijo() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
-                  <tr key={row.n}>
-                    <td>{row.n}</td>
-                    <td>{formatNumber(row.xn)}</td>
-                    <td>{formatNumber(row.gxn)}</td>
-                    <td>{formatNumber(row.error)}</td>
-                  </tr>
-                ))}
+                {rows.map((row, idx) => {
+                  const isLast = idx === lastIndex && foundFinal;
+                  return (
+                    <tr key={row.n}>
+                      <td>{row.n}</td>
+                      <td>{formatNumber(row.xn)}</td>
+                      <td className={isLast ? "cell-green" : ""}>{formatNumber(row.gxn)}</td>
+                      <td className={isLast ? "cell-red" : ""}>{formatNumber(row.error)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -590,7 +600,7 @@ export default function PuntoFijo() {
                 {/* g(x) */}
                 <path d={graphView.pathG} fill="none" stroke="#2563eb" strokeWidth="1.6" />
 
-                {/* Cobweb (vertical/horizontal) */}
+                {/* Cobweb */}
                 {cobweb.segments.map((s, idx) => (
                   <line
                     key={`cw-${idx}`}
