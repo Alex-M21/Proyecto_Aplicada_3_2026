@@ -82,6 +82,9 @@ export default function PosicionFalsa1() {
   const [message, setMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
+  // ✅ slider para ver iteración en la gráfica
+  const [iterView, setIterView] = useState(0);
+
   // -------------------------
   // Utilidades
   // -------------------------
@@ -117,6 +120,7 @@ export default function PosicionFalsa1() {
     setMessage("");
     setErrorMsg("");
     setRows([]);
+    setIterView(0);
 
     if (!fxInput.trim()) {
       setErrorMsg("Debes ingresar una expresión para f(x).");
@@ -177,7 +181,7 @@ export default function PosicionFalsa1() {
         const xCurr_i = xCurr;
 
         const fPrev = evalF(xPrev_i);
-        const fCurr = evalF(xCurr_i); // ✅ lo guardamos para graficar recta secante
+        const fCurr = evalF(xCurr_i);
 
         if (!Number.isFinite(fPrev) || !Number.isFinite(fCurr)) {
           setErrorMsg("No se pudo evaluar f(x) en alguna iteración. Revisa la función y el intervalo.");
@@ -206,14 +210,21 @@ export default function PosicionFalsa1() {
 
         newRows.push({
           n,
+          // display
           xPrev: xPrev_i,
           xCurr: xCurr_i,
           xNext,
           fPrev,
-          fCurr, // ✅ nuevo
+          fCurr,
           fNext,
           prod,
           error,
+          // raw para gráfica
+          xPrevRaw: xPrev_i,
+          xCurrRaw: xCurr_i,
+          xNextRaw: xNext,
+          fPrevRaw: fPrev,
+          fCurrRaw: fCurr,
         });
 
         if (Math.abs(fNext) < tol || error < tol) {
@@ -233,6 +244,8 @@ export default function PosicionFalsa1() {
     setRows(newRows);
     if (!newRows.length || hadError) return;
 
+    setIterView(newRows.length - 1);
+
     const last = newRows[newRows.length - 1];
     setMessage(
       found
@@ -249,6 +262,7 @@ export default function PosicionFalsa1() {
     setMaxIterInput("");
     setDecimalsInput("5");
     setRows([]);
+    setIterView(0);
     setMessage("");
     setErrorMsg("");
   };
@@ -335,7 +349,6 @@ export default function PosicionFalsa1() {
   const padT = 12;
   const padB = 30;
 
-  // botones de zoom
   const zoomInMain = () => {
     const { xMin, xMax } = rangeMain;
     if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
@@ -431,6 +444,7 @@ export default function PosicionFalsa1() {
       path,
       xTo,
       yTo,
+      f,
     };
   }, [fxInput, rangeMain.xMin, rangeMain.xMax, decimalsInput]);
 
@@ -457,7 +471,7 @@ export default function PosicionFalsa1() {
   useEffect(() => {
     setRangeA(autoRangeFor(first3));
     setRangeB(autoRangeFor(last3));
-  }, [rows.length]); // re-auto al recalcular
+  }, [rows.length]);
 
   const zoomIn = (range, setRange) => {
     const c = (range.xMin + range.xMax) / 2;
@@ -498,7 +512,6 @@ export default function PosicionFalsa1() {
       }
     };
 
-    // curva base
     const steps = 180;
     const step = (xMax - xMin) / steps;
     const pts = [];
@@ -508,7 +521,6 @@ export default function PosicionFalsa1() {
       if (Number.isFinite(y)) pts.push({ x, y });
     }
 
-    // yMin/yMax considerando curva + rectas
     let yMin = Infinity,
       yMax = -Infinity;
     pts.forEach((p) => {
@@ -519,8 +531,8 @@ export default function PosicionFalsa1() {
     const secantsInfo = items.map((r) => {
       const x1 = r.xPrev;
       const x2 = r.xCurr;
-      const y1 = r.fPrev; // ya guardado
-      const y2 = r.fCurr; // ✅ ya guardado
+      const y1 = r.fPrev;
+      const y2 = r.fCurr;
 
       if (!Number.isFinite(x1) || !Number.isFinite(x2) || x1 === x2 || !Number.isFinite(y1) || !Number.isFinite(y2)) {
         return { n: r.n, ok: false, m: NaN, b: NaN, path: "" };
@@ -580,7 +592,7 @@ export default function PosicionFalsa1() {
   const colorB = ["#7C3AED", "#0EA5E9", "#EF4444"];
 
   // =========================
-  // Convergencia (marcar como Secante)
+  // Convergencia
   // =========================
   const lastIndex = rows.length - 1;
   const converged =
@@ -588,7 +600,10 @@ export default function PosicionFalsa1() {
     Number.isFinite(tolNum) &&
     (Math.abs(rows[lastIndex]?.fNext) < tolNum || rows[lastIndex]?.error < tolNum);
 
-  // ========= RENDER =========
+  // ✅ fila seleccionada para overlay
+  const rowView = rows.length ? rows[Math.max(0, Math.min(iterView, rows.length - 1))] : null;
+  const cHistory = rows.map((r) => r.xNextRaw);
+
   return (
     <div className="bisection-grid">
       <div className="bisection-form">
@@ -670,9 +685,10 @@ export default function PosicionFalsa1() {
                 <tbody>
                   {rows.map((row, idx) => {
                     const isLastOk = converged && idx === lastIndex;
+                    const isSelected = idx === iterView;
 
                     return (
-                      <tr key={row.n}>
+                      <tr key={row.n} style={isSelected ? { outline: "2px solid #93c5fd" } : undefined}>
                         <td>{row.n}</td>
                         <td>{formatNumber(row.xPrev)}</td>
                         <td>{formatNumber(row.xCurr)}</td>
@@ -688,6 +704,26 @@ export default function PosicionFalsa1() {
                 </tbody>
               </table>
 
+              {/* slider */}
+              <div style={{ marginTop: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                  <span>
+                    Iteración: <strong>{rows[iterView]?.n}</strong>
+                  </span>
+                  <span>
+                    xₙ₊₁: <strong>{rowView ? formatNumber(rowView.xNext) : "-"}</strong>
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max={Math.max(0, rows.length - 1)}
+                  value={iterView}
+                  onChange={(e) => setIterView(parseInt(e.target.value, 10))}
+                  style={{ width: "100%" }}
+                />
+              </div>
+
               <div className="bisection-download">
                 <button type="button" className="btn-download" onClick={handleDownloadTable}>
                   Descargar tabla (CSV)
@@ -697,10 +733,10 @@ export default function PosicionFalsa1() {
           )}
         </div>
 
-        {/* Vista general */}
+        {/* ✅ Gráfica de avance: secante + x_{n+1} + historial */}
         <div className="graph-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h4 className="graph-title">f(x) — vista general (zoom y pan)</h4>
+            <h4 className="graph-title">Aproximación gráfica a la raíz (secante + xₙ₊₁)</h4>
             <div style={{ display: "flex", gap: 8 }}>
               <button type="button" className="btn-download" onClick={zoomInMain}>
                 Zoom +
@@ -731,36 +767,65 @@ export default function PosicionFalsa1() {
                 <line x1={padL} x2={width - padR} y1={graphData.xAxisY} y2={graphData.xAxisY} stroke="#9ca3af" />
                 <line x1={graphData.yAxisX} x2={graphData.yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" />
 
-                {/* ticks */}
-                {graphData.xTicks.map((t, i) => (
-                  <g key={`xt${i}`}>
-                    <line x1={t.X} x2={t.X} y1={graphData.xAxisY - 3} y2={graphData.xAxisY + 3} stroke="#6b7280" />
-                    <text x={t.X} y={height - 6} fontSize="9" textAnchor="middle" fill="#374151">
-                      {t.x.toFixed(2)}
-                    </text>
-                  </g>
-                ))}
-                {graphData.yTicks.map((t, i) => (
-                  <g key={`yt${i}`}>
-                    <line x1={graphData.yAxisX - 3} x2={graphData.yAxisX + 3} y1={t.Y} y2={t.Y} stroke="#6b7280" />
-                    <text x={padL - 6} y={t.Y + 3} fontSize="9" textAnchor="end" fill="#374151">
-                      {t.y.toFixed(2)}
-                    </text>
-                  </g>
-                ))}
-
                 {/* f(x) */}
                 <path d={graphData.path} fill="none" stroke="#2563eb" strokeWidth="1.7" />
+
+                {/* historial de x_{n+1} sobre eje x */}
+                {cHistory.map((c, i) => {
+                  if (!Number.isFinite(c)) return null;
+                  const X = graphData.xTo(c);
+                  const Y = graphData.xAxisY;
+                  return <circle key={`hist-${i}`} cx={X} cy={Y} r="2.6" fill="#111827" opacity="0.6" />;
+                })}
+
+                {/* overlay de iteración seleccionada */}
+                {rowView && (
+                  <>
+                    {/* puntos (xPrev,fPrev) y (xCurr,fCurr) */}
+                    <circle cx={graphData.xTo(rowView.xPrevRaw)} cy={graphData.yTo(rowView.fPrevRaw)} r="4" fill="#f59e0b" />
+                    <circle cx={graphData.xTo(rowView.xCurrRaw)} cy={graphData.yTo(rowView.fCurrRaw)} r="4" fill="#ef4444" />
+
+                    {/* secante */}
+                    <line
+                      x1={graphData.xTo(rowView.xPrevRaw)}
+                      y1={graphData.yTo(rowView.fPrevRaw)}
+                      x2={graphData.xTo(rowView.xCurrRaw)}
+                      y2={graphData.yTo(rowView.fCurrRaw)}
+                      stroke="#ef4444"
+                      strokeWidth="2"
+                      opacity="0.85"
+                    />
+
+                    {/* línea vertical en xNext */}
+                    <line
+                      x1={graphData.xTo(rowView.xNextRaw)}
+                      x2={graphData.xTo(rowView.xNextRaw)}
+                      y1={padT}
+                      y2={height - padB}
+                      stroke="#10b981"
+                      strokeWidth="1.6"
+                      strokeDasharray="4 3"
+                    />
+
+                    {/* punto en (xNext,0) */}
+                    <circle cx={graphData.xTo(rowView.xNextRaw)} cy={graphData.xAxisY} r="4.2" fill="#10b981" />
+
+                    {/* etiqueta */}
+                    <text x={graphData.xTo(rowView.xNextRaw) + 6} y={graphData.xAxisY - 8} fontSize="11" fill="#065f46">
+                      xₙ₊₁={rowView.xNextRaw.toFixed(Math.min(6, getDecimals()))}
+                    </text>
+                  </>
+                )}
               </svg>
 
               <p className="bisection-hint" style={{ marginTop: 6 }}>
-                Rueda: zoom • Arrastrar: mover
+                Rueda: zoom • Arrastrar: mover • Slider: ver secante por iteración • Puntitos: historial de xₙ₊₁ (aproximación a la raíz)
               </p>
             </>
           )}
         </div>
 
-        {/* ✅ Primeras 3 rectas secantes */}
+        {/* Primeras 3 / Últimas 3 secantes (como ya tenías) */}
         {rows.length > 0 && viewA && (
           <div className="graph-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -813,7 +878,6 @@ export default function PosicionFalsa1() {
           </div>
         )}
 
-        {/* ✅ Últimas 3 rectas secantes */}
         {rows.length > 0 && viewB && (
           <div className="graph-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
