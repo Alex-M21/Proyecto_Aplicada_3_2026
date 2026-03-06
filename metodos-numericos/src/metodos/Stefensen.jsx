@@ -1,11 +1,13 @@
 // src/metodos/Steffensen.jsx
 import { useState, useMemo, useEffect } from "react";
 import { create, all } from "mathjs";
-import "./Biseccion.css"; // reutilizamos estilos
+import "./Biseccion.css";
 
 const math = create(all, {});
 
-// === Pan & Zoom genéricos (solo eje X) ===
+// =========================================================
+// Pan & Zoom genéricos (solo eje X)
+// =========================================================
 const makePanZoomHandlers = (range, setRange, width, padL, padR) => {
   let dragging = false;
   let lastClientX = 0;
@@ -81,18 +83,13 @@ export default function Steffensen() {
   const [message, setMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  // slider para ver iteración en la gráfica (como PF2)
   const [iterView, setIterView] = useState(0);
 
-  // -------------------------
+  // =========================================================
   // Utilidades
-  // -------------------------
+  // =========================================================
   const normalizeExpr = (expr) =>
-    expr
-      .trim()
-      .replace(/LN/gi, "log")
-      .replace(/ln/gi, "log")
-      .replace(/sen/gi, "sin");
+    expr.trim().replace(/LN/gi, "log").replace(/ln/gi, "log").replace(/sen/gi, "sin");
 
   const buildCompiled = (expr) => {
     const t = expr.trim();
@@ -110,7 +107,6 @@ export default function Steffensen() {
     return Math.min(12, d);
   };
 
-  // redondeo "tipo Excel"
   const roundTo = (v) => {
     const d = getDecimals();
     const f = 10 ** d;
@@ -124,14 +120,9 @@ export default function Steffensen() {
     return Number.isFinite(t) ? t : NaN;
   }, [tolInput]);
 
-  // -------------------------
+  // =========================================================
   // Cálculo Steffensen
-  // p1 = g(p0)
-  // p2 = g(p1)
-  // p_{n+1} = p0 - (p1 - p0)^2 / (p2 - 2p1 + p0)
-  // Error = |p_{n+1} - p0|
-  // (IMPORTANTE: NO redondeamos DURANTE el cálculo, solo al guardar)
-  // -------------------------
+  // =========================================================
   const handleCalculate = (e) => {
     e.preventDefault();
     setMessage("");
@@ -211,14 +202,13 @@ export default function Steffensen() {
 
         const pNext = p0_i - ((p1 - p0_i) ** 2) / denom;
         if (!Number.isFinite(pNext)) {
-          setErrorMsg("No se pudo calcular p_{n+1}. Revisa dominio/función.");
+          setErrorMsg("No se pudo calcular pₙ₊₁. Revisa dominio/función.");
           bad = true;
           break;
         }
 
         const error = Math.abs(pNext - p0_i);
 
-        // Guardamos raw + display (para graficar bien y tabla bonita)
         newRows.push({
           n,
           p0Raw: p0_i,
@@ -233,12 +223,10 @@ export default function Steffensen() {
           pNext: roundTo(pNext),
           error: roundTo(error),
 
-          // para el “recorrido” en el plano: puntos A=(p0,g(p0)) y B=(p1,g(p1))
-          // (en tu notación p1=g(p0), p2=g(p1))
           Ax: p0_i,
-          Ay: p1, // y = g(p0)
+          Ay: p1,
           Bx: p1,
-          By: p2, // y = g(p1)
+          By: p2,
         });
 
         if (error < tol) {
@@ -278,16 +266,18 @@ export default function Steffensen() {
     setErrorMsg("");
   };
 
-  // -------------------------
+  // =========================================================
   // CSV
-  // -------------------------
+  // =========================================================
   const handleDownloadTable = () => {
     if (!rows.length) return;
-    const headers = ["n", "p0", "p1=g(p0)", "p2=g(p1)", "p_{n+1}", "Error"];
+    const headers = ["n", "p0", "p1=g(p0)", "p2=g(p1)", "pₙ₊₁", "Error"];
     const csvRows = [headers.join(",")];
 
     rows.forEach((r) => {
-      csvRows.push([r.n, formatNumber(r.p0), formatNumber(r.p1), formatNumber(r.p2), formatNumber(r.pNext), formatNumber(r.error)].join(","));
+      csvRows.push(
+        [r.n, formatNumber(r.p0), formatNumber(r.p1), formatNumber(r.p2), formatNumber(r.pNext), formatNumber(r.error)].join(",")
+      );
     });
 
     const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -301,28 +291,26 @@ export default function Steffensen() {
     URL.revokeObjectURL(url);
   };
 
-  // =========================
-  // Gráfica: y = g(x) y y = x  (recorrido tipo punto fijo)
-  // + slider: muestra A=(p0,g(p0)), B=(p1,g(p1)) y “pasos” hacia (p*,p*)
-  // =========================
+  // =========================================================
+  // Gráfica base
+  // =========================================================
   const baseRange = useMemo(() => {
     const p0 = parseFloat(p0Input);
     if (Number.isFinite(p0)) {
-      let xMin = p0 - 2;
-      let xMax = p0 + 2;
-      return { xMin, xMax };
+      return { xMin: p0 - 2, xMax: p0 + 2 };
     }
     return { xMin: -5, xMax: 5 };
   }, [p0Input, gInput]);
 
-  const width = 420,
-    height = 260,
-    padL = 50,
-    padR = 10,
-    padT = 12,
-    padB = 30;
+  const width = 640;
+  const height = 340;
+  const padL = 62;
+  const padR = 18;
+  const padT = 18;
+  const padB = 44;
 
   const [rangeMain, setRangeMain] = useState({ xMin: -5, xMax: 5 });
+
   useEffect(() => {
     setRangeMain({ xMin: baseRange.xMin, xMax: baseRange.xMax });
   }, [baseRange.xMin, baseRange.xMax]);
@@ -334,6 +322,7 @@ export default function Steffensen() {
     const s = (xMax - xMin) / 2 / 1.8;
     setRangeMain({ xMin: c - s, xMax: c + s });
   };
+
   const zoomOutMain = () => {
     const { xMin, xMax } = rangeMain;
     if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
@@ -341,6 +330,7 @@ export default function Steffensen() {
     const s = ((xMax - xMin) / 2) * 1.8;
     setRangeMain({ xMin: c - s, xMax: c + s });
   };
+
   const autoMain = () => setRangeMain({ xMin: baseRange.xMin, xMax: baseRange.xMax });
 
   const buildTicks = (min, max, count = 6) => {
@@ -356,6 +346,59 @@ export default function Steffensen() {
     return { xTo, yTo };
   };
 
+  const pathFromPts = (pts, xTo, yTo) =>
+    pts.length
+      ? pts.map((p, i) => `${i ? "L" : "M"} ${xTo(p.x)} ${yTo(p.y)}`).join(" ")
+      : "";
+
+  // =========================================================
+  // Ejes / escalas
+  // =========================================================
+  const renderAxes = ({ xTicks, yTicks, xAxisY, yAxisX }) => (
+    <>
+      {xTicks.map((t, i) => (
+        <g key={`gx-${i}`}>
+          <line x1={t.X} x2={t.X} y1={padT} y2={height - padB} stroke="#e5e7eb" strokeWidth="1" />
+          <line x1={t.X} x2={t.X} y1={height - padB} y2={height - padB + 5} stroke="#94a3b8" strokeWidth="1" />
+          <text x={t.X} y={height - 10} textAnchor="middle" fontSize="10" fill="#475569">
+            {t.x.toFixed(2)}
+          </text>
+        </g>
+      ))}
+
+      {yTicks.map((t, i) => (
+        <g key={`gy-${i}`}>
+          <line x1={padL} x2={width - padR} y1={t.Y} y2={t.Y} stroke="#e5e7eb" strokeWidth="1" />
+          <line x1={padL - 5} x2={padL} y1={t.Y} y2={t.Y} stroke="#94a3b8" strokeWidth="1" />
+          <text x={padL - 8} y={t.Y + 3} textAnchor="end" fontSize="10" fill="#475569">
+            {t.y.toFixed(2)}
+          </text>
+        </g>
+      ))}
+
+      <line x1={padL} x2={width - padR} y1={xAxisY} y2={xAxisY} stroke="#94a3b8" strokeWidth="1.3" />
+      <line x1={yAxisX} x2={yAxisX} y1={padT} y2={height - padB} stroke="#94a3b8" strokeWidth="1.3" />
+
+      <text x={(padL + width - padR) / 2} y={height - 4} textAnchor="middle" fontSize="12" fill="#334155">
+        x
+      </text>
+
+      <text
+        x={18}
+        y={(padT + height - padB) / 2}
+        textAnchor="middle"
+        fontSize="12"
+        fill="#334155"
+        transform={`rotate(-90 18 ${(padT + height - padB) / 2})`}
+      >
+        y
+      </text>
+    </>
+  );
+
+  // =========================================================
+  // Gráfica principal
+  // =========================================================
   const graphData = useMemo(() => {
     const cG = buildCompiled(gInput);
     if (!cG) return null;
@@ -376,7 +419,7 @@ export default function Steffensen() {
     const step = (xMax - xMin) / steps;
 
     const ptsG = [];
-    const ptsI = []; // y=x
+    const ptsI = [];
     for (let i = 0; i <= steps; i++) {
       const x = xMin + i * step;
       const yg = g(x);
@@ -384,9 +427,8 @@ export default function Steffensen() {
       ptsI.push({ x, y: x });
     }
 
-    // y-range considerando g(x) y la recta y=x
-    let yMin = Infinity,
-      yMax = -Infinity;
+    let yMin = Infinity;
+    let yMax = -Infinity;
 
     ptsG.forEach((p) => {
       yMin = Math.min(yMin, p.y);
@@ -407,10 +449,9 @@ export default function Steffensen() {
     }
 
     const { xTo, yTo } = toXY(xMin, xMax, yMin, yMax);
-    const pathFromPts = (pts) => (pts.length ? pts.map((p, i) => `${i ? "L" : "M"} ${xTo(p.x)} ${yTo(p.y)}`).join(" ") : "");
 
-    const pathG = pathFromPts(ptsG);
-    const pathI = pathFromPts(ptsI);
+    const pathG = pathFromPts(ptsG, xTo, yTo);
+    const pathI = pathFromPts(ptsI, xTo, yTo);
 
     const xTicks = buildTicks(xMin, xMax, 6);
     const yTicks = buildTicks(yMin, yMax, 6);
@@ -443,45 +484,66 @@ export default function Steffensen() {
     (rows[lastIndex]?.errorRaw < tolNum || rows[lastIndex]?.errorRaw === 0);
 
   const rowView = rows.length ? rows[Math.max(0, Math.min(iterView, rows.length - 1))] : null;
-
-  // historial de pNext (para “puntitos”)
   const pHistory = rows.map((r) => r.pNextRaw);
 
   return (
     <div className="bisection-grid">
-      {/* Columna: formulario */}
       <div className="bisection-form">
         <h3>Método de Steffensen</h3>
         <p className="bisection-hint">
-          Ingresa g(x) y un valor inicial p₀. Acepta <code>ln(x)</code> y <code>sen(x)</code>.
+          Ingresa <strong>g(x)</strong> y un valor inicial <strong>p₀</strong>. Acepta{" "}
+          <code>ln(x)</code> y <code>sen(x)</code>.
           <br />
           Ejemplo: <code>(-1)*(ln(x)/ln(2))</code>
         </p>
 
         <form onSubmit={handleCalculate}>
           <div className="bisection-form-row">
-            <label>Ingrese la función g(x) =</label>
-            <input type="text" value={gInput} onChange={(e) => setGInput(e.target.value)} placeholder="Ej: (-1)*(ln(x)/ln(2))" />
+            <label>Función g(x)</label>
+            <input
+              type="text"
+              value={gInput}
+              onChange={(e) => setGInput(e.target.value)}
+              placeholder="Ejemplo: (-1)*(ln(x)/ln(2))"
+            />
           </div>
 
           <div className="bisection-form-row">
-            <label>Ingrese el valor p₀ =</label>
-            <input type="number" step="any" value={p0Input} onChange={(e) => setP0Input(e.target.value)} />
+            <label>Valor inicial p₀</label>
+            <input
+              type="number"
+              step="any"
+              value={p0Input}
+              onChange={(e) => setP0Input(e.target.value)}
+            />
           </div>
 
           <div className="bisection-form-row">
-            <label>Ingrese tolerancia o exactitud =</label>
-            <input type="number" step="any" value={tolInput} onChange={(e) => setTolInput(e.target.value)} />
+            <label>Tolerancia</label>
+            <input
+              type="number"
+              step="any"
+              value={tolInput}
+              onChange={(e) => setTolInput(e.target.value)}
+            />
           </div>
 
           <div className="bisection-form-row">
-            <label>Ingrese número de iteraciones =</label>
-            <input type="number" value={maxIterInput} onChange={(e) => setMaxIterInput(e.target.value)} />
+            <label>Máximo de iteraciones</label>
+            <input
+              type="number"
+              value={maxIterInput}
+              onChange={(e) => setMaxIterInput(e.target.value)}
+            />
           </div>
 
           <div className="bisection-form-row">
-            <label>Ingrese número de decimales =</label>
-            <input type="number" value={decimalsInput} onChange={(e) => setDecimalsInput(e.target.value)} />
+            <label>Número de decimales</label>
+            <input
+              type="number"
+              value={decimalsInput}
+              onChange={(e) => setDecimalsInput(e.target.value)}
+            />
           </div>
 
           <div className="bisection-buttons">
@@ -489,7 +551,7 @@ export default function Steffensen() {
               CALCULAR
             </button>
             <button type="button" className="btn-secondary" onClick={handleClear}>
-              BORRAR CELDAS
+              LIMPIAR
             </button>
           </div>
         </form>
@@ -498,11 +560,10 @@ export default function Steffensen() {
         {errorMsg && <p className="bisection-error">{errorMsg}</p>}
       </div>
 
-      {/* Columna: tabla + gráfica */}
       <div className="bisection-results">
-        {/* Tabla */}
         <div className="bisection-table-wrapper">
           <h4>Tabla de iteraciones</h4>
+
           {rows.length === 0 ? (
             <p className="bisection-hint">
               Ingresa los datos y presiona <strong>CALCULAR</strong>.
@@ -514,8 +575,8 @@ export default function Steffensen() {
                   <tr>
                     <th>n</th>
                     <th>p₀</th>
-                    <th>p₁=g(p₀)</th>
-                    <th>p₂=g(p₁)</th>
+                    <th>p₁ = g(p₀)</th>
+                    <th>p₂ = g(p₁)</th>
                     <th>pₙ₊₁</th>
                     <th>Error</th>
                   </tr>
@@ -526,29 +587,49 @@ export default function Steffensen() {
                     const isSelected = idx === iterView;
 
                     return (
-                      <tr key={r.n} style={isSelected ? { outline: "2px solid #93c5fd" } : undefined}>
+                      <tr
+                        key={r.n}
+                        style={
+                          isSelected
+                            ? { outline: "2px solid #93c5fd", outlineOffset: "-2px" }
+                            : undefined
+                        }
+                      >
                         <td>{r.n}</td>
                         <td>{formatNumber(r.p0)}</td>
                         <td>{formatNumber(r.p1)}</td>
                         <td>{formatNumber(r.p2)}</td>
-                        <td className={isLastOk ? "cell-green" : ""}>{formatNumber(r.pNext)}</td>
-                        <td className={isLastOk ? "cell-red" : ""}>{formatNumber(r.error)}</td>
+                        <td className={isLastOk ? "cell-green" : ""}>
+                          {formatNumber(r.pNext)}
+                        </td>
+                        <td className={isLastOk ? "cell-red" : ""}>
+                          {formatNumber(r.error)}
+                        </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
 
-              {/* slider */}
-              <div style={{ marginTop: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+              <div style={{ marginTop: 14 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    flexWrap: "wrap",
+                    fontSize: 13,
+                    marginBottom: 8,
+                  }}
+                >
                   <span>
-                    Iteración: <strong>{rows[iterView]?.n}</strong>
+                    Iteración seleccionada: <strong>{rows[iterView]?.n}</strong>
                   </span>
                   <span>
-                    pₙ₊₁: <strong>{rowView ? formatNumber(rowView.pNext) : "-"}</strong>
+                    pₙ₊₁ ≈ <strong>{rowView ? formatNumber(rowView.pNext) : "-"}</strong>
                   </span>
                 </div>
+
                 <input
                   type="range"
                   min="0"
@@ -568,15 +649,28 @@ export default function Steffensen() {
           )}
         </div>
 
-        {/* Gráfica: recorrido */}
         <div className="graph-card">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h4 className="graph-title">Recorrido de Steffensen (g(x) y y=x)</h4>
-            <div style={{ display: "flex", gap: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              flexWrap: "wrap",
+              marginBottom: 10,
+            }}
+          >
+            <h4 className="graph-title">Recorrido de Steffensen</h4>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button type="button" className="btn-download" onClick={zoomInMain}>
                 Zoom +
               </button>
-              <button type="button" className="btn-download btn-download-secondary" onClick={zoomOutMain}>
+              <button
+                type="button"
+                className="btn-download btn-download-secondary"
+                onClick={zoomOutMain}
+              >
                 Zoom −
               </button>
               <button type="button" className="btn-secondary" onClick={autoMain}>
@@ -589,50 +683,75 @@ export default function Steffensen() {
             <p className="bisection-hint">No se pudo graficar. Revisa g(x) y el rango.</p>
           ) : (
             <>
-              <svg className="graph-svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" {...panZoomMain} style={{ touchAction: "none" }}>
-                {/* grid */}
-                {graphData.xTicks.map((t, i) => (
-                  <line key={`gx${i}`} x1={t.X} x2={t.X} y1={padT} y2={height - padB} stroke="#e5e7eb" />
-                ))}
-                {graphData.yTicks.map((t, i) => (
-                  <line key={`gy${i}`} x1={padL} x2={width - padR} y1={t.Y} y2={t.Y} stroke="#e5e7eb" />
-                ))}
-
-                {/* ejes */}
-                <line x1={padL} x2={width - padR} y1={graphData.xAxisY} y2={graphData.xAxisY} stroke="#9ca3af" />
-                <line x1={graphData.yAxisX} x2={graphData.yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" />
-
-                {/* y=x */}
-                <path d={graphData.pathI} fill="none" stroke="#111827" strokeWidth="1.3" opacity="0.6" strokeDasharray="4 3" />
-
-                {/* g(x) */}
-                <path d={graphData.pathG} fill="none" stroke="#2563eb" strokeWidth="1.7" />
-
-                {/* historial de p_{n+1} como puntitos sobre y=x (recorrido hacia el punto fijo) */}
-                {pHistory.map((p, i) => {
-                  if (!Number.isFinite(p)) return null;
-                  return <circle key={`ph-${i}`} cx={graphData.xTo(p)} cy={graphData.yTo(p)} r="2.6" fill="#111827" opacity="0.55" />;
+              <svg
+                className="graph-svg"
+                viewBox={`0 0 ${width} ${height}`}
+                preserveAspectRatio="none"
+                {...panZoomMain}
+                style={{ touchAction: "none" }}
+              >
+                {renderAxes({
+                  xTicks: graphData.xTicks,
+                  yTicks: graphData.yTicks,
+                  xAxisY: graphData.xAxisY,
+                  yAxisX: graphData.yAxisX,
                 })}
 
-                {/* overlay de iteración seleccionada */}
+                <path
+                  d={graphData.pathI}
+                  fill="none"
+                  stroke="#111827"
+                  strokeWidth="1.3"
+                  opacity="0.6"
+                  strokeDasharray="4 3"
+                />
+
+                <path
+                  d={graphData.pathG}
+                  fill="none"
+                  stroke="#2563eb"
+                  strokeWidth="2"
+                />
+
+                {pHistory.map((p, i) => {
+                  if (!Number.isFinite(p)) return null;
+                  return (
+                    <circle
+                      key={`ph-${i}`}
+                      cx={graphData.xTo(p)}
+                      cy={graphData.yTo(p)}
+                      r="2.6"
+                      fill="#111827"
+                      opacity="0.55"
+                    />
+                  );
+                })}
+
                 {rowView && (
                   <>
-                    {/* A=(p0, g(p0)) y B=(p1, g(p1)) */}
-                    <circle cx={graphData.xTo(rowView.Ax)} cy={graphData.yTo(rowView.Ay)} r="4" fill="#f59e0b" />
-                    <circle cx={graphData.xTo(rowView.Bx)} cy={graphData.yTo(rowView.By)} r="4" fill="#ef4444" />
+                    <circle
+                      cx={graphData.xTo(rowView.Ax)}
+                      cy={graphData.yTo(rowView.Ay)}
+                      r="4"
+                      fill="#64748b"
+                    />
+                    <circle
+                      cx={graphData.xTo(rowView.Bx)}
+                      cy={graphData.yTo(rowView.By)}
+                      r="4"
+                      fill="#334155"
+                    />
 
-                    {/* secante AB */}
                     <line
                       x1={graphData.xTo(rowView.Ax)}
                       y1={graphData.yTo(rowView.Ay)}
                       x2={graphData.xTo(rowView.Bx)}
                       y2={graphData.yTo(rowView.By)}
-                      stroke="#ef4444"
+                      stroke="#475569"
                       strokeWidth="2"
-                      opacity="0.85"
+                      opacity="0.9"
                     />
 
-                    {/* p_{n+1} marcado sobre eje x (línea vertical) */}
                     <line
                       x1={graphData.xTo(rowView.pNextRaw)}
                       x2={graphData.xTo(rowView.pNextRaw)}
@@ -643,19 +762,28 @@ export default function Steffensen() {
                       strokeDasharray="4 3"
                     />
 
-                    {/* punto (p_{n+1}, p_{n+1}) sobre y=x */}
-                    <circle cx={graphData.xTo(rowView.pNextRaw)} cy={graphData.yTo(rowView.pNextRaw)} r="4.2" fill="#10b981" />
+                    <circle
+                      cx={graphData.xTo(rowView.pNextRaw)}
+                      cy={graphData.yTo(rowView.pNextRaw)}
+                      r="4.2"
+                      fill="#10b981"
+                    />
 
-                    {/* etiqueta */}
-                    <text x={graphData.xTo(rowView.pNextRaw) + 6} y={graphData.yTo(rowView.pNextRaw) - 8} fontSize="11" fill="#065f46">
-                      pₙ₊₁={rowView.pNextRaw.toFixed(Math.min(6, getDecimals()))}
+                    <text
+                      x={graphData.xTo(rowView.pNextRaw) + 6}
+                      y={graphData.yTo(rowView.pNextRaw) - 8}
+                      fontSize="11"
+                      fill="#065f46"
+                    >
+                      pₙ₊₁ = {rowView.pNextRaw.toFixed(Math.min(6, getDecimals()))}
                     </text>
                   </>
                 )}
               </svg>
 
-              <p className="bisection-hint" style={{ marginTop: 6 }}>
-                Rueda: zoom • Arrastrar: mover • Slider: ver A=(p₀,g(p₀)), B=(p₁,g(p₁)) y pₙ₊₁ • Puntitos: recorrido hacia el punto fijo (intersección con y=x)
+              <p className="bisection-hint" style={{ marginTop: 8 }}>
+                Rueda del mouse: zoom • Arrastrar: mover • Slider: ver A=(p₀,g(p₀)),
+                B=(p₁,g(p₁)) y pₙ₊₁ • Puntos negros: recorrido hacia el punto fijo
               </p>
             </>
           )}

@@ -37,8 +37,6 @@ const makePanZoomHandlers = (range, setRange, width, padL, padR) => {
     if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
 
     const mouseX = clientXToX(svg, e.clientX, xMin, xMax);
-
-    // deltaY < 0 acerca; > 0 aleja
     const k = e.deltaY < 0 ? 1 / 1.2 : 1.2;
     const span = Math.max(1e-9, (xMax - xMin) * k);
 
@@ -92,7 +90,6 @@ export default function Biseccion() {
   const [message, setMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Iteración a visualizar en la gráfica (slider)
   const [iterView, setIterView] = useState(0);
 
   const tableRef = useRef(null);
@@ -209,7 +206,6 @@ export default function Biseccion() {
           break;
         }
 
-        // ✅ criterio de parada correcto
         if (Math.abs(fp) === 0 || error < tol) {
           found = true;
           break;
@@ -226,7 +222,6 @@ export default function Biseccion() {
     setRows(newRows);
     if (!newRows.length || hadError) return;
 
-    // Slider apunta a la última iteración por defecto
     setIterView(newRows.length - 1);
 
     const last = newRows[newRows.length - 1];
@@ -250,15 +245,14 @@ export default function Biseccion() {
     setErrorMsg("");
   };
 
-  // ✅ Detectar fila final para pintar (p verde, error rojo)
   const lastIndex = rows.length - 1;
   const tolNum = parseFloat(tolInput);
   const foundFinal =
     rows.length > 0 &&
-    (Number.isFinite(rows[lastIndex]?.error) && Number.isFinite(tolNum)) &&
+    Number.isFinite(rows[lastIndex]?.error) &&
+    Number.isFinite(tolNum) &&
     (rows[lastIndex].error < tolNum || Math.abs(rows[lastIndex]?.fp ?? NaN) === 0);
 
-  // ----- descarga de tabla en CSV -----
   const handleDownloadTableCsv = () => {
     if (!rows.length) return;
 
@@ -293,7 +287,6 @@ export default function Biseccion() {
     URL.revokeObjectURL(url);
   };
 
-  // ----- descarga de tabla en PDF -----
   const handleDownloadTablePdf = async () => {
     if (!rows.length || !tableRef.current) return;
 
@@ -323,15 +316,12 @@ export default function Biseccion() {
     }
   };
 
-  // =========================
-  // Gráfica dinámica con pan/zoom
-  // =========================
-  const width = 400;
-  const height = 240;
-  const padL = 46;
-  const padR = 10;
-  const padT = 10;
-  const padB = 28;
+  const width = 640;
+  const height = 340;
+  const padL = 62;
+  const padR = 18;
+  const padT = 18;
+  const padB = 44;
 
   const lastRow = rows.length ? rows[Math.max(0, Math.min(iterView, rows.length - 1))] : null;
   const intervalToShow = lastRow ? { a: lastRow.a, b: lastRow.b } : null;
@@ -339,7 +329,6 @@ export default function Biseccion() {
 
   const [rangeX, setRangeX] = useState({ xMin: -5, xMax: 5 });
 
-  // Auto-ajuste del rango X cuando cambia a/b o f(x)
   useEffect(() => {
     const a = parseFloat(aInput);
     const b = parseFloat(bInput);
@@ -370,8 +359,8 @@ export default function Biseccion() {
 
     const f = (x) => {
       try {
-        const r = compiled.evaluate({ x });
-        return Number.isFinite(r) ? r : NaN;
+        const res = compiled.evaluate({ x });
+        return Number.isFinite(res) ? res : NaN;
       } catch {
         return NaN;
       }
@@ -398,6 +387,7 @@ export default function Biseccion() {
       yMin = Math.min(yMin, p.y);
       yMax = Math.max(yMax, p.y);
     });
+
     if (!Number.isFinite(yMin) || !Number.isFinite(yMax) || yMin === yMax) {
       yMin = -1;
       yMax = 1;
@@ -430,31 +420,33 @@ export default function Biseccion() {
     return { xMin, xMax, yMin, yMax, xTo, yTo, pathD, xTicks, yTicks, xAxisY, yAxisX };
   }, [fxInput, rangeX, decimalsInput]);
 
-  // Botones zoom
   const zoomIn = () => {
     const c = (rangeX.xMin + rangeX.xMax) / 2;
     const s = (rangeX.xMax - rangeX.xMin) / 2 / 1.8;
     setRangeX({ xMin: c - s, xMax: c + s });
   };
+
   const zoomOut = () => {
     const c = (rangeX.xMin + rangeX.xMax) / 2;
-    const s = (rangeX.xMax - rangeX.xMin) / 2 * 1.8;
+    const s = ((rangeX.xMax - rangeX.xMin) / 2) * 1.8;
     setRangeX({ xMin: c - s, xMax: c + s });
   };
+
   const autoRange = () => {
     const a = parseFloat(aInput);
     const b = parseFloat(bInput);
-    let xMin = -5, xMax = 5;
+    let xMin = -5;
+    let xMax = 5;
     if (Number.isFinite(a) && Number.isFinite(b)) {
       xMin = Math.min(a, b);
       xMax = Math.max(a, b);
       const m = (xMax - xMin) * 0.2 || 0.5;
-      xMin -= m; xMax += m;
+      xMin -= m;
+      xMax += m;
     }
     setRangeX({ xMin, xMax });
   };
 
-  // ----- descarga de gráfica -----
   const handleDownloadGraph = (format = "png") => {
     if (!svgRef.current) return;
 
@@ -481,7 +473,10 @@ export default function Biseccion() {
 
       const link = document.createElement("a");
       link.href = imgURI;
-      link.download = format === "jpg" || format === "jpeg" ? "biseccion_grafica.jpg" : "biseccion_grafica.png";
+      link.download =
+        format === "jpg" || format === "jpeg"
+          ? "biseccion_grafica.jpg"
+          : "biseccion_grafica.png";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -497,7 +492,6 @@ export default function Biseccion() {
 
   return (
     <div className="bisection-grid">
-      {/* Columna: formulario */}
       <div className="bisection-form">
         <h3>Método de Bisección</h3>
         <p className="bisection-hint">
@@ -553,7 +547,6 @@ export default function Biseccion() {
         {errorMsg && <p className="bisection-error">{errorMsg}</p>}
       </div>
 
-      {/* Columna: tabla + gráfica */}
       <div className="bisection-results">
         <div className="bisection-table-wrapper" ref={tableRef}>
           <h4>Tabla de iteraciones</h4>
@@ -607,20 +600,21 @@ export default function Biseccion() {
         )}
 
         <div className="graph-card">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <h4 className="graph-title">Gráfica de f(x) (zoom y pan)</h4>
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button type="button" className="btn-download" onClick={zoomIn}>Zoom +</button>
               <button type="button" className="btn-download btn-download-secondary" onClick={zoomOut}>Zoom −</button>
               <button type="button" className="btn-secondary" onClick={autoRange}>Auto</button>
             </div>
           </div>
 
-          {/* Slider: elegir iteración */}
           {rows.length > 0 && (
             <div style={{ margin: "8px 0" }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-                <span>Iteración: <strong>{rows[iterView]?.n}</strong></span>
+                <span>
+                  Iteración: <strong>{rows[iterView]?.n}</strong>
+                </span>
                 <span>
                   p: <strong>{pToShow != null ? formatNumber(pToShow) : "-"}</strong>
                 </span>
@@ -655,7 +649,7 @@ export default function Biseccion() {
                   <line key={`gy${i}`} x1={padL} x2={width - padR} y1={t.Y} y2={t.Y} stroke="#e5e7eb" />
                 ))}
 
-                {/* Intervalo [a,b] de la iteración seleccionada */}
+                {/* Intervalo [a,b] */}
                 {intervalToShow && (
                   <rect
                     x={graphView.xTo(intervalToShow.a)}
@@ -667,14 +661,40 @@ export default function Biseccion() {
                 )}
 
                 {/* Ejes */}
-                <line x1={padL} x2={width - padR} y1={graphView.xAxisY} y2={graphView.xAxisY} stroke="#9ca3af" strokeWidth="1" />
-                <line x1={graphView.yAxisX} x2={graphView.yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" strokeWidth="1" />
+                <line
+                  x1={padL}
+                  x2={width - padR}
+                  y1={graphView.xAxisY}
+                  y2={graphView.xAxisY}
+                  stroke="#9ca3af"
+                  strokeWidth="1.2"
+                />
+                <line
+                  x1={graphView.yAxisX}
+                  x2={graphView.yAxisX}
+                  y1={padT}
+                  y2={height - padB}
+                  stroke="#9ca3af"
+                  strokeWidth="1.2"
+                />
 
                 {/* Ticks X */}
                 {graphView.xTicks.map((t, i) => (
                   <g key={`xt${i}`}>
-                    <line x1={t.X} x2={t.X} y1={graphView.xAxisY - 3} y2={graphView.xAxisY + 3} stroke="#6b7280" />
-                    <text x={t.X} y={height - 6} fontSize="9" textAnchor="middle" fill="#374151">
+                    <line
+                      x1={t.X}
+                      x2={t.X}
+                      y1={height - padB}
+                      y2={height - padB + 5}
+                      stroke="#6b7280"
+                    />
+                    <text
+                      x={t.X}
+                      y={height - 10}
+                      fontSize="10"
+                      textAnchor="middle"
+                      fill="#374151"
+                    >
                       {t.x.toFixed(2)}
                     </text>
                   </g>
@@ -683,17 +703,51 @@ export default function Biseccion() {
                 {/* Ticks Y */}
                 {graphView.yTicks.map((t, i) => (
                   <g key={`yt${i}`}>
-                    <line x1={graphView.yAxisX - 3} x2={graphView.yAxisX + 3} y1={t.Y} y2={t.Y} stroke="#6b7280" />
-                    <text x={padL - 6} y={t.Y + 3} fontSize="9" textAnchor="end" fill="#374151">
+                    <line
+                      x1={padL - 5}
+                      x2={padL}
+                      y1={t.Y}
+                      y2={t.Y}
+                      stroke="#6b7280"
+                    />
+                    <text
+                      x={padL - 8}
+                      y={t.Y + 3}
+                      fontSize="10"
+                      textAnchor="end"
+                      fill="#374151"
+                    >
                       {t.y.toFixed(2)}
                     </text>
                   </g>
                 ))}
 
-                {/* Curva f(x) */}
-                <path d={graphView.pathD} fill="none" stroke="#2563eb" strokeWidth="1.6" />
+                {/* Etiquetas de ejes */}
+                <text
+                  x={(padL + width - padR) / 2}
+                  y={height - 2}
+                  fontSize="12"
+                  textAnchor="middle"
+                  fill="#334155"
+                >
+                  x
+                </text>
 
-                {/* Línea en p de la iteración seleccionada */}
+                <text
+                  x={18}
+                  y={(padT + height - padB) / 2}
+                  fontSize="12"
+                  textAnchor="middle"
+                  fill="#334155"
+                  transform={`rotate(-90 18 ${(padT + height - padB) / 2})`}
+                >
+                  f(x)
+                </text>
+
+                {/* Curva */}
+                <path d={graphView.pathD} fill="none" stroke="#2563eb" strokeWidth="1.8" />
+
+                {/* Línea vertical en p */}
                 {pToShow != null && (
                   <line
                     x1={graphView.xTo(pToShow)}

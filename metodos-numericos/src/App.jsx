@@ -67,8 +67,8 @@ import MullerImaginario from "./metodos/MullerImaginario";
 import Lagrange from "./metodos/Lagrange";
 import Neville from "./metodos/Neville";
 import NewtonDiferenciasDivididas from "./metodos/NewtonDiferenciasDivididas";
-//import Jacobi from "./metodos/Jacobi";
-//import GaussSeidel from "./metodos/GaussSeidel";
+import Jacobi from "./metodos/Jacobi";
+import GaussSeidel from "./metodos/GaussSeidel";
 //import PuntoFijoNoLineal from "./metodos/PuntoFijoNoLineal";
 //import NewtonNoLineal from "./metodos/NewtonNoLineal";
 
@@ -220,28 +220,9 @@ const UNITS = [...new Set(METHODS.map((m) => m.unit))];
 
 
 
-function JacobiComponent() {
-  return (
-    <div>
-      <h3>Configuración: Jacobi</h3>
-      <p>
-        Permitirá ingresar la matriz A, el vector b, vector inicial y mostrar la
-        tabla de iteraciones.
-      </p>
-    </div>
-  );
-}
 
-function GaussSeidelComponent() {
-  return (
-    <div>
-      <h3>Configuración: Gauss-Seidel</h3>
-      <p>
-        Similar a Jacobi, pero usando actualización inmediata de las incógnitas.
-      </p>
-    </div>
-  );
-}
+
+
 
 function PuntoFijoNoLineal() {
   return (
@@ -284,11 +265,11 @@ const METHOD_COMPONENTS = {
   lagrange: Lagrange,
   neville: Neville,
   "newton-diferencias-divididas": NewtonDiferenciasDivididas,
-  jacobi: JacobiComponent,
-  "gauss-seidel": GaussSeidelComponent,
+  jacobi: Jacobi,
+  "gauss-seidel": GaussSeidel,
   "punto-fijo-no-lineal": PuntoFijoNoLineal,
   "newton-no-lineal": NewtonNoLineal,
-  "manual-expresiones": ManualExpresiones   // 👈 nueva línea
+  "manual-expresiones": ManualExpresiones  
 };
 
 // =====================

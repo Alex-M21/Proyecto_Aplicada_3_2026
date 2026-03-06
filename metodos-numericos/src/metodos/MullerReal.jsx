@@ -5,7 +5,9 @@ import "./Biseccion.css";
 
 const math = create(all, {});
 
-// === Pan & Zoom genéricos (solo eje X) ===
+// =========================================================
+// Pan & Zoom genéricos (solo eje X)
+// =========================================================
 const makePanZoomHandlers = (range, setRange, width, padL, padR) => {
   let dragging = false;
   let lastClientX = 0;
@@ -82,13 +84,11 @@ export default function MullerReal() {
   const [rows, setRows] = useState([]);
   const [message, setMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-
-  // slider para ver iteración en la gráfica
   const [iterView, setIterView] = useState(0);
 
-  // -------------------------
+  // =========================================================
   // Utilidades
-  // -------------------------
+  // =========================================================
   const normalizeExpr = (expr) =>
     expr.trim().replace(/LN/gi, "log").replace(/ln/gi, "log").replace(/sen/gi, "sin");
 
@@ -114,18 +114,17 @@ export default function MullerReal() {
     return Math.round(v * f) / f;
   };
 
-  const formatNumber = (v) => (Number.isFinite(v) ? v.toFixed(getDecimals()) : "NaN");
+  const formatNumber = (v) =>
+    Number.isFinite(v) ? v.toFixed(getDecimals()) : "NaN";
 
   const tolNum = useMemo(() => {
     const t = parseFloat(tolInput);
     return Number.isFinite(t) ? t : NaN;
   }, [tolInput]);
 
-  // -------------------------
+  // =========================================================
   // Cálculo: Muller (raíz real)
-  // Tabla: n, x0, x1, x2, p, Error
-  // Error = |p - x2|
-  // -------------------------
+  // =========================================================
   const handleCalculate = (e) => {
     e.preventDefault();
     setMessage("");
@@ -144,14 +143,22 @@ export default function MullerReal() {
     const tol = parseFloat(tolInput);
     const maxIter = parseInt(maxIterInput, 10);
 
-    if (!Number.isFinite(x0) || !Number.isFinite(x1) || !Number.isFinite(x2) || !Number.isFinite(tol) || !Number.isFinite(maxIter)) {
+    if (
+      !Number.isFinite(x0) ||
+      !Number.isFinite(x1) ||
+      !Number.isFinite(x2) ||
+      !Number.isFinite(tol) ||
+      !Number.isFinite(maxIter)
+    ) {
       setErrorMsg("Por favor ingresa valores numéricos válidos.");
       return;
     }
+
     if (tol <= 0) {
       setErrorMsg("La tolerancia debe ser un número positivo.");
       return;
     }
+
     if (maxIter <= 0) {
       setErrorMsg("El número de iteraciones debe ser mayor que cero.");
       return;
@@ -159,7 +166,7 @@ export default function MullerReal() {
 
     const compiledF = buildCompiled(fxInput);
     if (!compiledF) {
-      setErrorMsg("No se pudo interpretar f(x). Revisa la sintaxis (x^2, *, /, +, sin(x), ln(x), exp(x)...).");
+      setErrorMsg("No se pudo interpretar f(x). Revisa la sintaxis.");
       return;
     }
 
@@ -172,7 +179,6 @@ export default function MullerReal() {
       }
     };
 
-    // redondeo inicial (solo para tabla)
     x0 = roundTo(x0);
     x1 = roundTo(x1);
     x2 = roundTo(x2);
@@ -180,7 +186,6 @@ export default function MullerReal() {
     const newRows = [];
     let found = false;
     let bad = false;
-
     const EPS = 1e-14;
 
     try {
@@ -214,7 +219,6 @@ export default function MullerReal() {
 
         let p;
 
-        // Si d ~ 0 => secante
         if (Math.abs(d) < EPS) {
           const denomSec = f2 - f1;
           if (Math.abs(denomSec) < EPS) {
@@ -288,7 +292,9 @@ export default function MullerReal() {
 
     const last = newRows[newRows.length - 1];
     setMessage(
-      found ? `Se encontró una aproximación a la solución: p ≈ ${formatNumber(last.p)}` : "Se alcanzó el número máximo de iteraciones sin cumplir la tolerancia."
+      found
+        ? `Se encontró una aproximación a la solución: p ≈ ${formatNumber(last.p)}`
+        : "Se alcanzó el número máximo de iteraciones sin cumplir la tolerancia."
     );
   };
 
@@ -306,9 +312,9 @@ export default function MullerReal() {
     setErrorMsg("");
   };
 
-  // -------------------------
-  // Descarga tabla (CSV)
-  // -------------------------
+  // =========================================================
+  // Descarga CSV
+  // =========================================================
   const handleDownloadTable = () => {
     if (!rows.length) return;
 
@@ -316,10 +322,14 @@ export default function MullerReal() {
     const csvRows = [headers.join(",")];
 
     rows.forEach((r) => {
-      csvRows.push([r.n, formatNumber(r.x0), formatNumber(r.x1), formatNumber(r.x2), formatNumber(r.p), formatNumber(r.error)].join(","));
+      csvRows.push(
+        [r.n, formatNumber(r.x0), formatNumber(r.x1), formatNumber(r.x2), formatNumber(r.p), formatNumber(r.error)].join(",")
+      );
     });
 
-    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([csvRows.join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -330,9 +340,9 @@ export default function MullerReal() {
     URL.revokeObjectURL(url);
   };
 
-  // =========================
-  // Gráfica f(x) con rango interactivo + recorrido
-  // =========================
+  // =========================================================
+  // Gráfica
+  // =========================================================
   const baseRange = useMemo(() => {
     const x0 = parseFloat(x0Input);
     const x1 = parseFloat(x1Input);
@@ -354,14 +364,15 @@ export default function MullerReal() {
     return { xMin: -5, xMax: 5 };
   }, [x0Input, x1Input, x2Input, fxInput]);
 
-  const width = 420,
-    height = 260,
-    padL = 50,
-    padR = 10,
-    padT = 12,
-    padB = 30;
+  const width = 640;
+  const height = 340;
+  const padL = 62;
+  const padR = 18;
+  const padT = 18;
+  const padB = 44;
 
   const [rangeMain, setRangeMain] = useState({ xMin: -5, xMax: 5 });
+
   useEffect(() => {
     setRangeMain({ xMin: baseRange.xMin, xMax: baseRange.xMax });
   }, [baseRange.xMin, baseRange.xMax]);
@@ -373,6 +384,7 @@ export default function MullerReal() {
     const s = (xMax - xMin) / 2 / 1.8;
     setRangeMain({ xMin: c - s, xMax: c + s });
   };
+
   const zoomOutMain = () => {
     const { xMin, xMax } = rangeMain;
     if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
@@ -380,6 +392,7 @@ export default function MullerReal() {
     const s = ((xMax - xMin) / 2) * 1.8;
     setRangeMain({ xMin: c - s, xMax: c + s });
   };
+
   const autoMain = () => setRangeMain({ xMin: baseRange.xMin, xMax: baseRange.xMax });
 
   const buildTicks = (min, max, count = 6) => {
@@ -414,14 +427,16 @@ export default function MullerReal() {
     const steps = 240;
     const step = (xMax - xMin) / steps;
     const pts = [];
+
     for (let i = 0; i <= steps; i++) {
       const x = xMin + i * step;
       const y = f(x);
       if (Number.isFinite(y)) pts.push({ x, y });
     }
 
-    let yMin = Infinity,
-      yMax = -Infinity;
+    let yMin = Infinity;
+    let yMax = -Infinity;
+
     pts.forEach((p) => {
       yMin = Math.min(yMin, p.y);
       yMax = Math.max(yMax, p.y);
@@ -440,7 +455,10 @@ export default function MullerReal() {
     const yTicks = buildTicks(yMin, yMax, 6);
     const { xTo, yTo } = toXY(xMin, xMax, yMin, yMax);
 
-    const path = pts.length ? pts.map((p, i) => `${i ? "L" : "M"} ${xTo(p.x)} ${yTo(p.y)}`).join(" ") : "";
+    const path =
+      pts.length
+        ? pts.map((p, i) => `${i ? "L" : "M"} ${xTo(p.x)} ${yTo(p.y)}`).join(" ")
+        : "";
 
     const xAxisY = yMin <= 0 && yMax >= 0 ? yTo(0) : yTo(yMin);
     const yAxisX = xMin <= 0 && xMax >= 0 ? xTo(0) : xTo(xMin);
@@ -457,7 +475,6 @@ export default function MullerReal() {
       xTo,
       yTo,
       path,
-      f,
     };
   }, [fxInput, rangeMain.xMin, rangeMain.xMax]);
 
@@ -470,14 +487,11 @@ export default function MullerReal() {
     (rows[lastIndex]?.error < tolNum || rows[lastIndex]?.error === 0);
 
   const rowView = rows.length ? rows[Math.max(0, Math.min(iterView, rows.length - 1))] : null;
-
-  // historial de p sobre el eje x
   const pHistory = rows.map((r) => r.pRaw).filter((v) => Number.isFinite(v));
 
-  // =========================
-  // ✅ Paráb ola de la iteración (interpolación cuadrática)
-  // y = A x^2 + B x + C
-  // =========================
+  // =========================================================
+  // Parábola interpolante
+  // =========================================================
   const quadCoeffs = (xa, ya, xb, yb, xc, yc) => {
     const den0 = (xa - xb) * (xa - xc);
     const den1 = (xb - xa) * (xb - xc);
@@ -509,10 +523,15 @@ export default function MullerReal() {
     return d.trim();
   };
 
-  // ✅ texto y “callout” para etiquetas (x0,x1,x2,p)
   const pointLabel = (x, y, text, color = "#111827") => (
     <g>
-      <text x={x + 8} y={y - 8} fontSize="11" fill={color} style={{ paintOrder: "stroke", stroke: "#ffffff", strokeWidth: 3 }}>
+      <text
+        x={x + 8}
+        y={y - 8}
+        fontSize="11"
+        fill={color}
+        style={{ paintOrder: "stroke", stroke: "#ffffff", strokeWidth: 3 }}
+      >
         {text}
       </text>
       <text x={x + 8} y={y - 8} fontSize="11" fill={color}>
@@ -521,49 +540,187 @@ export default function MullerReal() {
     </g>
   );
 
+  // =========================================================
+  // Ejes / escalas
+  // =========================================================
+  const renderAxes = ({ xTicks, yTicks, xAxisY, yAxisX }) => (
+    <>
+      {xTicks.map((t, i) => (
+        <g key={`gx-${i}`}>
+          <line
+            x1={t.X}
+            x2={t.X}
+            y1={padT}
+            y2={height - padB}
+            stroke="#e5e7eb"
+            strokeWidth="1"
+          />
+          <line
+            x1={t.X}
+            x2={t.X}
+            y1={height - padB}
+            y2={height - padB + 5}
+            stroke="#94a3b8"
+            strokeWidth="1"
+          />
+          <text
+            x={t.X}
+            y={height - 10}
+            textAnchor="middle"
+            fontSize="10"
+            fill="#475569"
+          >
+            {t.x.toFixed(2)}
+          </text>
+        </g>
+      ))}
+
+      {yTicks.map((t, i) => (
+        <g key={`gy-${i}`}>
+          <line
+            x1={padL}
+            x2={width - padR}
+            y1={t.Y}
+            y2={t.Y}
+            stroke="#e5e7eb"
+            strokeWidth="1"
+          />
+          <line
+            x1={padL - 5}
+            x2={padL}
+            y1={t.Y}
+            y2={t.Y}
+            stroke="#94a3b8"
+            strokeWidth="1"
+          />
+          <text
+            x={padL - 8}
+            y={t.Y + 3}
+            textAnchor="end"
+            fontSize="10"
+            fill="#475569"
+          >
+            {t.y.toFixed(2)}
+          </text>
+        </g>
+      ))}
+
+      <line
+        x1={padL}
+        x2={width - padR}
+        y1={xAxisY}
+        y2={xAxisY}
+        stroke="#94a3b8"
+        strokeWidth="1.3"
+      />
+      <line
+        x1={yAxisX}
+        x2={yAxisX}
+        y1={padT}
+        y2={height - padB}
+        stroke="#94a3b8"
+        strokeWidth="1.3"
+      />
+
+      <text
+        x={(padL + width - padR) / 2}
+        y={height - 4}
+        textAnchor="middle"
+        fontSize="12"
+        fill="#334155"
+      >
+        x
+      </text>
+
+      <text
+        x={18}
+        y={(padT + height - padB) / 2}
+        textAnchor="middle"
+        fontSize="12"
+        fill="#334155"
+        transform={`rotate(-90 18 ${(padT + height - padB) / 2})`}
+      >
+        f(x)
+      </text>
+    </>
+  );
+
   return (
     <div className="bisection-grid">
-      {/* Columna: formulario */}
       <div className="bisection-form">
         <h3>Método de Muller (Raíz Real)</h3>
         <p className="bisection-hint">
-          Ingresa f(x) y tres valores iniciales x₀, x₁, x₂. Acepta <code>ln(x)</code> y <code>sen(x)</code>.
+          Ingresa <strong>f(x)</strong> y tres valores iniciales <strong>x₀, x₁, x₂</strong>.
+          Acepta <code>ln(x)</code> y <code>sen(x)</code>.
         </p>
 
         <form onSubmit={handleCalculate}>
           <div className="bisection-form-row">
-            <label>Ingrese el Polinomio / f(x) =</label>
-            <input type="text" value={fxInput} onChange={(e) => setFxInput(e.target.value)} />
+            <label>Polinomio / f(x)</label>
+            <input
+              type="text"
+              value={fxInput}
+              onChange={(e) => setFxInput(e.target.value)}
+              placeholder="Ejemplo: x^3+3*x^2+4*x-12"
+            />
           </div>
 
           <div className="bisection-form-row">
-            <label>Ingrese el valor x₀ =</label>
-            <input type="number" step="any" value={x0Input} onChange={(e) => setX0Input(e.target.value)} />
+            <label>Valor x₀</label>
+            <input
+              type="number"
+              step="any"
+              value={x0Input}
+              onChange={(e) => setX0Input(e.target.value)}
+            />
           </div>
 
           <div className="bisection-form-row">
-            <label>Ingrese el valor x₁ =</label>
-            <input type="number" step="any" value={x1Input} onChange={(e) => setX1Input(e.target.value)} />
+            <label>Valor x₁</label>
+            <input
+              type="number"
+              step="any"
+              value={x1Input}
+              onChange={(e) => setX1Input(e.target.value)}
+            />
           </div>
 
           <div className="bisection-form-row">
-            <label>Ingrese el valor x₂ =</label>
-            <input type="number" step="any" value={x2Input} onChange={(e) => setX2Input(e.target.value)} />
+            <label>Valor x₂</label>
+            <input
+              type="number"
+              step="any"
+              value={x2Input}
+              onChange={(e) => setX2Input(e.target.value)}
+            />
           </div>
 
           <div className="bisection-form-row">
-            <label>Ingrese tolerancia o exactitud =</label>
-            <input type="number" step="any" value={tolInput} onChange={(e) => setTolInput(e.target.value)} />
+            <label>Tolerancia</label>
+            <input
+              type="number"
+              step="any"
+              value={tolInput}
+              onChange={(e) => setTolInput(e.target.value)}
+            />
           </div>
 
           <div className="bisection-form-row">
-            <label>Ingrese número de iteraciones =</label>
-            <input type="number" value={maxIterInput} onChange={(e) => setMaxIterInput(e.target.value)} />
+            <label>Máximo de iteraciones</label>
+            <input
+              type="number"
+              value={maxIterInput}
+              onChange={(e) => setMaxIterInput(e.target.value)}
+            />
           </div>
 
           <div className="bisection-form-row">
-            <label>Ingrese número de decimales =</label>
-            <input type="number" value={decimalsInput} onChange={(e) => setDecimalsInput(e.target.value)} />
+            <label>Número de decimales</label>
+            <input
+              type="number"
+              value={decimalsInput}
+              onChange={(e) => setDecimalsInput(e.target.value)}
+            />
           </div>
 
           <div className="bisection-buttons">
@@ -571,7 +728,7 @@ export default function MullerReal() {
               CALCULAR
             </button>
             <button type="button" className="btn-secondary" onClick={handleClear}>
-              BORRAR CELDAS
+              LIMPIAR
             </button>
           </div>
         </form>
@@ -580,9 +737,7 @@ export default function MullerReal() {
         {errorMsg && <p className="bisection-error">{errorMsg}</p>}
       </div>
 
-      {/* Columna: resultados */}
       <div className="bisection-results">
-        {/* Tabla */}
         <div className="bisection-table-wrapper">
           <h4>Tabla de iteraciones</h4>
 
@@ -607,30 +762,51 @@ export default function MullerReal() {
                   {rows.map((r, idx) => {
                     const isLastOk = converged && idx === lastIndex;
                     const isSelected = idx === iterView;
+
                     return (
-                      <tr key={r.n} style={isSelected ? { outline: "2px solid #93c5fd" } : undefined}>
+                      <tr
+                        key={r.n}
+                        style={
+                          isSelected
+                            ? { outline: "2px solid #93c5fd", outlineOffset: "-2px" }
+                            : undefined
+                        }
+                      >
                         <td>{r.n}</td>
                         <td>{formatNumber(r.x0)}</td>
                         <td>{formatNumber(r.x1)}</td>
                         <td>{formatNumber(r.x2)}</td>
-                        <td className={isLastOk ? "cell-green" : ""}>{formatNumber(r.p)}</td>
-                        <td className={isLastOk ? "cell-red" : ""}>{formatNumber(r.error)}</td>
+                        <td className={isLastOk ? "cell-green" : ""}>
+                          {formatNumber(r.p)}
+                        </td>
+                        <td className={isLastOk ? "cell-red" : ""}>
+                          {formatNumber(r.error)}
+                        </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
 
-              {/* slider */}
-              <div style={{ marginTop: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+              <div style={{ marginTop: 14 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    flexWrap: "wrap",
+                    fontSize: 13,
+                    marginBottom: 8,
+                  }}
+                >
                   <span>
                     Iteración: <strong>{rows[iterView]?.n}</strong>
                   </span>
                   <span>
-                    p: <strong>{rowView ? formatNumber(rowView.p) : "-"}</strong>
+                    p ≈ <strong>{rowView ? formatNumber(rowView.p) : "-"}</strong>
                   </span>
                 </div>
+
                 <input
                   type="range"
                   min="0"
@@ -650,15 +826,28 @@ export default function MullerReal() {
           )}
         </div>
 
-        {/* Gráfica principal: recorrido */}
         <div className="graph-card">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h4 className="graph-title">Recorrido de Muller (parábola + puntos + p)</h4>
-            <div style={{ display: "flex", gap: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              flexWrap: "wrap",
+              marginBottom: 10,
+            }}
+          >
+            <h4 className="graph-title">Recorrido de Muller</h4>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button type="button" className="btn-download" onClick={zoomInMain}>
                 Zoom +
               </button>
-              <button type="button" className="btn-download btn-download-secondary" onClick={zoomOutMain}>
+              <button
+                type="button"
+                className="btn-download btn-download-secondary"
+                onClick={zoomOutMain}
+              >
                 Zoom −
               </button>
               <button type="button" className="btn-secondary" onClick={autoMain}>
@@ -671,33 +860,59 @@ export default function MullerReal() {
             <p className="bisection-hint">No se pudo graficar f(x).</p>
           ) : (
             <>
-              <svg className="graph-svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" {...panZoomMain} style={{ touchAction: "none" }}>
-                {/* grid */}
-                {graphData.xTicks.map((t, i) => (
-                  <line key={`gx${i}`} x1={t.X} x2={t.X} y1={padT} y2={height - padB} stroke="#e5e7eb" />
-                ))}
-                {graphData.yTicks.map((t, i) => (
-                  <line key={`gy${i}`} x1={padL} x2={width - padR} y1={t.Y} y2={t.Y} stroke="#e5e7eb" />
-                ))}
+              <svg
+                className="graph-svg"
+                viewBox={`0 0 ${width} ${height}`}
+                preserveAspectRatio="none"
+                {...panZoomMain}
+                style={{ touchAction: "none" }}
+              >
+                {renderAxes({
+                  xTicks: graphData.xTicks,
+                  yTicks: graphData.yTicks,
+                  xAxisY: graphData.xAxisY,
+                  yAxisX: graphData.yAxisX,
+                })}
 
-                {/* ejes */}
-                <line x1={padL} x2={width - padR} y1={graphData.xAxisY} y2={graphData.xAxisY} stroke="#9ca3af" />
-                <line x1={graphData.yAxisX} x2={graphData.yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" />
+                <path
+                  d={graphData.path}
+                  fill="none"
+                  stroke="#2563eb"
+                  strokeWidth="2"
+                />
 
-                {/* f(x) */}
-                <path d={graphData.path} fill="none" stroke="#2563eb" strokeWidth="1.7" />
-
-                {/* historial de p sobre el eje x */}
                 {pHistory.map((p, i) => (
-                  <circle key={`ph-${i}`} cx={graphData.xTo(p)} cy={graphData.xAxisY} r="2.6" fill="#111827" opacity="0.6" />
+                  <circle
+                    key={`ph-${i}`}
+                    cx={graphData.xTo(p)}
+                    cy={graphData.xAxisY}
+                    r="2.6"
+                    fill="#111827"
+                    opacity="0.6"
+                  />
                 ))}
 
-                {/* overlay iteración */}
                 {rowView &&
                   (() => {
-                    const coeffs = quadCoeffs(rowView.x0Raw, rowView.f0Raw, rowView.x1Raw, rowView.f1Raw, rowView.x2Raw, rowView.f2Raw);
+                    const coeffs = quadCoeffs(
+                      rowView.x0Raw,
+                      rowView.f0Raw,
+                      rowView.x1Raw,
+                      rowView.f1Raw,
+                      rowView.x2Raw,
+                      rowView.f2Raw
+                    );
+
                     const quadPath = coeffs
-                      ? buildQuadPath(coeffs.A, coeffs.B, coeffs.C, graphData.xMin, graphData.xMax, graphData.xTo, graphData.yTo)
+                      ? buildQuadPath(
+                          coeffs.A,
+                          coeffs.B,
+                          coeffs.C,
+                          graphData.xMin,
+                          graphData.xMax,
+                          graphData.xTo,
+                          graphData.yTo
+                        )
                       : "";
 
                     const X0 = graphData.xTo(rowView.x0Raw);
@@ -711,21 +926,33 @@ export default function MullerReal() {
 
                     return (
                       <>
-                        {/* parábola interpolante */}
-                        {coeffs && <path d={quadPath} fill="none" stroke="#f59e0b" strokeWidth="2" opacity="0.9" />}
+                        {coeffs && (
+                          <path
+                            d={quadPath}
+                            fill="none"
+                            stroke="#64748b"
+                            strokeWidth="2"
+                            opacity="0.95"
+                          />
+                        )}
 
-                        {/* puntos */}
-                        <circle cx={X0} cy={Y0} r="4" fill="#10b981" />
-                        <circle cx={X1} cy={Y1} r="4" fill="#0ea5e9" />
-                        <circle cx={X2} cy={Y2} r="4" fill="#ef4444" />
+                        <circle cx={X0} cy={Y0} r="4" fill="#64748b" />
+                        <circle cx={X1} cy={Y1} r="4" fill="#475569" />
+                        <circle cx={X2} cy={Y2} r="4" fill="#334155" />
 
-                        {/* etiquetas (para que sepas cuál es cuál) */}
-                        {pointLabel(X0, Y0, "x0", "#065f46")}
-                        {pointLabel(X1, Y1, "x1", "#075985")}
-                        {pointLabel(X2, Y2, "x2", "#7f1d1d")}
+                        {pointLabel(X0, Y0, "x0", "#475569")}
+                        {pointLabel(X1, Y1, "x1", "#334155")}
+                        {pointLabel(X2, Y2, "x2", "#1f2937")}
 
-                        {/* p (siguiente aproximación) */}
-                        <line x1={Xp} x2={Xp} y1={padT} y2={height - padB} stroke="#10b981" strokeWidth="1.6" strokeDasharray="4 3" />
+                        <line
+                          x1={Xp}
+                          x2={Xp}
+                          y1={padT}
+                          y2={height - padB}
+                          stroke="#10b981"
+                          strokeWidth="1.6"
+                          strokeDasharray="4 3"
+                        />
                         <circle cx={Xp} cy={YpAxis} r="4.2" fill="#10b981" />
                         {pointLabel(Xp, YpAxis, "p", "#065f46")}
                       </>
@@ -733,8 +960,9 @@ export default function MullerReal() {
                   })()}
               </svg>
 
-              <p className="bisection-hint" style={{ marginTop: 6 }}>
-                Rueda: zoom • Arrastrar: mover • Slider: ver iteración • Puntitos: historial de p
+              <p className="bisection-hint" style={{ marginTop: 8 }}>
+                Rueda del mouse: zoom • Arrastrar: mover • Slider: ver iteración •
+                Puntos negros: historial de p
               </p>
             </>
           )}

@@ -1,4 +1,3 @@
-
 // src/metodos/Newton.jsx
 import { useState, useMemo, useEffect } from "react";
 import { create, all } from "mathjs";
@@ -511,16 +510,88 @@ export default function Newton() {
   const panZoomB = makePanZoomHandlers(rangeB, setRangeB, width, padL, padR);
 
   // ====== ecuación de tangente como texto ======
-  // y_n(x) = f(xn) + f'(xn) (x - xn)  ==  m x + b
   const tangentText = (r) => {
-    // r.m y r.b ya están redondeados con roundTo
     const m = r.m;
     const b = r.b;
-
-    // Esto imprime: y_n(x) = m x + b (con signo)
     const bAbs = Math.abs(b);
     const sign = b >= 0 ? "+" : "-";
     return `y${r.n}(x) = ${formatNumber(m)} x ${sign} ${formatNumber(bAbs)}`;
+  };
+
+  // ✅ helper agregado: dibujar ejes + escalas + etiquetas
+  const renderAxes = (axis) => {
+    const { xAxisY, yAxisX, xTicks, yTicks } = axis;
+    return (
+      <>
+        {/* grid */}
+        {xTicks.map((t, i) => (
+          <line
+            key={`grid-x-${i}`}
+            x1={t.X}
+            x2={t.X}
+            y1={padT}
+            y2={height - padB}
+            stroke="#e5e7eb"
+          />
+        ))}
+        {yTicks.map((t, i) => (
+          <line
+            key={`grid-y-${i}`}
+            x1={padL}
+            x2={width - padR}
+            y1={t.Y}
+            y2={t.Y}
+            stroke="#e5e7eb"
+          />
+        ))}
+
+        {/* ejes */}
+        <line x1={padL} x2={width - padR} y1={xAxisY} y2={xAxisY} stroke="#9ca3af" strokeWidth="1.2" />
+        <line x1={yAxisX} x2={yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" strokeWidth="1.2" />
+
+        {/* ticks x */}
+        {xTicks.map((t, i) => (
+          <g key={`tick-x-${i}`}>
+            <line x1={t.X} x2={t.X} y1={height - padB} y2={height - padB + 5} stroke="#6b7280" />
+            <text x={t.X} y={height - 6} fontSize="9" textAnchor="middle" fill="#374151">
+              {t.x.toFixed(2)}
+            </text>
+          </g>
+        ))}
+
+        {/* ticks y */}
+        {yTicks.map((t, i) => (
+          <g key={`tick-y-${i}`}>
+            <line x1={padL - 5} x2={padL} y1={t.Y} y2={t.Y} stroke="#6b7280" />
+            <text x={padL - 6} y={t.Y + 3} fontSize="9" textAnchor="end" fill="#374151">
+              {t.y.toFixed(2)}
+            </text>
+          </g>
+        ))}
+
+        {/* nombres de ejes */}
+        <text
+          x={(padL + width - padR) / 2}
+          y={height - 2}
+          fontSize="11"
+          textAnchor="middle"
+          fill="#374151"
+        >
+          x
+        </text>
+
+        <text
+          x={16}
+          y={(padT + (height - padB)) / 2}
+          fontSize="11"
+          textAnchor="middle"
+          fill="#374151"
+          transform={`rotate(-90 16 ${(padT + (height - padB)) / 2})`}
+        >
+          f(x)
+        </text>
+      </>
+    );
   };
 
   // ========= RENDER =========
@@ -619,7 +690,6 @@ export default function Newton() {
                       <td>{formatNumber(r.xn)}</td>
                       <td>{formatNumber(r.fxn)}</td>
                       <td>{formatNumber(r.dfxn)}</td>
-                      {/* ✅ marcar resultado final */}
                       <td className={isLast ? "cell-green" : ""}>{formatNumber(r.xNext)}</td>
                       <td className={isLast ? "cell-red" : ""}>{formatNumber(r.error)}</td>
                     </tr>
@@ -672,6 +742,28 @@ export default function Newton() {
                     </text>
                   </g>
                 ))}
+
+                {/* ✅ etiquetas agregadas */}
+                <text
+                  x={(padL + width - padR) / 2}
+                  y={height - 2}
+                  fontSize="11"
+                  textAnchor="middle"
+                  fill="#374151"
+                >
+                  x
+                </text>
+
+                <text
+                  x={16}
+                  y={(padT + (height - padB)) / 2}
+                  fontSize="11"
+                  textAnchor="middle"
+                  fill="#374151"
+                  transform={`rotate(-90 16 ${(padT + (height - padB)) / 2})`}
+                >
+                  f(x)
+                </text>
 
                 {/* curva */}
                 <path d={v.path} fill="none" stroke="#2563eb" strokeWidth="1.7" />
@@ -739,17 +831,11 @@ export default function Newton() {
             >
               {(() => {
                 const v = viewA;
-                const { xAxisY, yAxisX, xTicks, yTicks } = v.axis;
+                const { xAxisY, yAxisX } = v.axis;
                 return (
                   <>
-                    {xTicks.map((t, i) => (
-                      <line key={`g1x${i}`} x1={t.X} x2={t.X} y1={padT} y2={height - padB} stroke="#e5e7eb" />
-                    ))}
-                    {yTicks.map((t, i) => (
-                      <line key={`g1y${i}`} x1={padL} x2={width - padR} y1={t.Y} y2={t.Y} stroke="#e5e7eb" />
-                    ))}
-                    <line x1={padL} x2={width - padR} y1={xAxisY} y2={xAxisY} stroke="#9ca3af" />
-                    <line x1={yAxisX} x2={yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" />
+                    {/* ✅ agregado: ejes, escalas y nombres */}
+                    {renderAxes(v.axis)}
 
                     <path d={v.basePath} fill="none" stroke="#2563eb" strokeOpacity="0.5" strokeWidth="1.4" />
                     {v.tangents.map((tg, i) => (
@@ -808,17 +894,11 @@ export default function Newton() {
             >
               {(() => {
                 const v = viewB;
-                const { xAxisY, yAxisX, xTicks, yTicks } = v.axis;
+                const { xAxisY, yAxisX } = v.axis;
                 return (
                   <>
-                    {xTicks.map((t, i) => (
-                      <line key={`g2x${i}`} x1={t.X} x2={t.X} y1={padT} y2={height - padB} stroke="#e5e7eb" />
-                    ))}
-                    {yTicks.map((t, i) => (
-                      <line key={`g2y${i}`} x1={padL} x2={width - padR} y1={t.Y} y2={t.Y} stroke="#e5e7eb" />
-                    ))}
-                    <line x1={padL} x2={width - padR} y1={xAxisY} y2={xAxisY} stroke="#9ca3af" />
-                    <line x1={yAxisX} x2={yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" />
+                    {/* ✅ agregado: ejes, escalas y nombres */}
+                    {renderAxes(v.axis)}
 
                     <path d={v.basePath} fill="none" stroke="#2563eb" strokeOpacity="0.5" strokeWidth="1.4" />
                     {v.tangents.map((tg, i) => (

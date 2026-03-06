@@ -357,7 +357,6 @@ export default function Secante() {
       yMax = Math.max(yMax, p.y);
     });
 
-    // fallback + margen
     if (!Number.isFinite(yMin) || !Number.isFinite(yMax) || yMin === yMax) {
       yMin = -1;
       yMax = 1;
@@ -424,7 +423,7 @@ export default function Secante() {
 
   useEffect(() => {
     setRangeA(autoRangeFor(first3));
-  }, [rows.length]); // re-auto al recalcular
+  }, [rows.length]);
 
   useEffect(() => {
     setRangeB(autoRangeFor(last3));
@@ -463,7 +462,6 @@ export default function Secante() {
       }
     };
 
-    // base
     const steps = 180;
     const step = (xMax - xMin) / steps;
     const pts = [];
@@ -473,7 +471,6 @@ export default function Secante() {
       if (Number.isFinite(y)) pts.push({ x, y });
     }
 
-    // yMin/yMax considerando curvas y secantes
     let yMin = Infinity,
       yMax = -Infinity;
     pts.forEach((p) => {
@@ -552,7 +549,6 @@ export default function Secante() {
     return `y = ${mm}x ${sign} ${Math.abs(bb)}`;
   };
 
-  // ========= RENDER =========
   return (
     <div className="bisection-grid">
       <div className="bisection-form">
@@ -643,7 +639,6 @@ export default function Secante() {
                 </tbody>
               </table>
 
-              {/* slider para seleccionar iteración */}
               <div style={{ marginTop: 10 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
                   <span>
@@ -693,7 +688,6 @@ export default function Secante() {
             const v = buildMainView(rangeMain);
             if (!v) return <p className="bisection-hint">No se pudo graficar f(x).</p>;
 
-            // secante de la iteración seleccionada (segmento entre los 2 puntos)
             let secantLine = null;
             if (rowView) {
               const x1 = rowView.xPrev;
@@ -719,6 +713,27 @@ export default function Secante() {
                   {/* ejes */}
                   <line x1={padL} x2={width - padR} y1={v.xAxisY} y2={v.xAxisY} stroke="#9ca3af" />
                   <line x1={v.yAxisX} x2={v.yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" />
+
+                  {/* ✅ identificadores de ejes */}
+                  <text
+                    x={(padL + width - padR) / 2}
+                    y={height - 2}
+                    fontSize="11"
+                    textAnchor="middle"
+                    fill="#374151"
+                  >
+                    Eje X
+                  </text>
+                  <text
+                    x={14}
+                    y={(padT + height - padB) / 2}
+                    fontSize="11"
+                    textAnchor="middle"
+                    fill="#374151"
+                    transform={`rotate(-90 14 ${(padT + height - padB) / 2})`}
+                  >
+                    Eje Y
+                  </text>
 
                   {/* ticks */}
                   {v.xTicks.map((t, i) => (
@@ -822,6 +837,27 @@ export default function Secante() {
                     <line x1={padL} x2={width - padR} y1={xAxisY} y2={xAxisY} stroke="#9ca3af" />
                     <line x1={yAxisX} x2={yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" />
 
+                    {/* ✅ identificadores de ejes */}
+                    <text
+                      x={(padL + width - padR) / 2}
+                      y={height - 2}
+                      fontSize="11"
+                      textAnchor="middle"
+                      fill="#374151"
+                    >
+                      Eje X
+                    </text>
+                    <text
+                      x={14}
+                      y={(padT + height - padB) / 2}
+                      fontSize="11"
+                      textAnchor="middle"
+                      fill="#374151"
+                      transform={`rotate(-90 14 ${(padT + height - padB) / 2})`}
+                    >
+                      Eje Y
+                    </text>
+
                     {xTicks.map((t, i) => (
                       <g key={`a-xt-${i}`}>
                         <line x1={t.X} x2={t.X} y1={xAxisY - 3} y2={xAxisY + 3} stroke="#6b7280" />
@@ -896,6 +932,27 @@ export default function Secante() {
                     ))}
                     <line x1={padL} x2={width - padR} y1={xAxisY} y2={xAxisY} stroke="#9ca3af" />
                     <line x1={yAxisX} x2={yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" />
+
+                    {/* ✅ identificadores de ejes */}
+                    <text
+                      x={(padL + width - padR) / 2}
+                      y={height - 2}
+                      fontSize="11"
+                      textAnchor="middle"
+                      fill="#374151"
+                    >
+                      Eje X
+                    </text>
+                    <text
+                      x={14}
+                      y={(padT + height - padB) / 2}
+                      fontSize="11"
+                      textAnchor="middle"
+                      fill="#374151"
+                      transform={`rotate(-90 14 ${(padT + height - padB) / 2})`}
+                    >
+                      Eje Y
+                    </text>
 
                     {xTicks.map((t, i) => (
                       <g key={`b-xt-${i}`}>

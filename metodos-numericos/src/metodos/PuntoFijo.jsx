@@ -210,7 +210,6 @@ export default function PuntoFijo() {
         const error = Math.abs(gxn - xn);
         newRows.push({ n, xn, gxn, error });
 
-        // ✅ criterio de paro (mismo que usabas)
         if (error < tol || error === 0) {
           found = true;
           break;
@@ -314,7 +313,6 @@ export default function PuntoFijo() {
     const xMax = rangeX.xMax;
     if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return null;
 
-    // Curvas base
     const steps = 240;
     const step = (xMax - xMin) / steps;
 
@@ -328,7 +326,6 @@ export default function PuntoFijo() {
       diagPts.push({ x, y: x });
     }
 
-    // Y auto
     let yMin = Infinity;
     let yMax = -Infinity;
     const consider = (y) => {
@@ -374,7 +371,6 @@ export default function PuntoFijo() {
     return { xMin, xMax, yMin, yMax, xTo, yTo, pathG, pathDiag, xTicks, yTicks, xAxisY, yAxisX, g };
   }, [gInput, rangeX, decimalsInput]);
 
-  // Cobweb (líneas) hasta iterView
   const cobweb = useMemo(() => {
     if (!graphView) return { segments: [], lastPoint: null };
     if (!rows.length) return { segments: [], lastPoint: null };
@@ -388,9 +384,7 @@ export default function PuntoFijo() {
       const gx = graphView.g(x);
       if (!Number.isFinite(gx)) break;
 
-      // vertical: (x, x) -> (x, g(x))
       segs.push({ x1: x, y1: x, x2: x, y2: gx });
-      // horizontal: (x, g(x)) -> (g(x), g(x))
       segs.push({ x1: x, y1: gx, x2: gx, y2: gx });
 
       x = gx;
@@ -402,9 +396,6 @@ export default function PuntoFijo() {
 
   const lastRow = rows.length ? rows[Math.max(0, Math.min(iterView, rows.length - 1))] : null;
 
-  // -------------------------
-  // Render
-  // -------------------------
   return (
     <div className="bisection-grid">
       {/* Columna: formulario + análisis de g'(x) */}
@@ -573,6 +564,28 @@ export default function PuntoFijo() {
                 {/* Ejes */}
                 <line x1={padL} x2={width - padR} y1={graphView.xAxisY} y2={graphView.xAxisY} stroke="#9ca3af" />
                 <line x1={graphView.yAxisX} x2={graphView.yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" />
+
+                {/* ✅ Etiquetas de ejes agregadas */}
+                <text
+                  x={(padL + width - padR) / 2}
+                  y={height - 2}
+                  fontSize="11"
+                  textAnchor="middle"
+                  fill="#374151"
+                >
+                  x
+                </text>
+
+                <text
+                  x={14}
+                  y={(padT + (height - padB)) / 2}
+                  fontSize="11"
+                  textAnchor="middle"
+                  fill="#374151"
+                  transform={`rotate(-90 14 ${(padT + (height - padB)) / 2})`}
+                >
+                  y
+                </text>
 
                 {/* Ticks X */}
                 {graphView.xTicks.map((t, i) => (
