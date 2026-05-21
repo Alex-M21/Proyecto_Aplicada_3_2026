@@ -1,12 +1,17 @@
-
 /* =========================================================
    BISECCION.CSS
-   Estilo premium para métodos numéricos
+   Estilo general para métodos numéricos
+   Usado por: bisección, métodos lineales, Newton no lineal,
+   punto fijo no lineal y métodos con tablas/gráficas.
    ========================================================= */
+
+/* =========================
+   VARIABLES GENERALES
+   ========================= */
 
 :root {
   --bg-page: #f3f7fc;
-  --bg-panel: rgba(255, 255, 255, 0.9);
+  --bg-panel: rgba(255, 255, 255, 0.92);
   --card-bg: #ffffff;
   --card-border: #dbe6f3;
   --card-shadow: 0 14px 30px rgba(15, 23, 42, 0.09);
@@ -17,6 +22,7 @@
 
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
+
   --secondary: #e2e8f0;
   --secondary-hover: #cbd5e1;
 
@@ -58,6 +64,10 @@
   --linear-2: #6366f1;
 }
 
+/* =========================
+   RESET BÁSICO
+   ========================= */
+
 *,
 *::before,
 *::after {
@@ -72,6 +82,10 @@ body {
   color: var(--text-main);
 }
 
+/* =========================
+   LAYOUT PRINCIPAL
+   ========================= */
+
 .bisection-grid {
   display: grid;
   grid-template-columns: 1.08fr 1.35fr;
@@ -79,22 +93,19 @@ body {
   align-items: start;
 }
 
-@media (max-width: 1024px) {
-  .bisection-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .bisection-form,
-  .bisection-results {
-    width: 100%;
-  }
+.bisection-results {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-@media (max-width: 640px) {
-  .bisection-grid {
-    gap: 0.9rem;
-  }
+.full-width-results {
+  grid-column: 1 / -1;
 }
+
+/* =========================
+   TARJETAS PRINCIPALES
+   ========================= */
 
 .bisection-form,
 .bisection-table-wrapper,
@@ -110,16 +121,18 @@ body {
   padding: 1.15rem 1.25rem;
 }
 
-.bisection-results {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
 .bisection-table-wrapper,
 .graph-card {
   padding: 1rem;
 }
+
+.graph-card {
+  overflow: hidden;
+}
+
+/* =========================
+   TÍTULOS Y TEXTOS
+   ========================= */
 
 .bisection-form > h3:first-child {
   margin-top: 0;
@@ -128,10 +141,6 @@ body {
   font-weight: 800;
   color: var(--text-main);
   letter-spacing: -0.015em;
-}
-
-.bisection-form > h3:first-child + .bisection-hint {
-  margin-bottom: 1rem;
 }
 
 .bisection-form h3,
@@ -161,6 +170,10 @@ body {
   margin-bottom: 0.85rem;
 }
 
+/* =========================
+   FORMULARIOS
+   ========================= */
+
 .bisection-form-row {
   display: grid;
   grid-template-columns: 1.15fr 1.85fr;
@@ -173,13 +186,6 @@ body {
   font-size: 0.91rem;
   font-weight: 650;
   color: var(--text-soft);
-}
-
-@media (max-width: 640px) {
-  .bisection-form-row {
-    grid-template-columns: 1fr;
-    align-items: flex-start;
-  }
 }
 
 .bisection-form input,
@@ -200,7 +206,6 @@ body {
   transition:
     border-color var(--transition),
     box-shadow var(--transition),
-    transform var(--transition),
     background var(--transition);
 }
 
@@ -221,6 +226,35 @@ body {
   color: #94a3b8;
 }
 
+/* =========================
+   SECCIONES INTERNAS DE MÉTODOS
+   ========================= */
+
+.method-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #dbeafe;
+}
+
+.method-section h4 {
+  margin: 0 0 0.8rem 0;
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+.method-two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem 1.2rem;
+  margin-top: 1rem;
+}
+
+/* =========================
+   BOTONES
+   ========================= */
+
 .bisection-buttons,
 .bisection-download,
 .graph-download {
@@ -228,6 +262,10 @@ body {
   flex-wrap: wrap;
   gap: 0.65rem;
   margin-top: 0.95rem;
+}
+
+.bisection-buttons {
+  justify-content: flex-start;
 }
 
 .bisection-download,
@@ -238,7 +276,8 @@ body {
 .btn-primary,
 .btn-secondary,
 .btn-download,
-.btn-download-secondary {
+.btn-download-secondary,
+.btn-export {
   border: none;
   border-radius: 14px;
   padding: 0.78rem 1.2rem;
@@ -249,14 +288,17 @@ body {
     transform var(--transition),
     box-shadow var(--transition),
     background var(--transition),
-    opacity var(--transition);
+    opacity var(--transition),
+    filter var(--transition);
 }
 
 .btn-primary:hover,
 .btn-secondary:hover,
 .btn-download:hover,
-.btn-download-secondary:hover {
+.btn-download-secondary:hover,
+.btn-export:hover {
   transform: translateY(-1px);
+  filter: brightness(1.04);
 }
 
 .btn-primary {
@@ -279,20 +321,37 @@ body {
   background: linear-gradient(135deg, #f1f5f9 0%, #dbe4ef 100%);
 }
 
-.btn-download {
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  color: var(--text-main);
-}
-
+.btn-download,
 .btn-download-secondary {
   background: #ffffff;
   color: var(--text-main);
   border: 1px solid #d1d5db;
 }
 
+.btn-export {
+  padding: 0.55rem 0.85rem;
+  border-radius: 10px;
+  background: #2563eb;
+  color: white;
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.btn-export:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+/* =========================
+   MENSAJES
+   ========================= */
+
 .bisection-message,
-.bisection-error {
-  margin-top: 0.45rem;
+.bisection-error,
+.bisection-warning {
+  margin-top: 0.65rem;
   padding: 0.9rem 1rem;
   border-radius: 14px;
   font-size: 0.9rem;
@@ -312,7 +371,22 @@ body {
   color: var(--error-text);
 }
 
+.bisection-warning {
+  background: linear-gradient(135deg, var(--warning-bg) 0%, #fff7ed 100%);
+  border: 1px solid var(--warning-border);
+  color: var(--warning-text);
+}
+
+/* =========================
+   TABLAS
+   ========================= */
+
 .bisection-table-wrapper {
+  overflow-x: auto;
+}
+
+.table-scroll {
+  width: 100%;
   overflow-x: auto;
 }
 
@@ -377,54 +451,43 @@ body {
   font-weight: 700;
 }
 
-@media (max-width: 640px) {
-  .bisection-table {
-    font-size: 0.78rem;
-    min-width: 560px;
-  }
-
-  .bisection-table th,
-  .bisection-table td {
-    padding: 0.38rem 0.45rem;
-  }
-}
-
-.graph-card {
-  overflow: hidden;
-}
-
-.graph-title {
-  font-size: 1rem;
-  margin-bottom: 0.65rem;
-}
-
-.graph-svg {
-  width: 100%;
-  height: 340px;
-  border-radius: 16px;
-  background: #ffffff;
-  border: 1px solid #dbe6f3;
-  touch-action: none;
-  box-shadow: none;
-}
-
-@media (max-width: 640px) {
-  .graph-svg {
-    height: 280px;
-  }
-}
-
 .cell-green {
-  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%) !important;
+  background: linear-gradient(135deg, #4ade80 0%, var(--green-cell) 100%) !important;
   color: #052e16 !important;
   font-weight: 800 !important;
 }
 
 .cell-red {
-  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%) !important;
+  background: linear-gradient(135deg, #f87171 0%, var(--red-cell) 100%) !important;
   color: #ffffff !important;
   font-weight: 800 !important;
 }
+
+/* =========================
+   ACCIONES DE TABLA Y GRÁFICA
+   ========================= */
+
+.table-header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.table-header-actions h4 {
+  margin: 0;
+}
+
+.chart-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* =========================
+   MINI TARJETAS
+   ========================= */
 
 .bisection-mini-card,
 .mini-info-card {
@@ -448,6 +511,120 @@ body {
   font-weight: 800;
   color: var(--text-main);
 }
+
+/* =========================
+   SISTEMAS NO LINEALES
+   ========================= */
+
+.system-preview {
+  font-size: 0.92rem;
+  color: #1f2937;
+  line-height: 1.45;
+}
+
+.system-preview p {
+  margin: 0.35rem 0;
+  word-break: break-word;
+}
+
+.jacobian-box {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.jacobian-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.jacobian-table td {
+  border: 1px solid #cbd5e1;
+  padding: 0.45rem;
+  text-align: center;
+  background: #f8fafc;
+  min-width: 80px;
+}
+
+/* =========================
+   GRÁFICAS
+   ========================= */
+
+.graph-svg {
+  width: 100%;
+  height: 340px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #dbe6f3;
+  touch-action: none;
+  box-shadow: none;
+}
+
+.interactive-chart-wrapper {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: white;
+}
+
+.error-chart {
+  width: 100%;
+  height: auto;
+  min-height: 300px;
+  cursor: grab;
+  user-select: none;
+}
+
+.chart-draggable {
+  cursor: grab;
+}
+
+.chart-dragging {
+  cursor: grabbing;
+}
+
+.chart-axis {
+  stroke: #334155;
+  stroke-width: 1.5;
+}
+
+.chart-grid-line {
+  stroke: #e2e8f0;
+  stroke-width: 1;
+}
+
+.chart-line {
+  stroke: #2563eb;
+  stroke-width: 2.5;
+}
+
+.chart-point {
+  fill: #dc2626;
+  stroke: white;
+  stroke-width: 1.5;
+}
+
+.chart-label {
+  font-size: 11px;
+  fill: #334155;
+}
+
+.chart-axis-title {
+  font-size: 13px;
+  fill: #0f172a;
+  font-weight: 700;
+}
+
+.chart-title-text {
+  font-size: 16px;
+  fill: #111827;
+  font-weight: 800;
+}
+
+/* =========================
+   VARIANTES POR TIPO DE MÉTODO
+   ========================= */
 
 .method-roots {
   border-top: 5px solid var(--roots-1);
@@ -491,20 +668,214 @@ body {
   color: #4c1d95;
 }
 
+/* =========================
+   SCROLLBARS
+   ========================= */
+
 .bisection-table-wrapper::-webkit-scrollbar,
-.graph-card::-webkit-scrollbar {
+.graph-card::-webkit-scrollbar,
+.table-scroll::-webkit-scrollbar,
+.jacobian-box::-webkit-scrollbar {
   height: 10px;
   width: 10px;
 }
 
 .bisection-table-wrapper::-webkit-scrollbar-thumb,
-.graph-card::-webkit-scrollbar-thumb {
+.graph-card::-webkit-scrollbar-thumb,
+.table-scroll::-webkit-scrollbar-thumb,
+.jacobian-box::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 999px;
 }
 
 .bisection-table-wrapper::-webkit-scrollbar-track,
-.graph-card::-webkit-scrollbar-track {
+.graph-card::-webkit-scrollbar-track,
+.table-scroll::-webkit-scrollbar-track,
+.jacobian-box::-webkit-scrollbar-track {
   background: #f1f5f9;
   border-radius: 999px;
+}
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+
+@media (max-width: 1024px) {
+  .bisection-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bisection-form,
+  .bisection-results {
+    width: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .method-two-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .table-header-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .error-chart {
+    min-height: 240px;
+  }
+}
+
+@media (max-width: 640px) {
+  .bisection-grid {
+    gap: 0.9rem;
+  }
+
+  .bisection-form-row {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+
+  .bisection-table {
+    font-size: 0.78rem;
+    min-width: 560px;
+  }
+
+  .bisection-table th,
+  .bisection-table td {
+    padding: 0.38rem 0.45rem;
+  }
+
+  .graph-svg {
+    height: 280px;
+  }
+
+  .bisection-buttons,
+  .bisection-download,
+  .graph-download {
+    justify-content: stretch;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-download,
+  .btn-download-secondary,
+  .btn-export {
+    width: 100%;
+  }
+}
+/*para gauss seidel*/
+.method-vector-grid,
+.method-result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.8rem;
+}
+
+.method-vector-grid .bisection-form-row {
+  grid-template-columns: 70px 1fr;
+  margin-bottom: 0;
+}
+
+.bisection-table input {
+  min-width: 78px;
+  padding: 0.45rem 0.55rem;
+  text-align: center;
+}
+
+.method-vector-grid,
+.method-result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.8rem;
+}
+
+.method-vector-grid .bisection-form-row {
+  grid-template-columns: 70px 1fr;
+  margin-bottom: 0;
+}
+
+.bisection-table input {
+  min-width: 78px;
+  padding: 0.45rem 0.55rem;
+  text-align: center;
+}
+/*esto es para jacobi*/
+.method-vector-grid,
+.method-result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.8rem;
+}
+
+.method-vector-grid .bisection-form-row {
+  grid-template-columns: 70px 1fr;
+  margin-bottom: 0;
+}
+
+.bisection-table input {
+  min-width: 78px;
+  padding: 0.45rem 0.55rem;
+  text-align: center;
+}
+.dd-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.12rem;
+  line-height: 1.15;
+  min-width: 105px;
+}
+
+.dd-header-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #1e3a8a;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.dd-header-formula {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.dd-header-note {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+/*Neville*/
+.dd-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.12rem;
+  line-height: 1.15;
+  min-width: 105px;
+}
+
+.dd-header-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #1e3a8a;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.dd-header-formula {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.dd-header-note {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
 }

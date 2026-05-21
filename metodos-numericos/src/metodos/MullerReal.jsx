@@ -1,146 +1,245 @@
 // src/metodos/MullerReal.jsx
-import { useState, useMemo, useEffect } from "react";
+import { useMemo, useRef, useState } from "react";
 import { create, all } from "mathjs";
 import "./Biseccion.css";
 
 const math = create(all, {});
 
-// =========================================================
-// Pan & Zoom genéricos (solo eje X)
-// =========================================================
-const makePanZoomHandlers = (range, setRange, width, padL, padR) => {
-  let dragging = false;
-  let lastClientX = 0;
-  const innerW = width - padL - padR;
-
-  const clientXToX = (svg, clientX, xMin, xMax) => {
-    const rect = svg.getBoundingClientRect();
-    let px = clientX - rect.left;
-    px = Math.max(padL, Math.min(width - padR, px));
-    const t = (px - padL) / innerW;
-    return xMin + t * (xMax - xMin);
-  };
-
-  const onWheel = (e) => {
-    e.preventDefault();
-    const svg = e.currentTarget;
-    const { xMin, xMax } = range;
-    if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
-
-    const mouseX = clientXToX(svg, e.clientX, xMin, xMax);
-    const k = e.deltaY < 0 ? 1 / 1.2 : 1.2;
-    const span = Math.max(1e-9, (xMax - xMin) * k);
-
-    const t = (mouseX - xMin) / (xMax - xMin);
-    const newXMin = mouseX - t * span;
-    const newXMax = newXMin + span;
-
-    setRange({ xMin: newXMin, xMax: newXMax });
-  };
-
-  const onMouseDown = (e) => {
-    dragging = true;
-    lastClientX = e.clientX;
-    e.currentTarget.style.cursor = "grabbing";
-  };
-
-  const onMouseMove = (e) => {
-    if (!dragging) return;
-
-    const dxPx = e.clientX - lastClientX;
-    lastClientX = e.clientX;
-
-    const { xMin, xMax } = range;
-    if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
-
-    const dxX = (-dxPx * (xMax - xMin)) / innerW;
-    setRange({ xMin: xMin + dxX, xMax: xMax + dxX });
-  };
-
-  const finish = (e) => {
-    dragging = false;
-    if (e?.currentTarget) e.currentTarget.style.cursor = "grab";
-  };
-
-  return {
-    onWheel,
-    onMouseDown,
-    onMouseMove,
-    onMouseUp: finish,
-    onMouseLeave: finish,
-    style: { cursor: "grab", touchAction: "none" },
-  };
+const ejemplosMullerReal = {
+  cubica: {
+    nombre: "Ejemplo: x³ + 3x² + 4x - 12",
+    fx: "x^3 + 3*x^2 + 4*x - 12",
+    x0: "0",
+    x1: "1",
+    x2: "2",
+    tol: "0.001",
+    iter: "50",
+    dec: "6",
+  },
+  cuadratica: {
+    nombre: "Ejemplo: x² - 4",
+    fx: "x^2 - 4",
+    x0: "0",
+    x1: "1",
+    x2: "3",
+    tol: "0.001",
+    iter: "50",
+    dec: "6",
+  },
+  cuartoGrado: {
+    nombre: "Ejemplo: x⁴ - 2x³ - 12x² + 16x - 40",
+    fx: "x^4 - 2*x^3 - 12*x^2 + 16*x - 40",
+    x0: "4",
+    x1: "4.5",
+    x2: "5",
+    tol: "0.01",
+    iter: "50",
+    dec: "4",
+  },
+  quintoGrado: {
+    nombre: "Ejemplo: x⁵ - 3x³ + x - 1",
+    fx: "x^5 - 3*x^3 + x - 1",
+    x0: "1",
+    x1: "1.2",
+    x2: "1.5",
+    tol: "0.0001",
+    iter: "60",
+    dec: "6",
+  },
 };
 
 export default function MullerReal() {
-  const [fxInput, setFxInput] = useState("x^3+3*x^2+4*x-12");
-  const [x0Input, setX0Input] = useState("0");
-  const [x1Input, setX1Input] = useState("1");
-  const [x2Input, setX2Input] = useState("2");
-  const [tolInput, setTolInput] = useState("0.01");
-  const [maxIterInput, setMaxIterInput] = useState("25");
-  const [decimalsInput, setDecimalsInput] = useState("4");
+  const [fxInput, setFxInput] = useState(ejemplosMullerReal.cubica.fx);
+  const [x0Input, setX0Input] = useState(ejemplosMullerReal.cubica.x0);
+  const [x1Input, setX1Input] = useState(ejemplosMullerReal.cubica.x1);
+  const [x2Input, setX2Input] = useState(ejemplosMullerReal.cubica.x2);
+  const [tolInput, setTolInput] = useState(ejemplosMullerReal.cubica.tol);
+  const [maxIterInput, setMaxIterInput] = useState(ejemplosMullerReal.cubica.iter);
+  const [decimalsInput, setDecimalsInput] = useState(ejemplosMullerReal.cubica.dec);
 
   const [rows, setRows] = useState([]);
+  const [iterView, setIterView] = useState(0);
   const [message, setMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-  const [iterView, setIterView] = useState(0);
+  const [warningMsg, setWarningMsg] = useState("");
 
-  // =========================================================
-  // Utilidades
-  // =========================================================
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const svgRef = useRef(null);
+
+  const width = 760;
+  const height = 360;
+  const marginLeft = 75;
+  const marginRight = 30;
+  const marginTop = 35;
+  const marginBottom = 70;
+
+  const graphWidth = width - marginLeft - marginRight;
+  const graphHeight = height - marginTop - marginBottom;
+
   const normalizeExpr = (expr) =>
-    expr.trim().replace(/LN/gi, "log").replace(/ln/gi, "log").replace(/sen/gi, "sin");
+    String(expr ?? "")
+      .trim()
+      .replace(/,/g, ".");
+
+  const esPolinomioValido = (expr) => {
+    const t = normalizeExpr(expr).toLowerCase();
+
+    if (!t) return false;
+
+    const funcionesNoPermitidas = [
+      "sin",
+      "sen",
+      "cos",
+      "tan",
+      "log",
+      "ln",
+      "exp",
+      "sqrt",
+      "abs",
+      "asin",
+      "acos",
+      "atan",
+    ];
+
+    if (funcionesNoPermitidas.some((fn) => t.includes(fn))) {
+      return false;
+    }
+
+    const patronPermitido = /^[0-9xX+\-*/^().\s]*$/;
+
+    if (!patronPermitido.test(t)) {
+      return false;
+    }
+
+    if (!/[xX]/.test(t)) {
+      return false;
+    }
+
+    return true;
+  };
 
   const buildCompiled = (expr) => {
-    const t = expr.trim();
+    const t = normalizeExpr(expr);
+
     if (!t) return null;
+
     try {
-      return math.compile(normalizeExpr(t));
+      return math.compile(t);
     } catch {
       return null;
     }
   };
 
+  const compiledF = useMemo(() => buildCompiled(fxInput), [fxInput]);
+
+  const evalF = (x) => {
+    if (!compiledF) return NaN;
+
+    try {
+      const r = compiledF.evaluate({ x });
+
+      if (typeof r === "number") {
+        return Number.isFinite(r) ? r : NaN;
+      }
+
+      if (
+        r &&
+        typeof r === "object" &&
+        typeof r.re === "number" &&
+        typeof r.im === "number"
+      ) {
+        if (Math.abs(r.im) > 1e-10) return NaN;
+        return Number.isFinite(r.re) ? r.re : NaN;
+      }
+
+      return NaN;
+    } catch {
+      return NaN;
+    }
+  };
+
+  const parseNum = (value) => {
+    const v = parseFloat(String(value ?? "").replace(",", ".").trim());
+    return Number.isFinite(v) ? v : NaN;
+  };
+
   const getDecimals = () => {
     const d = parseInt(decimalsInput, 10);
     if (Number.isNaN(d) || d < 0) return 6;
-    return Math.min(12, d);
+    return Math.min(d, 12);
   };
 
-  const roundTo = (v) => {
+  const formatNumber = (value) => {
     const d = getDecimals();
-    const f = 10 ** d;
-    return Math.round(v * f) / f;
+    return Number.isFinite(value) ? Number(value).toFixed(d) : "NaN";
   };
 
-  const formatNumber = (v) =>
-    Number.isFinite(v) ? v.toFixed(getDecimals()) : "NaN";
+  const roundTo = (value) => {
+    const d = getDecimals();
+    const factor = 10 ** d;
+    return Math.round(value * factor) / factor;
+  };
 
-  const tolNum = useMemo(() => {
-    const t = parseFloat(tolInput);
-    return Number.isFinite(t) ? t : NaN;
-  }, [tolInput]);
+  const resetChart = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setDragging(false);
+    setDragStart({ x: 0, y: 0 });
+  };
 
-  // =========================================================
-  // Cálculo: Muller (raíz real)
-  // =========================================================
-  const handleCalculate = (e) => {
-    e.preventDefault();
-    setMessage("");
-    setErrorMsg("");
+  const resetResults = () => {
     setRows([]);
     setIterView(0);
+    setMessage("");
+    setErrorMsg("");
+    setWarningMsg("");
+    resetChart();
+  };
+
+  const cargarEjemplo = (key) => {
+    const ejemplo = ejemplosMullerReal[key];
+
+    setFxInput(ejemplo.fx);
+    setX0Input(ejemplo.x0);
+    setX1Input(ejemplo.x1);
+    setX2Input(ejemplo.x2);
+    setTolInput(ejemplo.tol);
+    setMaxIterInput(ejemplo.iter);
+    setDecimalsInput(ejemplo.dec);
+
+    resetResults();
+  };
+
+  const handleCalculate = (e) => {
+    e.preventDefault();
+
+    resetResults();
 
     if (!fxInput.trim()) {
-      setErrorMsg("Debes ingresar una expresión para el polinomio / f(x).");
+      setErrorMsg("Debes ingresar una función polinomial P(x).");
       return;
     }
 
-    let x0 = parseFloat(x0Input);
-    let x1 = parseFloat(x1Input);
-    let x2 = parseFloat(x2Input);
-    const tol = parseFloat(tolInput);
+    if (!esPolinomioValido(fxInput)) {
+      setErrorMsg(
+        "Muller Real está configurado para funciones polinomiales en x. Usa expresiones como: x^3 + 3*x^2 + 4*x - 12. No uses ln, log, sen, sin, cos, tan, exp o sqrt en este método."
+      );
+      return;
+    }
+
+    if (!compiledF) {
+      setErrorMsg("No se pudo interpretar el polinomio. Revisa la sintaxis.");
+      return;
+    }
+
+    let x0 = parseNum(x0Input);
+    let x1 = parseNum(x1Input);
+    let x2 = parseNum(x2Input);
+    const tol = parseNum(tolInput);
     const maxIter = parseInt(maxIterInput, 10);
 
     if (
@@ -164,138 +263,123 @@ export default function MullerReal() {
       return;
     }
 
-    const compiledF = buildCompiled(fxInput);
-    if (!compiledF) {
-      setErrorMsg("No se pudo interpretar f(x). Revisa la sintaxis.");
-      return;
-    }
-
-    const evalF = (x) => {
-      try {
-        const r = compiledF.evaluate({ x });
-        return Number.isFinite(r) ? r : NaN;
-      } catch {
-        return NaN;
-      }
-    };
-
-    x0 = roundTo(x0);
-    x1 = roundTo(x1);
-    x2 = roundTo(x2);
-
+    const EPS = 1e-14;
     const newRows = [];
     let found = false;
-    let bad = false;
-    const EPS = 1e-14;
 
-    try {
-      for (let n = 1; n <= maxIter; n++) {
-        const x0_i = x0;
-        const x1_i = x1;
-        const x2_i = x2;
+    for (let n = 1; n <= maxIter; n++) {
+      const x0_i = x0;
+      const x1_i = x1;
+      const x2_i = x2;
 
-        const f0 = evalF(x0_i);
-        const f1 = evalF(x1_i);
-        const f2 = evalF(x2_i);
+      const f0 = evalF(x0_i);
+      const f1 = evalF(x1_i);
+      const f2 = evalF(x2_i);
 
-        if (!Number.isFinite(f0) || !Number.isFinite(f1) || !Number.isFinite(f2)) {
-          setErrorMsg("No se pudo evaluar f(x) en alguna iteración. Revisa el dominio y la función.");
-          bad = true;
-          break;
-        }
-
-        const h1 = x1_i - x0_i;
-        const h2 = x2_i - x1_i;
-
-        if (Math.abs(h1) < EPS || Math.abs(h2) < EPS) {
-          setErrorMsg("Hay dos puntos iguales o muy cercanos (x0, x1, x2). Cambia los valores iniciales.");
-          bad = true;
-          break;
-        }
-
-        const d1 = (f1 - f0) / h1;
-        const d2 = (f2 - f1) / h2;
-        const d = (d2 - d1) / (h2 + h1);
-
-        let p;
-
-        if (Math.abs(d) < EPS) {
-          const denomSec = f2 - f1;
-          if (Math.abs(denomSec) < EPS) {
-            setErrorMsg("No se puede avanzar (pendiente ~ 0). Cambia los valores iniciales.");
-            bad = true;
-            break;
-          }
-          p = x2_i - (f2 * (x2_i - x1_i)) / denomSec;
-        } else {
-          const b = d2 + h2 * d;
-          const disc = b * b - 4 * f2 * d;
-
-          if (disc < 0) {
-            setErrorMsg("El discriminante salió negativo (raíz compleja en esta iteración). Cambia x0, x1, x2.");
-            bad = true;
-            break;
-          }
-
-          const D = Math.sqrt(disc);
-          const denom1 = b + D;
-          const denom2 = b - D;
-          const denom = Math.abs(denom1) >= Math.abs(denom2) ? denom1 : denom2;
-
-          if (Math.abs(denom) < EPS) {
-            setErrorMsg("División entre cero numérica en el denominador. Cambia los valores iniciales.");
-            bad = true;
-            break;
-          }
-
-          p = x2_i + (-2 * f2) / denom;
-        }
-
-        const pRounded = roundTo(p);
-        const error = roundTo(Math.abs(pRounded - x2_i));
-
-        newRows.push({
-          n,
-          x0Raw: x0_i,
-          x1Raw: x1_i,
-          x2Raw: x2_i,
-          pRaw: p,
-          f0Raw: f0,
-          f1Raw: f1,
-          f2Raw: f2,
-
-          x0: x0_i,
-          x1: x1_i,
-          x2: x2_i,
-          p: pRounded,
-          error,
-        });
-
-        if (error < tol) {
-          found = true;
-          break;
-        }
-
-        x0 = x1_i;
-        x1 = x2_i;
-        x2 = pRounded;
+      if (!Number.isFinite(f0) || !Number.isFinite(f1) || !Number.isFinite(f2)) {
+        setErrorMsg(
+          "No se pudo evaluar el polinomio con los valores actuales. Revisa los valores iniciales."
+        );
+        break;
       }
-    } catch {
-      setErrorMsg("Ocurrió un error inesperado durante el cálculo.");
-      bad = true;
+
+      const h1 = x1_i - x0_i;
+      const h2 = x2_i - x1_i;
+
+      if (Math.abs(h1) < EPS || Math.abs(h2) < EPS) {
+        setErrorMsg("Hay dos puntos iguales o muy cercanos. Cambia x₀, x₁ o x₂.");
+        break;
+      }
+
+      const r1 = (f1 - f0) / h1;
+      const r2 = (f2 - f1) / h2;
+
+      const denomD = h2 + h1;
+
+      if (Math.abs(denomD) < EPS) {
+        setErrorMsg("No se puede avanzar porque h₁ + h₂ es cercano a cero.");
+        break;
+      }
+
+      const d = (r2 - r1) / denomD;
+      const b = r2 + h2 * d;
+      const c = f2;
+
+      let p;
+
+      if (Math.abs(d) < EPS) {
+        const denomSec = f2 - f1;
+
+        if (Math.abs(denomSec) < EPS) {
+          setErrorMsg("No se puede avanzar porque el denominador es cercano a cero.");
+          break;
+        }
+
+        p = x2_i - (f2 * (x2_i - x1_i)) / denomSec;
+      } else {
+        const discriminante = b * b - 4 * d * c;
+
+        if (discriminante < 0) {
+          setErrorMsg(
+            "El proceso generó una raíz imaginaria o compleja porque el discriminante fue negativo. Este caso ya no pertenece a Muller Real. Usa el método de Muller Imaginario."
+          );
+
+          setWarningMsg(
+            "Sugerencia: conserva el mismo polinomio y los mismos valores iniciales, pero resuélvelo en Muller Imaginario."
+          );
+
+          break;
+        }
+
+        const D = Math.sqrt(discriminante);
+
+        const denom1 = b + D;
+        const denom2 = b - D;
+        const E = Math.abs(denom1) >= Math.abs(denom2) ? denom1 : denom2;
+
+        if (Math.abs(E) < EPS) {
+          setErrorMsg("Denominador cercano a cero. Cambia los valores iniciales.");
+          break;
+        }
+
+        const h = (-2 * c) / E;
+        p = x2_i + h;
+      }
+
+      if (!Number.isFinite(p)) {
+        setErrorMsg("El método generó un valor no numérico. Cambia los valores iniciales.");
+        break;
+      }
+
+      const error = Math.abs(p - x2_i);
+      const errorDisp = roundTo(error);
+
+      newRows.push({
+        n,
+        x0: x0_i,
+        x1: x1_i,
+        x2: x2_i,
+        p,
+        error,
+        errorDisp,
+      });
+
+      if (error < tol || error === 0) {
+        found = true;
+        break;
+      }
+
+      x0 = x1_i;
+      x1 = x2_i;
+      x2 = p;
     }
 
     setRows(newRows);
-    if (!newRows.length || bad) return;
+
+    if (!newRows.length) return;
 
     setIterView(newRows.length - 1);
-
-    const last = newRows[newRows.length - 1];
-    setMessage(
-      found
-        ? `Se encontró una aproximación a la solución: p ≈ ${formatNumber(last.p)}`
-        : "Se alcanzó el número máximo de iteraciones sin cumplir la tolerancia."
-    );
+    setMessage(found ? "SE ENCONTRÓ LA SOLUCIÓN" : "Se alcanzó el máximo de iteraciones.");
   };
 
   const handleClear = () => {
@@ -305,448 +389,541 @@ export default function MullerReal() {
     setX2Input("");
     setTolInput("");
     setMaxIterInput("");
-    setDecimalsInput("4");
-    setRows([]);
-    setIterView(0);
-    setMessage("");
-    setErrorMsg("");
+    setDecimalsInput("6");
+    resetResults();
   };
 
-  // =========================================================
-  // Descarga CSV
-  // =========================================================
-  const handleDownloadTable = () => {
-    if (!rows.length) return;
+  const exportCSV = () => {
+    if (rows.length === 0) return;
 
     const headers = ["n", "x0", "x1", "x2", "p", "Error"];
-    const csvRows = [headers.join(",")];
 
-    rows.forEach((r) => {
-      csvRows.push(
-        [r.n, formatNumber(r.x0), formatNumber(r.x1), formatNumber(r.x2), formatNumber(r.p), formatNumber(r.error)].join(",")
-      );
-    });
+    const csvRows = rows.map((row) => [
+      row.n,
+      formatNumber(row.x0),
+      formatNumber(row.x1),
+      formatNumber(row.x2),
+      formatNumber(row.p),
+      formatNumber(row.errorDisp),
+    ]);
 
-    const blob = new Blob([csvRows.join("\n")], {
+    const quoteCSV = (value) => {
+      const text = String(value ?? "");
+      return `"${text.replaceAll('"', '""')}"`;
+    };
+
+    const csv = [
+      headers.map(quoteCSV).join(","),
+      ...csvRows.map((row) => row.map(quoteCSV).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csv], {
       type: "text/csv;charset=utf-8;",
     });
+
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
+
     link.href = url;
-    link.setAttribute("download", "muller_real_iteraciones.csv");
-    document.body.appendChild(link);
+    link.download = "muller_real.csv";
     link.click();
-    document.body.removeChild(link);
+
     URL.revokeObjectURL(url);
   };
 
-  // =========================================================
-  // Gráfica
-  // =========================================================
-  const baseRange = useMemo(() => {
-    const x0 = parseFloat(x0Input);
-    const x1 = parseFloat(x1Input);
-    const x2 = parseFloat(x2Input);
+  const downloadChartPNG = () => {
+    if (!svgRef.current) return;
 
-    const xs = [x0, x1, x2].filter((v) => Number.isFinite(v));
-    if (xs.length) {
-      let xMin = Math.min(...xs);
-      let xMax = Math.max(...xs);
-      const m = (xMax - xMin) * 0.25 || 2;
-      xMin -= m;
-      xMax += m;
-      if (xMin === xMax) {
-        xMin -= 2;
-        xMax += 2;
-      }
-      return { xMin, xMax };
-    }
-    return { xMin: -5, xMax: 5 };
-  }, [x0Input, x1Input, x2Input, fxInput]);
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svgRef.current);
 
-  const width = 640;
-  const height = 340;
-  const padL = 62;
-  const padR = 18;
-  const padT = 18;
-  const padB = 44;
-
-  const [rangeMain, setRangeMain] = useState({ xMin: -5, xMax: 5 });
-
-  useEffect(() => {
-    setRangeMain({ xMin: baseRange.xMin, xMax: baseRange.xMax });
-  }, [baseRange.xMin, baseRange.xMax]);
-
-  const zoomInMain = () => {
-    const { xMin, xMax } = rangeMain;
-    if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
-    const c = (xMin + xMax) / 2;
-    const s = (xMax - xMin) / 2 / 1.8;
-    setRangeMain({ xMin: c - s, xMax: c + s });
-  };
-
-  const zoomOutMain = () => {
-    const { xMin, xMax } = rangeMain;
-    if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
-    const c = (xMin + xMax) / 2;
-    const s = ((xMax - xMin) / 2) * 1.8;
-    setRangeMain({ xMin: c - s, xMax: c + s });
-  };
-
-  const autoMain = () => setRangeMain({ xMin: baseRange.xMin, xMax: baseRange.xMax });
-
-  const buildTicks = (min, max, count = 6) => {
-    if (!Number.isFinite(min) || !Number.isFinite(max) || min === max) return [];
-    const ticks = [];
-    for (let i = 0; i <= count; i++) ticks.push(min + (i * (max - min)) / count);
-    return ticks;
-  };
-
-  const toXY = (xMin, xMax, yMin, yMax) => {
-    const xTo = (x) => padL + ((x - xMin) / (xMax - xMin)) * (width - padL - padR);
-    const yTo = (y) => padT + (1 - (y - yMin) / (yMax - yMin)) * (height - padT - padB);
-    return { xTo, yTo };
-  };
-
-  const graphData = useMemo(() => {
-    const cF = buildCompiled(fxInput);
-    if (!cF) return null;
-
-    const f = (x) => {
-      try {
-        const r = cF.evaluate({ x });
-        return Number.isFinite(r) ? r : NaN;
-      } catch {
-        return NaN;
-      }
-    };
-
-    const xMin = rangeMain.xMin;
-    const xMax = rangeMain.xMax;
-
-    const steps = 240;
-    const step = (xMax - xMin) / steps;
-    const pts = [];
-
-    for (let i = 0; i <= steps; i++) {
-      const x = xMin + i * step;
-      const y = f(x);
-      if (Number.isFinite(y)) pts.push({ x, y });
-    }
-
-    let yMin = Infinity;
-    let yMax = -Infinity;
-
-    pts.forEach((p) => {
-      yMin = Math.min(yMin, p.y);
-      yMax = Math.max(yMax, p.y);
+    const svgBlob = new Blob([svgString], {
+      type: "image/svg+xml;charset=utf-8",
     });
 
-    if (!Number.isFinite(yMin) || !Number.isFinite(yMax) || yMin === yMax) {
-      yMin = -1;
-      yMax = 1;
-    } else {
-      const m = (yMax - yMin) * 0.15;
-      yMin -= m;
-      yMax += m;
+    const url = URL.createObjectURL(svgBlob);
+    const image = new Image();
+
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+
+      canvas.width = 1000;
+      canvas.height = 560;
+
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      const pngUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+
+      link.href = pngUrl;
+      link.download = "grafica_muller_real.png";
+      link.click();
+
+      URL.revokeObjectURL(url);
+    };
+
+    image.src = url;
+  };
+
+  const finalRow = rows.length > 0 ? rows[rows.length - 1] : null;
+  const rowView = rows.length > 0 ? rows[Math.min(iterView, rows.length - 1)] : null;
+
+  const tol = parseNum(tolInput);
+  const lastIndex = rows.length - 1;
+
+  const foundFinal =
+    rows.length > 0 &&
+    Number.isFinite(tol) &&
+    Number.isFinite(rows[lastIndex]?.error) &&
+    rows[lastIndex].error < tol;
+
+  const pHistory = rows.map((row) => row.p);
+
+  const buildRange = (values, fallbackMin = -5, fallbackMax = 5) => {
+    const clean = values.filter(Number.isFinite);
+
+    if (!clean.length) {
+      return { min: fallbackMin, max: fallbackMax };
     }
 
-    const xTicks = buildTicks(xMin, xMax, 6);
-    const yTicks = buildTicks(yMin, yMax, 6);
-    const { xTo, yTo } = toXY(xMin, xMax, yMin, yMax);
+    let min = Math.min(...clean);
+    let max = Math.max(...clean);
 
-    const path =
-      pts.length
-        ? pts.map((p, i) => `${i ? "L" : "M"} ${xTo(p.x)} ${yTo(p.y)}`).join(" ")
-        : "";
+    if (min === max) {
+      min -= 1;
+      max += 1;
+    } else {
+      const pad = (max - min) * 0.18;
+      min -= pad;
+      max += pad;
+    }
 
-    const xAxisY = yMin <= 0 && yMax >= 0 ? yTo(0) : yTo(yMin);
-    const yAxisX = xMin <= 0 && xMax >= 0 ? xTo(0) : xTo(xMin);
+    return { min, max };
+  };
+
+  const graph = useMemo(() => {
+    const initialXs = [parseNum(x0Input), parseNum(x1Input), parseNum(x2Input)].filter(
+      Number.isFinite
+    );
+
+    const pXs = rows.map((row) => row.p).filter(Number.isFinite);
+
+    const xRange = buildRange([...initialXs, ...pXs], -5, 5);
+
+    const baseXMin = xRange.min;
+    const baseXMax = xRange.max;
+
+    const baseCurve = [];
+
+    if (compiledF && esPolinomioValido(fxInput)) {
+      const steps = 220;
+      const step = (baseXMax - baseXMin) / steps;
+
+      for (let i = 0; i <= steps; i++) {
+        const x = baseXMin + i * step;
+        const y = evalF(x);
+
+        if (Number.isFinite(y)) {
+          baseCurve.push({ x, y });
+        }
+      }
+    }
+
+    const yValues = baseCurve.map((point) => point.y);
+    const yRange = buildRange(yValues, -5, 5);
+
+    const baseYMin = yRange.min;
+    const baseYMax = yRange.max;
+
+    const visibleXSpan = (baseXMax - baseXMin) / Math.max(zoom, 0.5);
+    const visibleYSpan = (baseYMax - baseYMin) / Math.max(zoom, 0.5);
+
+    const shiftX = (-pan.x / graphWidth) * visibleXSpan;
+    const shiftY = (pan.y / graphHeight) * visibleYSpan;
+
+    const centerX = (baseXMin + baseXMax) / 2 + shiftX;
+    const centerY = (baseYMin + baseYMax) / 2 + shiftY;
+
+    const xMin = centerX - visibleXSpan / 2;
+    const xMax = centerX + visibleXSpan / 2;
+    const yMin = centerY - visibleYSpan / 2;
+    const yMax = centerY + visibleYSpan / 2;
+
+    const curve = [];
+
+    if (compiledF && esPolinomioValido(fxInput)) {
+      const steps = 250;
+      const step = (xMax - xMin) / steps;
+
+      for (let i = 0; i <= steps; i++) {
+        const x = xMin + i * step;
+        const y = evalF(x);
+
+        if (Number.isFinite(y)) {
+          curve.push({ x, y });
+        }
+      }
+    }
+
+    const ticks = (min, max, count = 5) =>
+      Array.from({ length: count + 1 }, (_, i) => min + (i * (max - min)) / count);
 
     return {
+      curve,
       xMin,
       xMax,
       yMin,
       yMax,
-      xTicks: xTicks.map((x) => ({ x, X: xTo(x) })),
-      yTicks: yTicks.map((y) => ({ y, Y: yTo(y) })),
-      xAxisY,
-      yAxisX,
-      xTo,
-      yTo,
-      path,
+      xTicks: ticks(xMin, xMax),
+      yTicks: ticks(yMin, yMax),
     };
-  }, [fxInput, rangeMain.xMin, rangeMain.xMax]);
+  }, [fxInput, rows, x0Input, x1Input, x2Input, zoom, pan]);
 
-  const panZoomMain = makePanZoomHandlers(rangeMain, setRangeMain, width, padL, padR);
+  const xToSvg = (x) => {
+    if (graph.xMax === graph.xMin) return marginLeft + graphWidth / 2;
 
-  const lastIndex = rows.length - 1;
-  const converged =
-    rows.length > 0 &&
-    Number.isFinite(tolNum) &&
-    (rows[lastIndex]?.error < tolNum || rows[lastIndex]?.error === 0);
-
-  const rowView = rows.length ? rows[Math.max(0, Math.min(iterView, rows.length - 1))] : null;
-  const pHistory = rows.map((r) => r.pRaw).filter((v) => Number.isFinite(v));
-
-  // =========================================================
-  // Parábola interpolante
-  // =========================================================
-  const quadCoeffs = (xa, ya, xb, yb, xc, yc) => {
-    const den0 = (xa - xb) * (xa - xc);
-    const den1 = (xb - xa) * (xb - xc);
-    const den2 = (xc - xa) * (xc - xb);
-    if (den0 === 0 || den1 === 0 || den2 === 0) return null;
-
-    const A0 = ya / den0;
-    const A1 = yb / den1;
-    const A2 = yc / den2;
-
-    const A = A0 + A1 + A2;
-    const B = -(A0 * (xb + xc) + A1 * (xa + xc) + A2 * (xa + xb));
-    const C = A0 * (xb * xc) + A1 * (xa * xc) + A2 * (xa * xb);
-
-    if (![A, B, C].every(Number.isFinite)) return null;
-    return { A, B, C };
+    return (
+      marginLeft +
+      ((x - graph.xMin) / (graph.xMax - graph.xMin)) * graphWidth
+    );
   };
 
-  const buildQuadPath = (A, B, C, xMin, xMax, xTo, yTo) => {
-    const steps = 200;
-    const step = (xMax - xMin) / steps;
-    let d = "";
-    for (let i = 0; i <= steps; i++) {
-      const x = xMin + i * step;
-      const y = A * x * x + B * x + C;
-      if (!Number.isFinite(y)) continue;
-      d += `${d ? "L" : "M"} ${xTo(x)} ${yTo(y)} `;
-    }
-    return d.trim();
+  const yToSvg = (y) => {
+    if (graph.yMax === graph.yMin) return marginTop + graphHeight / 2;
+
+    return (
+      marginTop +
+      graphHeight -
+      ((y - graph.yMin) / (graph.yMax - graph.yMin)) * graphHeight
+    );
   };
 
-  const pointLabel = (x, y, text, color = "#111827") => (
-    <g>
-      <text
-        x={x + 8}
-        y={y - 8}
-        fontSize="11"
-        fill={color}
-        style={{ paintOrder: "stroke", stroke: "#ffffff", strokeWidth: 3 }}
-      >
-        {text}
-      </text>
-      <text x={x + 8} y={y - 8} fontSize="11" fill={color}>
-        {text}
-      </text>
-    </g>
-  );
+  const curvePath =
+    graph.curve.length > 0
+      ? graph.curve
+          .map((point, index) =>
+            `${index === 0 ? "M" : "L"} ${xToSvg(point.x)} ${yToSvg(point.y)}`
+          )
+          .join(" ")
+      : "";
 
-  // =========================================================
-  // Ejes / escalas
-  // =========================================================
-  const renderAxes = ({ xTicks, yTicks, xAxisY, yAxisX }) => (
-    <>
-      {xTicks.map((t, i) => (
-        <g key={`gx-${i}`}>
-          <line
-            x1={t.X}
-            x2={t.X}
-            y1={padT}
-            y2={height - padB}
-            stroke="#e5e7eb"
-            strokeWidth="1"
-          />
-          <line
-            x1={t.X}
-            x2={t.X}
-            y1={height - padB}
-            y2={height - padB + 5}
-            stroke="#94a3b8"
-            strokeWidth="1"
-          />
-          <text
-            x={t.X}
-            y={height - 10}
-            textAnchor="middle"
-            fontSize="10"
-            fill="#475569"
-          >
-            {t.x.toFixed(2)}
-          </text>
-        </g>
-      ))}
+  const increaseZoom = () => {
+    setZoom((prev) => Math.min(prev * 1.25, 8));
+  };
 
-      {yTicks.map((t, i) => (
-        <g key={`gy-${i}`}>
-          <line
-            x1={padL}
-            x2={width - padR}
-            y1={t.Y}
-            y2={t.Y}
-            stroke="#e5e7eb"
-            strokeWidth="1"
-          />
-          <line
-            x1={padL - 5}
-            x2={padL}
-            y1={t.Y}
-            y2={t.Y}
-            stroke="#94a3b8"
-            strokeWidth="1"
-          />
-          <text
-            x={padL - 8}
-            y={t.Y + 3}
-            textAnchor="end"
-            fontSize="10"
-            fill="#475569"
-          >
-            {t.y.toFixed(2)}
-          </text>
-        </g>
-      ))}
+  const decreaseZoom = () => {
+    setZoom((prev) => Math.max(prev / 1.25, 0.5));
+  };
 
-      <line
-        x1={padL}
-        x2={width - padR}
-        y1={xAxisY}
-        y2={xAxisY}
-        stroke="#94a3b8"
-        strokeWidth="1.3"
-      />
-      <line
-        x1={yAxisX}
-        x2={yAxisX}
-        y1={padT}
-        y2={height - padB}
-        stroke="#94a3b8"
-        strokeWidth="1.3"
-      />
+  const handleWheel = (e) => {
+    e.preventDefault();
 
-      <text
-        x={(padL + width - padR) / 2}
-        y={height - 4}
-        textAnchor="middle"
-        fontSize="12"
-        fill="#334155"
-      >
-        x
-      </text>
+    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
 
-      <text
-        x={18}
-        y={(padT + height - padB) / 2}
-        textAnchor="middle"
-        fontSize="12"
-        fill="#334155"
-        transform={`rotate(-90 18 ${(padT + height - padB) / 2})`}
-      >
-        f(x)
-      </text>
-    </>
-  );
+    setZoom((prev) => Math.min(Math.max(prev * factor, 0.5), 8));
+  };
+
+  const startDrag = (e) => {
+    setDragging(true);
+
+    setDragStart({
+      x: e.clientX - pan.x,
+      y: e.clientY - pan.y,
+    });
+  };
+
+  const moveDrag = (e) => {
+    if (!dragging) return;
+
+    setPan({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y,
+    });
+  };
+
+  const endDrag = () => {
+    setDragging(false);
+  };
 
   return (
     <div className="bisection-grid">
       <div className="bisection-form">
-        <h3>Método de Muller (Raíz Real)</h3>
+        <h3>Método de Muller Real</h3>
+
         <p className="bisection-hint">
-          Ingresa <strong>f(x)</strong> y tres valores iniciales <strong>x₀, x₁, x₂</strong>.
-          Acepta <code>ln(x)</code> y <code>sen(x)</code>.
+          Este módulo está orientado a funciones polinomiales de la forma{" "}
+          <strong>P(x)=a₀+a₁x+a₂x²+...+aₙxⁿ</strong>. Ingresa tres valores
+          iniciales reales <strong>x₀, x₁, x₂</strong>. Si durante el proceso
+          aparece una raíz compleja, usa <strong>Muller Imaginario</strong>.
         </p>
 
         <form onSubmit={handleCalculate}>
-          <div className="bisection-form-row">
-            <label>Polinomio / f(x)</label>
-            <input
-              type="text"
-              value={fxInput}
-              onChange={(e) => setFxInput(e.target.value)}
-              placeholder="Ejemplo: x^3+3*x^2+4*x-12"
-            />
+          <div className="method-section">
+            <h4>Guía para ingresar el polinomio</h4>
+
+            <p className="bisection-hint">
+              Escribe el polinomio usando la variable <strong>x</strong>. Usa{" "}
+              <code>*</code> para multiplicar y <code>^</code> para potencias.
+            </p>
+
+            <div className="system-preview">
+              <p>
+                <strong>Válidos:</strong> x^2 - 4, x^3 + 3*x^2 + 4*x - 12,
+                x^4 - 2*x^3 - 12*x^2 + 16*x - 40
+              </p>
+
+              <p>
+                <strong>No usar aquí:</strong> ln(x), log(x), sen(x), sin(x),
+                cos(x), tan(x), exp(x), sqrt(x)
+              </p>
+
+              <p className="bisection-warning">
+                Si el discriminante del método se vuelve negativo, el proceso
+                entra al caso imaginario. En ese caso conserva el mismo polinomio
+                y resuélvelo en <strong>Muller Imaginario</strong>.
+              </p>
+            </div>
+
+            <div className="bisection-form-row">
+              <label>Ejemplo opcional =</label>
+
+              <select onChange={(e) => cargarEjemplo(e.target.value)} defaultValue="">
+                <option value="" disabled>
+                  Usar ejemplo de apoyo
+                </option>
+
+                {Object.entries(ejemplosMullerReal).map(([key, ejemplo]) => (
+                  <option key={key} value={key}>
+                    {ejemplo.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div className="bisection-form-row">
-            <label>Valor x₀</label>
-            <input
-              type="number"
-              step="any"
-              value={x0Input}
-              onChange={(e) => setX0Input(e.target.value)}
-            />
-          </div>
+          <div className="method-section">
+            <h4>Datos de entrada</h4>
 
-          <div className="bisection-form-row">
-            <label>Valor x₁</label>
-            <input
-              type="number"
-              step="any"
-              value={x1Input}
-              onChange={(e) => setX1Input(e.target.value)}
-            />
-          </div>
+            <div className="bisection-form-row">
+              <label>P(x) =</label>
 
-          <div className="bisection-form-row">
-            <label>Valor x₂</label>
-            <input
-              type="number"
-              step="any"
-              value={x2Input}
-              onChange={(e) => setX2Input(e.target.value)}
-            />
-          </div>
+              <input
+                type="text"
+                value={fxInput}
+                onChange={(e) => {
+                  setFxInput(e.target.value);
+                  resetResults();
+                }}
+                placeholder="Ej: x^3 + 3*x^2 + 4*x - 12"
+              />
+            </div>
 
-          <div className="bisection-form-row">
-            <label>Tolerancia</label>
-            <input
-              type="number"
-              step="any"
-              value={tolInput}
-              onChange={(e) => setTolInput(e.target.value)}
-            />
-          </div>
+            <div className="method-two-columns">
+              <div className="bisection-form-row">
+                <label>x₀ =</label>
 
-          <div className="bisection-form-row">
-            <label>Máximo de iteraciones</label>
-            <input
-              type="number"
-              value={maxIterInput}
-              onChange={(e) => setMaxIterInput(e.target.value)}
-            />
-          </div>
+                <input
+                  type="number"
+                  step="any"
+                  value={x0Input}
+                  onChange={(e) => {
+                    setX0Input(e.target.value);
+                    resetResults();
+                  }}
+                />
+              </div>
 
-          <div className="bisection-form-row">
-            <label>Número de decimales</label>
-            <input
-              type="number"
-              value={decimalsInput}
-              onChange={(e) => setDecimalsInput(e.target.value)}
-            />
+              <div className="bisection-form-row">
+                <label>x₁ =</label>
+
+                <input
+                  type="number"
+                  step="any"
+                  value={x1Input}
+                  onChange={(e) => {
+                    setX1Input(e.target.value);
+                    resetResults();
+                  }}
+                />
+              </div>
+
+              <div className="bisection-form-row">
+                <label>x₂ =</label>
+
+                <input
+                  type="number"
+                  step="any"
+                  value={x2Input}
+                  onChange={(e) => {
+                    setX2Input(e.target.value);
+                    resetResults();
+                  }}
+                />
+              </div>
+
+              <div className="bisection-form-row">
+                <label>Tolerancia =</label>
+
+                <input
+                  type="number"
+                  step="any"
+                  value={tolInput}
+                  onChange={(e) => {
+                    setTolInput(e.target.value);
+                    resetResults();
+                  }}
+                />
+              </div>
+
+              <div className="bisection-form-row">
+                <label>Iteraciones =</label>
+
+                <input
+                  type="number"
+                  value={maxIterInput}
+                  onChange={(e) => {
+                    setMaxIterInput(e.target.value);
+                    resetResults();
+                  }}
+                />
+              </div>
+
+              <div className="bisection-form-row">
+                <label>Decimales =</label>
+
+                <input
+                  type="number"
+                  value={decimalsInput}
+                  onChange={(e) => setDecimalsInput(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="bisection-buttons">
             <button type="submit" className="btn-primary">
               CALCULAR
             </button>
+
             <button type="button" className="btn-secondary" onClick={handleClear}>
-              LIMPIAR
+              BORRAR CELDAS
             </button>
           </div>
         </form>
 
         {message && <p className="bisection-message">{message}</p>}
+        {warningMsg && <p className="bisection-warning">{warningMsg}</p>}
         {errorMsg && <p className="bisection-error">{errorMsg}</p>}
       </div>
 
       <div className="bisection-results">
+        <div className="graph-card">
+          <h4 className="graph-title">Respuesta final</h4>
+
+          {!finalRow ? (
+            <p className="bisection-hint">
+              Aún no hay resultado. Completa los datos y presiona{" "}
+              <strong>CALCULAR</strong>.
+            </p>
+          ) : (
+            <div className="method-result-grid">
+              <div className="mini-info-card">
+                <div className="mini-info-card-title">Raíz aproximada</div>
+                <div className="mini-info-card-value">
+                  {formatNumber(finalRow.p)}
+                </div>
+              </div>
+
+              <div className="mini-info-card">
+                <div className="mini-info-card-title">Error final</div>
+                <div className="mini-info-card-value">
+                  {formatNumber(finalRow.errorDisp)}
+                </div>
+              </div>
+
+              <div className="mini-info-card">
+                <div className="mini-info-card-title">Iteraciones usadas</div>
+                <div className="mini-info-card-value">{rows.length}</div>
+              </div>
+
+              <div className="mini-info-card">
+                <div className="mini-info-card-title">Estado</div>
+                <div className="mini-info-card-value">
+                  {foundFinal ? "Converge" : "Revisar"}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="graph-card">
+          <h4 className="graph-title">Iteración seleccionada</h4>
+
+          {rowView ? (
+            <>
+              <div className="method-result-grid">
+                <div className="mini-info-card">
+                  <div className="mini-info-card-title">Iteración</div>
+                  <div className="mini-info-card-value">{rowView.n}</div>
+                </div>
+
+                <div className="mini-info-card">
+                  <div className="mini-info-card-title">p</div>
+                  <div className="mini-info-card-value">
+                    {formatNumber(rowView.p)}
+                  </div>
+                </div>
+
+                <div className="mini-info-card">
+                  <div className="mini-info-card-title">Error</div>
+                  <div className="mini-info-card-value">
+                    {formatNumber(rowView.errorDisp)}
+                  </div>
+                </div>
+              </div>
+
+              <input
+                type="range"
+                min="0"
+                max={Math.max(0, rows.length - 1)}
+                value={iterView}
+                onChange={(e) => setIterView(parseInt(e.target.value, 10))}
+                style={{ width: "100%", marginTop: "1rem" }}
+              />
+            </>
+          ) : (
+            <p className="bisection-hint">
+              Calcula el método para visualizar una iteración específica.
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="bisection-results full-width-results">
         <div className="bisection-table-wrapper">
-          <h4>Tabla de iteraciones</h4>
+          <div className="table-header-actions">
+            <h4>Tabla de iteraciones</h4>
+
+            <button
+              type="button"
+              className="btn-export"
+              onClick={exportCSV}
+              disabled={rows.length === 0}
+            >
+              Descargar CSV
+            </button>
+          </div>
 
           {rows.length === 0 ? (
             <p className="bisection-hint">
               Ingresa los datos y presiona <strong>CALCULAR</strong>.
             </p>
           ) : (
-            <>
+            <div className="table-scroll">
               <table className="bisection-table">
                 <thead>
                   <tr>
@@ -755,217 +932,220 @@ export default function MullerReal() {
                     <th>x₁</th>
                     <th>x₂</th>
                     <th>p</th>
-                    <th>Error = |p - x₂|</th>
+                    <th>Error</th>
                   </tr>
                 </thead>
+
                 <tbody>
-                  {rows.map((r, idx) => {
-                    const isLastOk = converged && idx === lastIndex;
-                    const isSelected = idx === iterView;
+                  {rows.map((row, index) => {
+                    const isLast = index === lastIndex && foundFinal;
+                    const isSelected = index === iterView;
 
                     return (
                       <tr
-                        key={r.n}
+                        key={row.n}
                         style={
                           isSelected
                             ? { outline: "2px solid #93c5fd", outlineOffset: "-2px" }
                             : undefined
                         }
                       >
-                        <td>{r.n}</td>
-                        <td>{formatNumber(r.x0)}</td>
-                        <td>{formatNumber(r.x1)}</td>
-                        <td>{formatNumber(r.x2)}</td>
-                        <td className={isLastOk ? "cell-green" : ""}>
-                          {formatNumber(r.p)}
+                        <td>{row.n}</td>
+                        <td>{formatNumber(row.x0)}</td>
+                        <td>{formatNumber(row.x1)}</td>
+                        <td>{formatNumber(row.x2)}</td>
+                        <td className={isLast ? "cell-green" : ""}>
+                          {formatNumber(row.p)}
                         </td>
-                        <td className={isLastOk ? "cell-red" : ""}>
-                          {formatNumber(r.error)}
+                        <td className={isLast ? "cell-red" : ""}>
+                          {formatNumber(row.errorDisp)}
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
 
-              <div style={{ marginTop: 14 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 12,
-                    flexWrap: "wrap",
-                    fontSize: 13,
-                    marginBottom: 8,
-                  }}
-                >
-                  <span>
-                    Iteración: <strong>{rows[iterView]?.n}</strong>
-                  </span>
-                  <span>
-                    p ≈ <strong>{rowView ? formatNumber(rowView.p) : "-"}</strong>
-                  </span>
-                </div>
-
-                <input
-                  type="range"
-                  min="0"
-                  max={Math.max(0, rows.length - 1)}
-                  value={iterView}
-                  onChange={(e) => setIterView(parseInt(e.target.value, 10))}
-                  style={{ width: "100%" }}
-                />
-              </div>
-
-              <div className="bisection-download">
-                <button type="button" className="btn-download" onClick={handleDownloadTable}>
-                  Descargar tabla (CSV)
-                </button>
-              </div>
-            </>
+          {foundFinal && (
+            <p className="bisection-message">
+              SE ENCONTRÓ LA SOLUCIÓN porque {formatNumber(rows[lastIndex].errorDisp)} &lt;{" "}
+              {tolInput}
+            </p>
           )}
         </div>
 
         <div className="graph-card">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-              flexWrap: "wrap",
-              marginBottom: 10,
-            }}
-          >
-            <h4 className="graph-title">Recorrido de Muller</h4>
+          <div className="table-header-actions">
+            <h4 className="graph-title">Gráfica interactiva de P(x)</h4>
 
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button type="button" className="btn-download" onClick={zoomInMain}>
-                Zoom +
+            <div className="chart-actions">
+              <button type="button" className="btn-export" onClick={increaseZoom}>
+                +
               </button>
+
+              <button type="button" className="btn-export" onClick={decreaseZoom}>
+                -
+              </button>
+
+              <button type="button" className="btn-export" onClick={resetChart}>
+                Reiniciar
+              </button>
+
               <button
                 type="button"
-                className="btn-download btn-download-secondary"
-                onClick={zoomOutMain}
+                className="btn-export"
+                onClick={downloadChartPNG}
+                disabled={!curvePath}
               >
-                Zoom −
-              </button>
-              <button type="button" className="btn-secondary" onClick={autoMain}>
-                Auto
+                PNG
               </button>
             </div>
           </div>
 
-          {!graphData ? (
-            <p className="bisection-hint">No se pudo graficar f(x).</p>
-          ) : (
-            <>
-              <svg
-                className="graph-svg"
-                viewBox={`0 0 ${width} ${height}`}
-                preserveAspectRatio="none"
-                {...panZoomMain}
-                style={{ touchAction: "none" }}
-              >
-                {renderAxes({
-                  xTicks: graphData.xTicks,
-                  yTicks: graphData.yTicks,
-                  xAxisY: graphData.xAxisY,
-                  yAxisX: graphData.yAxisX,
-                })}
+          <p className="bisection-hint">
+            Usa la rueda del mouse para acercar o alejar. Arrastra la gráfica
+            para desplazarla. Los puntos marcados sobre el eje X representan las
+            aproximaciones p.
+          </p>
 
-                <path
-                  d={graphData.path}
-                  fill="none"
-                  stroke="#2563eb"
-                  strokeWidth="2"
-                />
+          <div className="interactive-chart-wrapper">
+            <svg
+              ref={svgRef}
+              className="error-chart"
+              viewBox={`0 0 ${width} ${height}`}
+              role="img"
+              aria-label="Gráfica del método de Muller real"
+              onWheel={handleWheel}
+              onMouseDown={startDrag}
+              onMouseMove={moveDrag}
+              onMouseUp={endDrag}
+              onMouseLeave={endDrag}
+            >
+              <style>
+                {`
+                  .chart-axis { stroke: #334155; stroke-width: 1.5; }
+                  .chart-grid-line { stroke: #e2e8f0; stroke-width: 1; }
+                  .chart-line { stroke: #2563eb; stroke-width: 2.5; }
+                  .chart-point { fill: #111827; stroke: white; stroke-width: 1.5; }
+                  .chart-eval-point { fill: #dc2626; stroke: white; stroke-width: 1.5; }
+                  .chart-label { font-size: 11px; fill: #334155; }
+                  .chart-axis-title { font-size: 13px; fill: #0f172a; font-weight: 700; }
+                  .chart-title-text { font-size: 16px; fill: #111827; font-weight: 800; }
+                `}
+              </style>
 
-                {pHistory.map((p, i) => (
-                  <circle
-                    key={`ph-${i}`}
-                    cx={graphData.xTo(p)}
-                    cy={graphData.xAxisY}
-                    r="2.6"
-                    fill="#111827"
-                    opacity="0.6"
+              <rect x="0" y="0" width={width} height={height} fill="white" />
+
+              <text x={width / 2 - 105} y="22" className="chart-title-text">
+                Método de Muller Real
+              </text>
+
+              {graph.yTicks.map((tick, index) => (
+                <g key={`ytick-${index}`}>
+                  <line
+                    x1={marginLeft}
+                    y1={yToSvg(tick)}
+                    x2={marginLeft + graphWidth}
+                    y2={yToSvg(tick)}
+                    className="chart-grid-line"
                   />
+
+                  <text x="8" y={yToSvg(tick) + 4} className="chart-label">
+                    {formatNumber(tick)}
+                  </text>
+                </g>
+              ))}
+
+              {graph.xTicks.map((tick, index) => (
+                <g key={`xtick-${index}`}>
+                  <line
+                    x1={xToSvg(tick)}
+                    y1={marginTop}
+                    x2={xToSvg(tick)}
+                    y2={marginTop + graphHeight}
+                    className="chart-grid-line"
+                  />
+
+                  <text
+                    x={xToSvg(tick) - 8}
+                    y={marginTop + graphHeight + 22}
+                    className="chart-label"
+                  >
+                    {formatNumber(tick)}
+                  </text>
+                </g>
+              ))}
+
+              <line
+                x1={marginLeft}
+                y1={marginTop + graphHeight}
+                x2={marginLeft + graphWidth}
+                y2={marginTop + graphHeight}
+                className="chart-axis"
+              />
+
+              <line
+                x1={marginLeft}
+                y1={marginTop}
+                x2={marginLeft}
+                y2={marginTop + graphHeight}
+                className="chart-axis"
+              />
+
+              <text
+                x={width / 2 - 35}
+                y={height - 18}
+                className="chart-axis-title"
+              >
+                Eje X
+              </text>
+
+              <text
+                x="-215"
+                y="18"
+                transform="rotate(-90)"
+                className="chart-axis-title"
+              >
+                P(x)
+              </text>
+
+              <defs>
+                <clipPath id="plot-area-muller-real">
+                  <rect
+                    x={marginLeft}
+                    y={marginTop}
+                    width={graphWidth}
+                    height={graphHeight}
+                  />
+                </clipPath>
+              </defs>
+
+              <g
+                clipPath="url(#plot-area-muller-real)"
+                className={dragging ? "chart-dragging" : "chart-draggable"}
+              >
+                {curvePath && (
+                  <path d={curvePath} className="chart-line" fill="none" />
+                )}
+
+                {pHistory.map((p, index) => (
+                  <circle
+                    key={`p-${index}`}
+                    cx={xToSvg(p)}
+                    cy={yToSvg(0)}
+                    r="4"
+                    className={index === lastIndex ? "chart-eval-point" : "chart-point"}
+                  >
+                    <title>
+                      Iteración {index + 1}: p = {formatNumber(p)}
+                    </title>
+                  </circle>
                 ))}
-
-                {rowView &&
-                  (() => {
-                    const coeffs = quadCoeffs(
-                      rowView.x0Raw,
-                      rowView.f0Raw,
-                      rowView.x1Raw,
-                      rowView.f1Raw,
-                      rowView.x2Raw,
-                      rowView.f2Raw
-                    );
-
-                    const quadPath = coeffs
-                      ? buildQuadPath(
-                          coeffs.A,
-                          coeffs.B,
-                          coeffs.C,
-                          graphData.xMin,
-                          graphData.xMax,
-                          graphData.xTo,
-                          graphData.yTo
-                        )
-                      : "";
-
-                    const X0 = graphData.xTo(rowView.x0Raw);
-                    const Y0 = graphData.yTo(rowView.f0Raw);
-                    const X1 = graphData.xTo(rowView.x1Raw);
-                    const Y1 = graphData.yTo(rowView.f1Raw);
-                    const X2 = graphData.xTo(rowView.x2Raw);
-                    const Y2 = graphData.yTo(rowView.f2Raw);
-                    const Xp = graphData.xTo(rowView.pRaw);
-                    const YpAxis = graphData.xAxisY;
-
-                    return (
-                      <>
-                        {coeffs && (
-                          <path
-                            d={quadPath}
-                            fill="none"
-                            stroke="#64748b"
-                            strokeWidth="2"
-                            opacity="0.95"
-                          />
-                        )}
-
-                        <circle cx={X0} cy={Y0} r="4" fill="#64748b" />
-                        <circle cx={X1} cy={Y1} r="4" fill="#475569" />
-                        <circle cx={X2} cy={Y2} r="4" fill="#334155" />
-
-                        {pointLabel(X0, Y0, "x0", "#475569")}
-                        {pointLabel(X1, Y1, "x1", "#334155")}
-                        {pointLabel(X2, Y2, "x2", "#1f2937")}
-
-                        <line
-                          x1={Xp}
-                          x2={Xp}
-                          y1={padT}
-                          y2={height - padB}
-                          stroke="#10b981"
-                          strokeWidth="1.6"
-                          strokeDasharray="4 3"
-                        />
-                        <circle cx={Xp} cy={YpAxis} r="4.2" fill="#10b981" />
-                        {pointLabel(Xp, YpAxis, "p", "#065f46")}
-                      </>
-                    );
-                  })()}
-              </svg>
-
-              <p className="bisection-hint" style={{ marginTop: 8 }}>
-                Rueda del mouse: zoom • Arrastrar: mover • Slider: ver iteración •
-                Puntos negros: historial de p
-              </p>
-            </>
-          )}
+              </g>
+            </svg>
+          </div>
         </div>
       </div>
     </div>

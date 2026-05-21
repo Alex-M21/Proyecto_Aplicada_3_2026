@@ -2,32 +2,37 @@
   background: #ffffff;
   border-radius: 0.75rem;
   padding: 1rem 1.25rem;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
   font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .manual-intro {
-  font-size: 0.85rem;
+  font-size: clamp(0.8rem, 2vw, 0.9rem);
   color: #4b5563;
   margin-bottom: 0.75rem;
 }
 
 .manual-table-wrapper {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   margin-top: 0.5rem;
+  border-radius: 0.5rem;
 }
 
 .manual-table {
   width: 100%;
-  min-width: 520px;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: clamp(0.75rem, 1.8vw, 0.85rem);
+  min-width: 100%;
 }
 
 .manual-table th,
 .manual-table td {
   border: 1px solid #e5e7eb;
-  padding: 0.4rem 0.5rem;
+  padding: 0.5rem 0.75rem;
   text-align: left;
   vertical-align: top;
 }
@@ -35,6 +40,9 @@
 .manual-table th {
   background: #f3f4f6;
   font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .manual-table tbody tr:nth-child(even) {
@@ -43,14 +51,14 @@
 
 .manual-table code {
   background: #f3f4f6;
-  padding: 0 0.15rem;
-  border-radius: 0.2rem;
-  font-size: 0.84em;
+  padding: 0 0.2rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
 }
 
 .manual-note {
   margin-top: 0.75rem;
-  font-size: 0.8rem;
+  font-size: clamp(0.75rem, 1.6vw, 0.8rem);
   color: #6b7280;
 }
 
@@ -60,7 +68,12 @@
     padding: 0.75rem;
   }
 
+  .manual-table th,
+  .manual-table td {
+    padding: 0.4rem 0.5rem;
+  }
+
   .manual-table {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
   }
 }

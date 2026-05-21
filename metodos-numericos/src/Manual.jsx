@@ -48,19 +48,88 @@
                /_|.-'\ ,".             '.'`__'-( \
                  / ,"'"\,'               `/  `-.|"
  */
+import { useState } from "react";
 import "./Manual.css";
 
+// Datos dinámicos con categorías para filtros
+const manualData = [
+  { expr: "(x²)", code: "x^2", comment: "El operador ^ es potencia.", category: "Polinomios" },
+  { expr: "(x³ − x − 1)", code: "x^3 - x - 1", comment: "Polinomios normales.", category: "Polinomios" },
+  { expr: "(eˣ)", code: "exp(x) o e^x", comment: "exp(x) es más claro; e es la constante de Euler.", category: "Exponenciales" },
+  { expr: "(e⁻ˣ)", code: "exp(-x) o e^(-x)", comment: "Usa paréntesis para el exponente.", category: "Exponenciales" },
+  { expr: "(10ˣ)", code: "10^x", comment: "Potencia de 10.", category: "Exponenciales" },
+  { expr: "(√x)", code: "sqrt(x)", comment: "Raíz cuadrada.", category: "Raíces" },
+  { expr: "(³√x)", code: "cbrt(x) o nthRoot(x, 3)", comment: "Raíz cúbica.", category: "Raíces" },
+  { expr: "(x^(1/n))", code: "nthRoot(x, n)", comment: "Raíz n-ésima de x.", category: "Raíces" },
+  { expr: "(sin(x))", code: "sin(x) o sen(x)", comment: "Funciones trig. en radianes.", category: "Trigonométricas" },
+  { expr: "(cos(x))", code: "cos(x)", comment: "Coseno de x.", category: "Trigonométricas" },
+  { expr: "(tan(x))", code: "tan(x)", comment: "Tangente de x.", category: "Trigonométricas" },
+  { expr: "(sin⁻¹(x))", code: "asin(x)", comment: "Seno inverso (arcsin) en radianes.", category: "Trigonométricas Inversas" },
+  { expr: "(cos⁻¹(x))", code: "acos(x)", comment: "Coseno inverso (arccos) en radianes.", category: "Trigonométricas Inversas" },
+  { expr: "(tan⁻¹(x))", code: "atan(x)", comment: "Tangente inversa (arctan) en radianes.", category: "Trigonométricas Inversas" },
+  { expr: "(sinh(x))", code: "sinh(x)", comment: "Seno hiperbólico.", category: "Hiperbólicas" },
+  { expr: "(cosh(x))", code: "cosh(x)", comment: "Coseno hiperbólico.", category: "Hiperbólicas" },
+  { expr: "(tanh(x))", code: "tanh(x)", comment: "Tangente hiperbólica.", category: "Hiperbólicas" },
+  { expr: "(sinh⁻¹(x))", code: "asinh(x)", comment: "Seno hiperbólico inverso.", category: "Hiperbólicas Inversas" },
+  { expr: "(cosh⁻¹(x))", code: "acosh(x)", comment: "Coseno hiperbólico inverso.", category: "Hiperbólicas Inversas" },
+  { expr: "(tanh⁻¹(x))", code: "atanh(x)", comment: "Tangente hiperbólica inversa.", category: "Hiperbólicas Inversas" },
+  { expr: "(ln(x))", code: "ln(x) o log(x)", comment: "Logaritmo natural.", category: "Logaritmos" },
+  { expr: "(log₁₀(x))", code: "log10(x)", comment: "Logaritmo base 10.", category: "Logaritmos" },
+  { expr: "(log_b(x))", code: "log(x, b)", comment: "Ej: log(x,2) es log₂(x).", category: "Logaritmos" },
+  { expr: "(π)", code: "pi", comment: "Constante π.", category: "Constantes" },
+  { expr: "(2π)", code: "2*pi", comment: "Multiplicación siempre con *.", category: "Constantes" },
+  { expr: "(e)", code: "e", comment: "Constante de Euler (~2.71828).", category: "Constantes" },
+  { expr: "(|x|)", code: "abs(x)", comment: "Valor absoluto.", category: "Redondeo/Valor Absoluto" },
+  { expr: "signo(x)", code: "sign(x)", comment: "Devuelve -1,0 o 1 según signo.", category: "Redondeo/Valor Absoluto" },
+  { expr: "⌊x⌋", code: "floor(x)", comment: "Redondea hacia abajo.", category: "Redondeo/Valor Absoluto" },
+  { expr: "⌈x⌉", code: "ceil(x)", comment: "Redondea hacia arriba.", category: "Redondeo/Valor Absoluto" },
+  { expr: "redondeo(x)", code: "round(x) o round(x,n)", comment: "Redondeo normal.", category: "Redondeo/Valor Absoluto" },
+  { expr: "(x!)", code: "factorial(x) o x!", comment: "Factorial de x.", category: "Factorial/Combinatoria" },
+  { expr: "n C k", code: "combinations(n, k)", comment: "Número de combinaciones.", category: "Factorial/Combinatoria" },
+  { expr: "n P k", code: "permutations(n, k)", comment: "Número de permutaciones.", category: "Factorial/Combinatoria" },
+  { expr: "(a mod b)", code: "mod(a,b) o a % b", comment: "Resto de división.", category: "Factorial/Combinatoria" },
+  { expr: "(2x)", code: "2*x", comment: "Siempre usar * para multiplicar.", category: "Multiplicaciones" },
+  { expr: "((x+1)(x−2))", code: "(x+1)*(x-2)", comment: "Multiplicaciones entre paréntesis con *.", category: "Multiplicaciones" },
+  { expr: "(e⁻ˣ·cos(x))", code: "exp(-x)*cos(x)", comment: "Combina funciones con +,-,*,/,^.", category: "Multiplicaciones" }
+];
+
 export default function ManualExpresiones() {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("Todas");
+
+  const categories = ["Todas", ...Array.from(new Set(manualData.map(d => d.category)))];
+
+  const filteredData = manualData.filter(row => {
+    const matchesCategory = category === "Todas" || row.category === category;
+    const matchesSearch =
+      row.expr.toLowerCase().includes(search.toLowerCase()) ||
+      row.code.toLowerCase().includes(search.toLowerCase()) ||
+      row.comment.toLowerCase().includes(search.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
   return (
     <div className="manual-card">
       <h3>Manual de expresiones</h3>
       <p className="manual-intro">
-        En todos los métodos, la función se escribe como <code>f(x)</code> usando
-        la sintaxis de <code>mathjs</code>/<code>JavaScript</code>. La variable
-        independiente es siempre <code>x</code> y las funciones trigonométricas
-        trabajan en <strong>radianes</strong>.
+        Busca expresiones por <code>nombre</code>, <code>código</code> o <code>comentario</code>. La variable independiente es <code>x</code> y las funciones trigonométricas usan radianes.
       </p>
 
+      {/* Filtros */}
+      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+        <input
+          type="text"
+          placeholder="Buscar..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ flex: 1, padding: "0.5rem", fontSize: "1rem" }}
+        />
+        <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ padding: "0.5rem", fontSize: "1rem" }}>
+          {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+        </select>
+      </div>
+
+      {/* Tabla */}
       <div className="manual-table-wrapper">
         <table className="manual-table">
           <thead>
@@ -71,225 +140,23 @@ export default function ManualExpresiones() {
             </tr>
           </thead>
           <tbody>
-            {/* Potencias y polinomios */}
-            <tr>
-              <td>(x²)</td>
-              <td><code>x^2</code></td>
-              <td>El operador <code>^</code> es potencia.</td>
-            </tr>
-            <tr>
-              <td>(x³ − x − 1)</td>
-              <td><code>x^3 - x - 1</code></td>
-              <td>Polinomios normales.</td>
-            </tr>
-
-            {/* Exponenciales */}
-            <tr>
-              <td>(eˣ)</td>
-              <td><code>exp(x)</code> o <code>e^x</code></td>
-              <td><code>exp(x)</code> es más claro; <code>e</code> es la constante de Euler.</td>
-            </tr>
-            <tr>
-              <td>(e⁻ˣ)</td>
-              <td><code>exp(-x)</code> o <code>e^(-x)</code></td>
-              <td>Usa paréntesis para el exponente.</td>
-            </tr>
-            <tr>
-              <td>(10ˣ)</td>
-              <td><code>10^x</code></td>
-              <td>Potencia de 10.</td>
-            </tr>
-
-            {/* Raíces */}
-            <tr>
-              <td>(√x)</td>
-              <td><code>sqrt(x)</code></td>
-              <td>Raíz cuadrada.</td>
-            </tr>
-            <tr>
-              <td>(³√x)</td>
-              <td><code>cbrt(x)</code> o <code>nthRoot(x, 3)</code></td>
-              <td>Raíz cúbica.</td>
-            </tr>
-            <tr>
-              <td>(x^(1/n))</td>
-              <td><code>nthRoot(x, n)</code></td>
-              <td>Raíz n-ésima de x.</td>
-            </tr>
-
-            {/* Trigonométricas directas */}
-            <tr>
-              <td>(sin(x))</td>
-              <td><code>sin(x)</code> o <code>sen(x)</code></td>
-              <td>Puedes escribir <code>sen(x)</code>, la app lo convierte internamente a <code>sin(x)</code>.</td>
-            </tr>
-            <tr>
-              <td>(cos(x))</td>
-              <td><code>cos(x)</code></td>
-              <td>Coseno de x (en radianes).</td>
-            </tr>
-            <tr>
-              <td>(tan(x))</td>
-              <td><code>tan(x)</code></td>
-              <td>Tangente de x (en radianes).</td>
-            </tr>
-
-            {/* Trigonométricas inversas */}
-            <tr>
-              <td>(sin⁻¹(x))</td>
-              <td><code>asin(x)</code></td>
-              <td>Seno inverso (arcsin). Devuelve el ángulo en radianes.</td>
-            </tr>
-            <tr>
-              <td>(cos⁻¹(x))</td>
-              <td><code>acos(x)</code></td>
-              <td>Coseno inverso (arccos). Devuelve el ángulo en radianes.</td>
-            </tr>
-            <tr>
-              <td>(tan⁻¹(x))</td>
-              <td><code>atan(x)</code></td>
-              <td>Tangente inversa (arctan). Devuelve el ángulo en radianes.</td>
-            </tr>
-
-            {/* Trigonométricas hiperbólicas */}
-            <tr>
-              <td>(sinh(x))</td>
-              <td><code>sinh(x)</code></td>
-              <td>Seno hiperbólico.</td>
-            </tr>
-            <tr>
-              <td>(cosh(x))</td>
-              <td><code>cosh(x)</code></td>
-              <td>Coseno hiperbólico.</td>
-            </tr>
-            <tr>
-              <td>(tanh(x))</td>
-              <td><code>tanh(x)</code></td>
-              <td>Tangente hiperbólica.</td>
-            </tr>
-            <tr>
-              <td>(sinh⁻¹(x))</td>
-              <td><code>asinh(x)</code></td>
-              <td>Seno hiperbólico inverso.</td>
-            </tr>
-            <tr>
-              <td>(cosh⁻¹(x))</td>
-              <td><code>acosh(x)</code></td>
-              <td>Coseno hiperbólico inverso.</td>
-            </tr>
-            <tr>
-              <td>(tanh⁻¹(x))</td>
-              <td><code>atanh(x)</code></td>
-              <td>Tangente hiperbólica inversa.</td>
-            </tr>
-
-            {/* Logaritmos */}
-            <tr>
-              <td>(ln(x))</td>
-              <td><code>ln(x)</code> o <code>log(x)</code></td>
-              <td>Logaritmo natural. En el código <code>ln</code> se trata como <code>log</code>.</td>
-            </tr>
-            <tr>
-              <td>(log₁₀(x))</td>
-              <td><code>log10(x)</code></td>
-              <td>Logaritmo base 10.</td>
-            </tr>
-            <tr>
-              <td>(log_b(x))</td>
-              <td><code>log(x, b)</code></td>
-              <td>Ejemplo: <code>log(x, 2)</code> es <code>log₂(x)</code>.</td>
-            </tr>
-
-            {/* Constantes */}
-            <tr>
-              <td>(π)</td>
-              <td><code>pi</code></td>
-              <td><code>pi</code> es la constante &pi;. Ej: <code>sin(pi/2)</code> = 1.</td>
-            </tr>
-            <tr>
-              <td>(2π)</td>
-              <td><code>2*pi</code></td>
-              <td>Siempre usa <code>*</code> para multiplicar.</td>
-            </tr>
-            <tr>
-              <td>(e)</td>
-              <td><code>e</code></td>
-              <td>Constante de Euler (~2.71828).</td>
-            </tr>
-
-            {/* Funciones de redondeo / valor absoluto */}
-            <tr>
-              <td>(|x|)</td>
-              <td><code>abs(x)</code></td>
-              <td>Valor absoluto.</td>
-            </tr>
-            <tr>
-              <td>signo(x)</td>
-              <td><code>sign(x)</code></td>
-              <td>Devuelve -1, 0 o 1 según el signo de x.</td>
-            </tr>
-            <tr>
-              <td>⌊x⌋</td>
-              <td><code>floor(x)</code></td>
-              <td>Redondea hacia abajo (entero más pequeño).</td>
-            </tr>
-            <tr>
-              <td>⌈x⌉</td>
-              <td><code>ceil(x)</code></td>
-              <td>Redondea hacia arriba (entero más grande).</td>
-            </tr>
-            <tr>
-              <td>redondeo(x)</td>
-              <td><code>round(x)</code> o <code>round(x, n)</code></td>
-              <td>Redondeo normal, opcionalmente a n decimales.</td>
-            </tr>
-
-            {/* Factorial, combinatoria y módulo */}
-            <tr>
-              <td>(x!)</td>
-              <td><code>factorial(x)</code> o <code>x!</code></td>
-              <td>Factorial de x (x entero ≥ 0).</td>
-            </tr>
-            <tr>
-              <td>n C k</td>
-              <td><code>combinations(n, k)</code></td>
-              <td>Número de combinaciones (n sobre k).</td>
-            </tr>
-            <tr>
-              <td>n P k</td>
-              <td><code>permutations(n, k)</code></td>
-              <td>Número de permutaciones.</td>
-            </tr>
-            <tr>
-              <td>(a mod b)</td>
-              <td><code>mod(a, b)</code> o <code>a % b</code></td>
-              <td>Resto de la división de a entre b.</td>
-            </tr>
-
-            {/* Multiplicación y combinaciones */}
-            <tr>
-              <td>(2x)</td>
-              <td><code>2*x</code></td>
-              <td><strong>Siempre</strong> usar <code>*</code> para multiplicar (no escribir <code>2x</code>).</td>
-            </tr>
-            <tr>
-              <td>((x+1)(x−2))</td>
-              <td><code>(x+1)*(x-2)</code></td>
-              <td>Multiplicaciones entre paréntesis siempre con <code>*</code>.</td>
-            </tr>
-            <tr>
-              <td>Combinación, p.ej. (e⁻ˣ·cos(x))</td>
-              <td><code>exp(-x)*cos(x)</code></td>
-              <td>Combina funciones con <code>*</code>, <code>+</code>, <code>-</code>, <code>/</code>, <code>^</code>.</td>
-            </tr>
+            {filteredData.length > 0 ? filteredData.map((row, idx) => (
+              <tr key={idx}>
+                <td>{row.expr}</td>
+                <td><code>{row.code}</code></td>
+                <td>{row.comment}</td>
+              </tr>
+            )) : (
+              <tr>
+                <td colSpan={3} style={{ textAlign: "center", color: "#888" }}>No se encontraron resultados.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
       <p className="manual-note">
-        💡 Si la función está mal escrita o se sale del dominio en el intervalo
-        elegido (por ejemplo, <code>log(x)</code> con <code>x ≤ 0</code>), la app
-        mostrará un mensaje de error en el método de Bisección.
+        💡 Si la función está mal escrita o se sale del dominio, la app mostrará un mensaje de error.
       </p>
     </div>
   );
