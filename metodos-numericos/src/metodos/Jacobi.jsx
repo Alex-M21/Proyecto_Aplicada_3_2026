@@ -663,469 +663,469 @@ export default function Jacobi() {
   });
 
   return (
-    <div className="bisection-grid">
-      <div className="bisection-form">
-        <h3>Método de Jacobi</h3>
+  <div className="bisection-grid">
+    <div className="bisection-form">
+      <h3>Método de Jacobi</h3>
 
-        <p className="bisection-hint">
-          Ingresa la dimensión de la matriz cuadrada. Si es de 2x2 a 6x6,
-          se cargará un ejemplo funcional. Si es mayor, se generará una matriz
-          vacía para ingresar tus propios valores.
-        </p>
+      <p className="bisection-hint">
+        Ingresa la dimensión de la matriz cuadrada. Si es de 2x2 a 6x6,
+        se cargará un ejemplo funcional. Si es mayor, se generará una matriz
+        vacía para ingresar tus propios valores.
+      </p>
 
-        <form onSubmit={handleCalculate}>
-          <div className="method-section">
-            <h4>Configuración del sistema</h4>
+      <form onSubmit={handleCalculate}>
+        <div className="method-section">
+          <h4>Configuración del sistema</h4>
 
-            <div className="method-two-columns">
-              <div className="bisection-form-row">
-                <label>Dimensión n =</label>
+          <div className="method-two-columns">
+            <div className="bisection-form-row">
+              <label>Dimensión n =</label>
 
-                <input
-                  type="number"
-                  min="2"
-                  step="1"
-                  value={dimension}
-                  onChange={(e) => handleDimensionChange(e.target.value)}
-                  placeholder="Ej: 3"
-                />
-              </div>
-
-              <div className="bisection-form-row">
-                <label>Iteraciones =</label>
-
-                <input
-                  type="number"
-                  min="1"
-                  value={iterInput}
-                  onChange={(e) => {
-                    setIterInput(e.target.value);
-                    resetResults();
-                  }}
-                />
-              </div>
-
-              <div className="bisection-form-row">
-                <label>Tolerancia =</label>
-
-                <input
-                  type="number"
-                  step="any"
-                  value={tolInput}
-                  onChange={(e) => {
-                    setTolInput(e.target.value);
-                    resetResults();
-                  }}
-                />
-              </div>
-
-              <div className="bisection-form-row">
-                <label>Decimales =</label>
-
-                <input
-                  type="number"
-                  min="0"
-                  value={decimalsInput}
-                  onChange={(e) => setDecimalsInput(e.target.value)}
-                />
-              </div>
+              <input
+                type="number"
+                min="2"
+                step="1"
+                value={dimension}
+                onChange={(e) => handleDimensionChange(e.target.value)}
+                placeholder="Ej: 3"
+              />
             </div>
 
-            <p className="bisection-hint">
-              {ejemplosJacobi[n]
-                ? `Ejemplo cargado: ${ejemplosJacobi[n].descripcion}`
-                : `Matriz de ${n}x${n}: ingresa manualmente los coeficientes y el vector b.`}
-            </p>
-          </div>
+            <div className="bisection-form-row">
+              <label>Iteraciones =</label>
 
-          <div className="method-section">
-            <div className="table-header-actions">
-              <h4>Matriz aumentada [A|b] — Matriz de {n}x{n}</h4>
-
-              <button
-                type="button"
-                className="btn-export"
-                onClick={tryReorderRows}
-              >
-                Intentar ordenar
-              </button>
+              <input
+                type="number"
+                min="1"
+                value={iterInput}
+                onChange={(e) => {
+                  setIterInput(e.target.value);
+                  resetResults();
+                }}
+              />
             </div>
 
-            <div className="table-scroll">
-              <table className="bisection-table">
-                <thead>
-                  <tr>
-                    <th>Ec.</th>
+            <div className="bisection-form-row">
+              <label>Tolerancia =</label>
 
-                    {variables.map((variable) => (
-                      <th key={`coef-${variable}`}>Coef. {variable}</th>
-                    ))}
+              <input
+                type="number"
+                step="any"
+                value={tolInput}
+                onChange={(e) => {
+                  setTolInput(e.target.value);
+                  resetResults();
+                }}
+              />
+            </div>
 
-                    <th>b</th>
-                  </tr>
-                </thead>
+            <div className="bisection-form-row">
+              <label>Decimales =</label>
 
-                <tbody>
-                  {Array.from({ length: n }).map((_, i) => (
-                    <tr key={`row-${i}`}>
-                      <td>Ec. {i + 1}</td>
-
-                      {Array.from({ length: n + 1 }).map((_, j) => (
-                        <td key={`cell-${i}-${j}`}>
-                          <input
-                            type="number"
-                            step="any"
-                            value={matrix[i]?.[j] ?? ""}
-                            onChange={(e) => setCell(i, j, e.target.value)}
-                          />
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <input
+                type="number"
+                min="0"
+                value={decimalsInput}
+                onChange={(e) => setDecimalsInput(e.target.value)}
+              />
             </div>
           </div>
 
-          <div className="method-section">
-            <h4>Vector inicial</h4>
-
-            <div className="method-vector-grid">
-              {variables.map((variable, i) => (
-                <div className="bisection-form-row" key={`x0-${variable}`}>
-                  <label>
-                    {variable}
-                    <sub>0</sub> =
-                  </label>
-
-                  <input
-                    type="number"
-                    step="any"
-                    value={x0[i] ?? ""}
-                    onChange={(e) => setX0Cell(i, e.target.value)}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bisection-buttons">
-            <button type="submit" className="btn-primary">
-              CALCULAR
-            </button>
-
-            <button type="button" className="btn-secondary" onClick={clearAll}>
-              BORRAR CELDAS
-            </button>
-          </div>
-        </form>
-
-        {message && <p className="bisection-message">{message}</p>}
-        {dominanceMsg && <p className="bisection-message">{dominanceMsg}</p>}
-        {warningMsg && <p className="bisection-warning">{warningMsg}</p>}
-        {errorMsg && <p className="bisection-error">{errorMsg}</p>}
-      </div>
-
-      <div className="bisection-results">
-        <div className="graph-card">
-          <h4 className="graph-title">Respuesta final</h4>
-
-          {!solution ? (
-            <p className="bisection-hint">
-              Aún no hay resultado. Completa los datos y presiona{" "}
-              <strong>CALCULAR</strong>.
-            </p>
-          ) : (
-            <>
-              <div className="method-result-grid">
-                {solution.map((value, index) => (
-                  <div className="mini-info-card" key={`solution-${index}`}>
-                    <div className="mini-info-card-title">{variables[index]}</div>
-                    <div className="mini-info-card-value">{fmt(value)}</div>
-                  </div>
-                ))}
-              </div>
-
-              <p className="bisection-hint" style={{ marginTop: "0.8rem" }}>
-                Residuo máximo:{" "}
-                <strong>
-                  {residualMax === null ? "Pendiente" : fmt(residualMax)}
-                </strong>
-              </p>
-            </>
-          )}
+          <p className="bisection-hint">
+            {ejemplosJacobi[n]
+              ? `Ejemplo cargado: ${ejemplosJacobi[n].descripcion}`
+              : `Matriz de ${n}x${n}: ingresa manualmente los coeficientes y el vector b.`}
+          </p>
         </div>
 
-        <div className="graph-card">
-          <h4 className="graph-title">Sistema ingresado</h4>
-
-          <div className="system-preview">
-            {matrix.map((row, i) => {
-              const equation = variables
-                .map((variable, j) => {
-                  const coef = row[j] || "0";
-                  return `${coef}${variable}`;
-                })
-                .join(" + ");
-
-              return (
-                <p key={`eq-${i}`}>
-                  <strong>Ec. {i + 1}:</strong> {equation} = {row[n] || "0"}
-                </p>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div className="bisection-results full-width-results">
-        <div className="graph-card">
+        <div className="method-section">
           <div className="table-header-actions">
-            <h4 className="graph-title">Gráfica interactiva de error</h4>
-
-            <div className="chart-actions">
-              <button type="button" className="btn-export" onClick={increaseZoom}>
-                +
-              </button>
-
-              <button type="button" className="btn-export" onClick={decreaseZoom}>
-                -
-              </button>
-
-              <button type="button" className="btn-export" onClick={resetChart}>
-                Reiniciar
-              </button>
-
-              <button
-                type="button"
-                className="btn-export"
-                onClick={downloadChartPNG}
-                disabled={rows.length === 0}
-              >
-                PNG
-              </button>
-            </div>
-          </div>
-
-          {rows.length === 0 ? (
-            <p className="bisection-hint">
-              La gráfica aparecerá después de calcular.
-            </p>
-          ) : (
-            <>
-              <p className="bisection-hint">
-                Usa la rueda del mouse para acercar o alejar. Arrastra la gráfica
-                para desplazarla.
-              </p>
-
-              <div className="interactive-chart-wrapper">
-                <svg
-                  ref={svgRef}
-                  className="error-chart"
-                  viewBox={`0 0 ${width} ${height}`}
-                  role="img"
-                  aria-label="Gráfica de error contra iteración"
-                  onWheel={handleWheel}
-                  onMouseDown={startDrag}
-                  onMouseMove={moveDrag}
-                  onMouseUp={endDrag}
-                  onMouseLeave={endDrag}
-                >
-                  <style>
-                    {`
-                      .chart-axis { stroke: #334155; stroke-width: 1.5; }
-                      .chart-grid-line { stroke: #e2e8f0; stroke-width: 1; }
-                      .chart-line { stroke: #2563eb; stroke-width: 2.5; }
-                      .chart-point { fill: #dc2626; stroke: white; stroke-width: 1.5; }
-                      .chart-label { font-size: 11px; fill: #334155; }
-                      .chart-axis-title { font-size: 13px; fill: #0f172a; font-weight: 700; }
-                      .chart-title-text { font-size: 16px; fill: #111827; font-weight: 800; }
-                    `}
-                  </style>
-
-                  <rect x="0" y="0" width={width} height={height} fill="white" />
-
-                  <text x={width / 2 - 80} y="22" className="chart-title-text">
-                    Error vs Iteración
-                  </text>
-
-                  <line
-                    x1={marginLeft}
-                    y1={marginTop + graphHeight}
-                    x2={marginLeft + graphWidth}
-                    y2={marginTop + graphHeight}
-                    className="chart-axis"
-                  />
-
-                  <line
-                    x1={marginLeft}
-                    y1={marginTop}
-                    x2={marginLeft}
-                    y2={marginTop + graphHeight}
-                    className="chart-axis"
-                  />
-
-                  {yTicks.map((tick, index) => (
-                    <g key={`ytick-${index}`}>
-                      <line
-                        x1={marginLeft}
-                        y1={tick.y}
-                        x2={marginLeft + graphWidth}
-                        y2={tick.y}
-                        className="chart-grid-line"
-                      />
-
-                      <text x="8" y={tick.y + 4} className="chart-label">
-                        {fmt(tick.value)}
-                      </text>
-                    </g>
-                  ))}
-
-                  {xTicks.map((point) => (
-                    <g key={`xtick-${point.iter}`}>
-                      <line
-                        x1={point.x}
-                        y1={marginTop + graphHeight}
-                        x2={point.x}
-                        y2={marginTop + graphHeight + 6}
-                        className="chart-axis"
-                      />
-
-                      <text
-                        x={point.x - 4}
-                        y={marginTop + graphHeight + 22}
-                        className="chart-label"
-                      >
-                        {point.iter}
-                      </text>
-                    </g>
-                  ))}
-
-                  <text
-                    x={width / 2 - 40}
-                    y={height - 18}
-                    className="chart-axis-title"
-                  >
-                    Eje X: Iteración
-                  </text>
-
-                  <text
-                    x="-220"
-                    y="18"
-                    transform="rotate(-90)"
-                    className="chart-axis-title"
-                  >
-                    Eje Y: Error máximo
-                  </text>
-
-                  <g
-                    transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}
-                    className={dragging ? "chart-dragging" : "chart-draggable"}
-                  >
-                    <path d={chartPath} className="chart-line" fill="none" />
-
-                    {chartPoints.map((point, index) => (
-                      <g key={`point-${index}`}>
-                        <circle
-                          cx={point.x}
-                          cy={point.y}
-                          r="4"
-                          className="chart-point"
-                        />
-
-                        <title>
-                          Iteración {point.iter} | Error: {fmt(point.error)}
-                        </title>
-                      </g>
-                    ))}
-                  </g>
-                </svg>
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="bisection-table-wrapper">
-          <div className="table-header-actions">
-            <h4>Tabla de iteraciones</h4>
+            <h4>
+              Matriz aumentada [A|b] — Matriz de {n}x{n}
+            </h4>
 
             <button
               type="button"
               className="btn-export"
-              onClick={exportCSV}
-              disabled={rows.length === 0}
+              onClick={tryReorderRows}
             >
-              Descargar CSV
+              Intentar ordenar
             </button>
           </div>
 
-          {rows.length === 0 ? (
-            <p className="bisection-hint">
-              Aquí aparecerán las iteraciones del método.
-            </p>
-          ) : (
-            <div className="table-scroll">
-              <table className="bisection-table">
-                <thead>
-                  <tr>
-                    <th>n</th>
+          <div className="table-scroll">
+            <table className="bisection-table">
+              <thead>
+                <tr>
+                  <th>Ec.</th>
 
-                    {variables.map((variable) => (
-                      <th key={`x-${variable}`}>{variable}</th>
+                  {variables.map((variable) => (
+                    <th key={`coef-${variable}`}>Coef. {variable}</th>
+                  ))}
+
+                  <th>b</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {Array.from({ length: n }).map((_, i) => (
+                  <tr key={`row-${i}`}>
+                    <td>Ec. {i + 1}</td>
+
+                    {Array.from({ length: n + 1 }).map((_, j) => (
+                      <td key={`cell-${i}-${j}`}>
+                        <input
+                          type="number"
+                          step="any"
+                          value={matrix[i]?.[j] ?? ""}
+                          onChange={(e) => setCell(i, j, e.target.value)}
+                        />
+                      </td>
                     ))}
-
-                    {variables.map((variable) => (
-                      <th key={`e-${variable}`}>
-                        E<sub>{variable}</sub>
-                      </th>
-                    ))}
-
-                    <th>Error</th>
                   </tr>
-                </thead>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-                <tbody>
-                  {rows.map((row, index) => {
-                    const isLast = index === lastIndex && foundFinal;
+        <div className="method-section">
+          <h4>Vector inicial</h4>
 
-                    return (
-                      <tr key={row.iter}>
-                        <td>{row.iter}</td>
+          <div className="method-vector-grid">
+            {variables.map((variable, i) => (
+              <div className="bisection-form-row" key={`x0-${variable}`}>
+                <label>
+                  {variable}
+                  <sub>0</sub> =
+                </label>
 
-                        {row.xs.map((value, i) => (
-                          <td
-                            key={`x-${row.iter}-${i}`}
-                            className={isLast ? "cell-green" : ""}
-                          >
-                            {fmt(value)}
-                          </td>
-                        ))}
+                <input
+                  type="number"
+                  step="any"
+                  value={x0[i] ?? ""}
+                  onChange={(e) => setX0Cell(i, e.target.value)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
 
-                        {row.errs.map((value, i) => (
-                          <td key={`err-${row.iter}-${i}`}>
-                            {fmt(value)}
-                          </td>
-                        ))}
+        <div className="bisection-buttons">
+          <button type="submit" className="btn-primary">
+            CALCULAR
+          </button>
 
-                        <td className={isLast ? "cell-red" : ""}>
-                          {fmt(row.maxErr)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          <button type="button" className="btn-secondary" onClick={clearAll}>
+            BORRAR CELDAS
+          </button>
+        </div>
+      </form>
+
+      {message && <p className="bisection-message">{message}</p>}
+      {dominanceMsg && <p className="bisection-message">{dominanceMsg}</p>}
+      {warningMsg && <p className="bisection-warning">{warningMsg}</p>}
+      {errorMsg && <p className="bisection-error">{errorMsg}</p>}
+    </div>
+
+    <div className="bisection-results">
+      <div className="graph-card">
+        <h4 className="graph-title">Respuesta final</h4>
+
+        {!solution ? (
+          <p className="bisection-hint">
+            Aún no hay resultado. Completa los datos y presiona{" "}
+            <strong>CALCULAR</strong>.
+          </p>
+        ) : (
+          <>
+            <div className="method-result-grid">
+              {solution.map((value, index) => (
+                <div className="mini-info-card" key={`solution-${index}`}>
+                  <div className="mini-info-card-title">{variables[index]}</div>
+                  <div className="mini-info-card-value">{fmt(value)}</div>
+                </div>
+              ))}
             </div>
-          )}
 
-          {foundFinal && (
-            <p className="bisection-message">
-              SE ENCONTRÓ LA SOLUCIÓN porque {fmt(rows[lastIndex].maxErr)} &lt;{" "}
-              {tolInput}
+            <p className="bisection-hint" style={{ marginTop: "0.8rem" }}>
+              Residuo máximo:{" "}
+              <strong>
+                {residualMax === null ? "Pendiente" : fmt(residualMax)}
+              </strong>
             </p>
-          )}
+          </>
+        )}
+      </div>
+
+      <div className="graph-card">
+        <h4 className="graph-title">Sistema ingresado</h4>
+
+        <div className="system-preview">
+          {matrix.map((row, i) => {
+            const equation = variables
+              .map((variable, j) => {
+                const coef = row[j] || "0";
+                return `${coef}${variable}`;
+              })
+              .join(" + ");
+
+            return (
+              <p key={`eq-${i}`}>
+                <strong>Ec. {i + 1}:</strong> {equation} = {row[n] || "0"}
+              </p>
+            );
+          })}
         </div>
       </div>
+
+      <div className="graph-card">
+        <div className="table-header-actions">
+          <h4 className="graph-title">Gráfica interactiva de error</h4>
+
+          <div className="chart-actions">
+            <button type="button" className="btn-export" onClick={increaseZoom}>
+              +
+            </button>
+
+            <button type="button" className="btn-export" onClick={decreaseZoom}>
+              -
+            </button>
+
+            <button type="button" className="btn-export" onClick={resetChart}>
+              Reiniciar
+            </button>
+
+            <button
+              type="button"
+              className="btn-export"
+              onClick={downloadChartPNG}
+              disabled={rows.length === 0}
+            >
+              PNG
+            </button>
+          </div>
+        </div>
+
+        {rows.length === 0 ? (
+          <p className="bisection-hint">
+            La gráfica aparecerá después de calcular.
+          </p>
+        ) : (
+          <>
+            <p className="bisection-hint">
+              Usa la rueda del mouse para acercar o alejar. Arrastra la gráfica
+              para desplazarla.
+            </p>
+
+            <div className="interactive-chart-wrapper">
+              <svg
+                ref={svgRef}
+                className="error-chart"
+                viewBox={`0 0 ${width} ${height}`}
+                role="img"
+                aria-label="Gráfica de error contra iteración"
+                onWheel={handleWheel}
+                onMouseDown={startDrag}
+                onMouseMove={moveDrag}
+                onMouseUp={endDrag}
+                onMouseLeave={endDrag}
+              >
+                <style>
+                  {`
+                    .chart-axis { stroke: #334155; stroke-width: 1.5; }
+                    .chart-grid-line { stroke: #e2e8f0; stroke-width: 1; }
+                    .chart-line { stroke: #2563eb; stroke-width: 2.5; }
+                    .chart-point { fill: #dc2626; stroke: white; stroke-width: 1.5; }
+                    .chart-label { font-size: 11px; fill: #334155; }
+                    .chart-axis-title { font-size: 13px; fill: #0f172a; font-weight: 700; }
+                    .chart-title-text { font-size: 16px; fill: #111827; font-weight: 800; }
+                  `}
+                </style>
+
+                <rect x="0" y="0" width={width} height={height} fill="white" />
+
+                <text x={width / 2 - 80} y="22" className="chart-title-text">
+                  Error vs Iteración
+                </text>
+
+                <line
+                  x1={marginLeft}
+                  y1={marginTop + graphHeight}
+                  x2={marginLeft + graphWidth}
+                  y2={marginTop + graphHeight}
+                  className="chart-axis"
+                />
+
+                <line
+                  x1={marginLeft}
+                  y1={marginTop}
+                  x2={marginLeft}
+                  y2={marginTop + graphHeight}
+                  className="chart-axis"
+                />
+
+                {yTicks.map((tick, index) => (
+                  <g key={`ytick-${index}`}>
+                    <line
+                      x1={marginLeft}
+                      y1={tick.y}
+                      x2={marginLeft + graphWidth}
+                      y2={tick.y}
+                      className="chart-grid-line"
+                    />
+
+                    <text x="8" y={tick.y + 4} className="chart-label">
+                      {fmt(tick.value)}
+                    </text>
+                  </g>
+                ))}
+
+                {xTicks.map((point) => (
+                  <g key={`xtick-${point.iter}`}>
+                    <line
+                      x1={point.x}
+                      y1={marginTop + graphHeight}
+                      x2={point.x}
+                      y2={marginTop + graphHeight + 6}
+                      className="chart-axis"
+                    />
+
+                    <text
+                      x={point.x - 4}
+                      y={marginTop + graphHeight + 22}
+                      className="chart-label"
+                    >
+                      {point.iter}
+                    </text>
+                  </g>
+                ))}
+
+                <text
+                  x={width / 2 - 40}
+                  y={height - 18}
+                  className="chart-axis-title"
+                >
+                  Eje X: Iteración
+                </text>
+
+                <text
+                  x="-220"
+                  y="18"
+                  transform="rotate(-90)"
+                  className="chart-axis-title"
+                >
+                  Eje Y: Error máximo
+                </text>
+
+                <g
+                  transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}
+                  className={dragging ? "chart-dragging" : "chart-draggable"}
+                >
+                  <path d={chartPath} className="chart-line" fill="none" />
+
+                  {chartPoints.map((point, index) => (
+                    <g key={`point-${index}`}>
+                      <circle
+                        cx={point.x}
+                        cy={point.y}
+                        r="4"
+                        className="chart-point"
+                      />
+
+                      <title>
+                        Iteración {point.iter} | Error: {fmt(point.error)}
+                      </title>
+                    </g>
+                  ))}
+                </g>
+              </svg>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="bisection-table-wrapper">
+        <div className="table-header-actions">
+          <h4>Tabla de iteraciones</h4>
+
+          <button
+            type="button"
+            className="btn-export"
+            onClick={exportCSV}
+            disabled={rows.length === 0}
+          >
+            Descargar CSV
+          </button>
+        </div>
+
+        {rows.length === 0 ? (
+          <p className="bisection-hint">
+            Aquí aparecerán las iteraciones del método.
+          </p>
+        ) : (
+          <div className="table-scroll">
+            <table className="bisection-table">
+              <thead>
+                <tr>
+                  <th>n</th>
+
+                  {variables.map((variable) => (
+                    <th key={`x-${variable}`}>{variable}</th>
+                  ))}
+
+                  {variables.map((variable) => (
+                    <th key={`e-${variable}`}>
+                      E<sub>{variable}</sub>
+                    </th>
+                  ))}
+
+                  <th>Error</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {rows.map((row, index) => {
+                  const isLast = index === lastIndex && foundFinal;
+
+                  return (
+                    <tr key={row.iter}>
+                      <td>{row.iter}</td>
+
+                      {row.xs.map((value, i) => (
+                        <td
+                          key={`x-${row.iter}-${i}`}
+                          className={isLast ? "cell-green" : ""}
+                        >
+                          {fmt(value)}
+                        </td>
+                      ))}
+
+                      {row.errs.map((value, i) => (
+                        <td key={`err-${row.iter}-${i}`}>
+                          {fmt(value)}
+                        </td>
+                      ))}
+
+                      <td className={isLast ? "cell-red" : ""}>
+                        {fmt(row.maxErr)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {foundFinal && (
+          <p className="bisection-message">
+            SE ENCONTRÓ LA SOLUCIÓN porque {fmt(rows[lastIndex].maxErr)} &lt;{" "}
+            {tolInput}
+          </p>
+        )}
+      </div>
     </div>
-  );
+  </div>
+);
 }

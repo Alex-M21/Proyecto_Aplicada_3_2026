@@ -24,6 +24,9 @@ const makePanZoomHandlers = (range, setRange, width, padL, padR) => {
     e.preventDefault();
     const svg = e.currentTarget;
     const { xMin, xMax } = range;
+
+    if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) return;
+
     const mouseX = clientXToX(svg, e.clientX, xMin, xMax);
 
     const k = e.deltaY < 0 ? 1 / 1.2 : 1.2;
@@ -44,11 +47,13 @@ const makePanZoomHandlers = (range, setRange, width, padL, padR) => {
 
   const onMouseMove = (e) => {
     if (!dragging) return;
+
     const dxPx = e.clientX - lastClientX;
     lastClientX = e.clientX;
 
     const { xMin, xMax } = range;
     const dxX = (-dxPx * (xMax - xMin)) / innerW;
+
     setRange({ xMin: xMin + dxX, xMax: xMax + dxX });
   };
 
@@ -79,12 +84,19 @@ export default function Newton() {
   const [message, setMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  // ---- utilidades numéricas
-  const normalizeExpr = (expr) => expr.trim().replace(/ln/gi, "log").replace(/sen/gi, "sin");
+  // Barra de iteraciones
+  const [iterView, setIterView] = useState(0);
+
+  // -------------------------
+  // Utilidades numéricas
+  // -------------------------
+  const normalizeExpr = (expr) =>
+    expr.trim().replace(/ln/gi, "log").replace(/sen/gi, "sin");
 
   const buildCompiled = (expr) => {
     const t = expr.trim();
     if (!t) return null;
+
     try {
       return math.compile(normalizeExpr(t));
     } catch {
@@ -102,7 +114,8 @@ export default function Newton() {
     return Math.round(v * f) / f;
   };
 
-  const formatNumber = (v) => (Number.isFinite(v) ? v.toFixed(getDecimals()) : "NaN");
+  const formatNumber = (v) =>
+    Number.isFinite(v) ? v.toFixed(getDecimals()) : "NaN";
 
   const tolNum = useMemo(() => {
     const t = parseFloat(tolInput);
@@ -114,9 +127,11 @@ export default function Newton() {
   // =========================
   const handleCalculate = (e) => {
     e.preventDefault();
+
     setMessage("");
     setErrorMsg("");
     setRows([]);
+    setIterView(0);
 
     if (!fxInput.trim() || !dfxInput.trim()) {
       setErrorMsg("Debes ingresar f(x) y su derivada f'(x).");
@@ -131,10 +146,12 @@ export default function Newton() {
       setErrorMsg("Por favor ingresa valores numéricos válidos.");
       return;
     }
+
     if (tol <= 0) {
       setErrorMsg("La tolerancia debe ser positiva.");
       return;
     }
+
     if (maxIter <= 0) {
       setErrorMsg("El número de iteraciones debe ser > 0.");
       return;
@@ -144,6 +161,7 @@ export default function Newton() {
 
     const cF = buildCompiled(fxInput);
     const cDf = buildCompiled(dfxInput);
+
     if (!cF || !cDf) {
       setErrorMsg("No se pudo interpretar f(x) o f'(x).");
       return;
@@ -157,6 +175,7 @@ export default function Newton() {
         return NaN;
       }
     };
+
     const df = (x) => {
       try {
         const r = cDf.evaluate({ x });
@@ -167,9 +186,9 @@ export default function Newton() {
     };
 
     const newRows = [];
-    let xn = x0,
-      ok = false,
-      bad = false;
+    let xn = x0;
+    let ok = false;
+    let bad = false;
 
     try {
       for (let n = 1; n <= maxIter; n++) {
@@ -181,6 +200,7 @@ export default function Newton() {
           bad = true;
           break;
         }
+
         if (dfxn === 0) {
           setErrorMsg("Apareció f'(xₙ)=0. Newton no puede continuar.");
           bad = true;
@@ -190,7 +210,7 @@ export default function Newton() {
         const xNext = roundTo(xn - fxn / dfxn);
         const error = roundTo(Math.abs(xNext - xn));
 
-        // ✅ Guardamos también m y b de la tangente para mostrar ecuaciones
+        // Recta tangente: y = mx + b
         const m = dfxn;
         const b = roundTo(fxn - m * xn);
 
@@ -200,6 +220,7 @@ export default function Newton() {
           ok = true;
           break;
         }
+
         xn = xNext;
       }
     } catch {
@@ -208,9 +229,13 @@ export default function Newton() {
     }
 
     setRows(newRows);
+
     if (!newRows.length || bad) return;
 
+    setIterView(newRows.length - 1);
+
     const last = newRows[newRows.length - 1];
+
     setMessage(
       ok
         ? `Se encontró una aproximación: x ≈ ${formatNumber(last.xNext)}`
@@ -226,12 +251,14 @@ export default function Newton() {
     setMaxIterInput("");
     setDecimalsInput("5");
     setRows([]);
+    setIterView(0);
     setMessage("");
     setErrorMsg("");
   };
 
-  // ✅ Pintar fila final si converge
+  // Pintar fila final si converge
   const lastIndex = rows.length - 1;
+
   const foundFinal =
     rows.length > 0 &&
     Number.isFinite(rows[lastIndex]?.error) &&
@@ -239,10 +266,11 @@ export default function Newton() {
     (rows[lastIndex].error < tolNum || rows[lastIndex].error === 0);
 
   // =========================
-  // Curva base f(x) (para auto-range inicial)
+  // Curva base f(x)
   // =========================
   const graphBase = useMemo(() => {
     const cF = buildCompiled(fxInput);
+
     if (!cF) return { pts: [], xMin: -5, xMax: 5, yMin: -1, yMax: 1 };
 
     const f = (x) => {
@@ -255,7 +283,9 @@ export default function Newton() {
     };
 
     const x0 = parseFloat(x0Input);
-    let xMin, xMax;
+    let xMin;
+    let xMax;
+
     if (Number.isFinite(x0)) {
       xMin = x0 - 2;
       xMax = x0 + 2;
@@ -264,9 +294,10 @@ export default function Newton() {
       xMax = 5;
     }
 
-    const steps = 120,
-      step = (xMax - xMin) / steps,
-      pts = [];
+    const steps = 120;
+    const step = (xMax - xMin) / steps;
+    const pts = [];
+
     for (let i = 0; i <= steps; i++) {
       const x = xMin + i * step;
       const y = f(x);
@@ -276,8 +307,10 @@ export default function Newton() {
     if (!pts.length) return { pts: [], xMin, xMax, yMin: -1, yMax: 1 };
 
     const ys = pts.map((p) => p.y);
-    let yMin = Math.min(...ys),
-      yMax = Math.max(...ys);
+
+    let yMin = Math.min(...ys);
+    let yMax = Math.max(...ys);
+
     if (yMin === yMax) {
       yMin -= 1;
       yMax += 1;
@@ -286,41 +319,69 @@ export default function Newton() {
       yMin -= m;
       yMax += m;
     }
-    return { pts: pts, xMin, xMax, yMin, yMax };
+
+    return { pts, xMin, xMax, yMin, yMax };
   }, [fxInput, x0Input, decimalsInput]);
 
-  // ===== Vista general con pan/zoom =====
-  const width = 420,
-    height = 260,
-    padL = 50,
-    padR = 10,
-    padT = 12,
-    padB = 30;
+  // =========================
+  // Configuración gráfica
+  // =========================
+  const width = 420;
+  const height = 260;
+  const padL = 50;
+  const padR = 10;
+  const padT = 12;
+  const padB = 30;
 
   const [rangeMain, setRangeMain] = useState({ xMin: -5, xMax: 5 });
+
   useEffect(() => {
     setRangeMain({ xMin: graphBase.xMin, xMax: graphBase.xMax });
   }, [graphBase.xMin, graphBase.xMax]);
 
   const buildTicks = (min, max, count = 6) => {
     if (!Number.isFinite(min) || !Number.isFinite(max) || min === max) return [];
+
     const ticks = [];
-    for (let i = 0; i <= count; i++) ticks.push(min + (i * (max - min)) / count);
+
+    for (let i = 0; i <= count; i++) {
+      ticks.push(min + (i * (max - min)) / count);
+    }
+
     return ticks;
   };
 
   const toXY = (xMin, xMax, yMin, yMax) => {
-    const xTo = (x) => padL + ((x - xMin) / (xMax - xMin)) * (width - padL - padR);
-    const yTo = (y) => padT + (1 - (y - yMin) / (yMax - yMin)) * (height - padT - padB);
+    const xTo = (x) =>
+      padL + ((x - xMin) / (xMax - xMin)) * (width - padL - padR);
+
+    const yTo = (y) =>
+      padT + (1 - (y - yMin) / (yMax - yMin)) * (height - padT - padB);
+
     return { xTo, yTo };
   };
 
   const pathFromPts = (pts, xTo, yTo) =>
-    pts.length ? pts.map((p, i) => `${i ? "L" : "M"} ${xTo(p.x)} ${yTo(p.y)}`).join(" ") : "";
+    pts.length
+      ? pts.map((p, i) => `${i ? "L" : "M"} ${xTo(p.x)} ${yTo(p.y)}`).join(" ")
+      : "";
 
-  const buildMainView = (rangeX) => {
+  const makeLinePath = (m, c, xMin, xMax, xTo, yTo) => {
+    const x1 = xMin;
+    const x2 = xMax;
+    const y1 = m * x1 + c;
+    const y2 = m * x2 + c;
+
+    return `M ${xTo(x1)} ${yTo(y1)} L ${xTo(x2)} ${yTo(y2)}`;
+  };
+
+  // =========================
+  // Vista principal con tangente seleccionada
+  // =========================
+  const buildMainView = (rangeX, tangentRow = null) => {
     const { xMin, xMax } = rangeX;
     const cF = buildCompiled(fxInput);
+
     if (!cF) return null;
 
     const f = (x) => {
@@ -332,21 +393,38 @@ export default function Newton() {
       }
     };
 
-    const steps = 200,
-      step = (xMax - xMin) / steps,
-      pts = [];
+    if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) {
+      return null;
+    }
+
+    const steps = 220;
+    const step = (xMax - xMin) / steps;
+    const pts = [];
+
     for (let i = 0; i <= steps; i++) {
       const x = xMin + i * step;
       const y = f(x);
       if (Number.isFinite(y)) pts.push({ x, y });
     }
 
-    let yMin = Infinity,
-      yMax = -Infinity;
+    let yMin = Infinity;
+    let yMax = -Infinity;
+
     pts.forEach((p) => {
       yMin = Math.min(yMin, p.y);
       yMax = Math.max(yMax, p.y);
     });
+
+    // Incluir la tangente actual y el eje x en el rango vertical
+    if (tangentRow) {
+      const yTanA = tangentRow.m * xMin + tangentRow.b;
+      const yTanB = tangentRow.m * xMax + tangentRow.b;
+
+      if (Number.isFinite(yTanA) && Number.isFinite(yTanB)) {
+        yMin = Math.min(yMin, yTanA, yTanB, 0, tangentRow.fxn);
+        yMax = Math.max(yMax, yTanA, yTanB, 0, tangentRow.fxn);
+      }
+    }
 
     if (!Number.isFinite(yMin) || !Number.isFinite(yMax) || yMin === yMax) {
       yMin = -1;
@@ -359,11 +437,16 @@ export default function Newton() {
 
     const xTicks = buildTicks(xMin, xMax, 6);
     const yTicks = buildTicks(yMin, yMax, 6);
+
     const { xTo, yTo } = toXY(xMin, xMax, yMin, yMax);
     const path = pathFromPts(pts, xTo, yTo);
 
     const xAxisY = yMin <= 0 && yMax >= 0 ? yTo(0) : yTo(yMin);
     const yAxisX = xMin <= 0 && xMax >= 0 ? xTo(0) : xTo(xMin);
+
+    const tangentPath = tangentRow
+      ? makeLinePath(tangentRow.m, tangentRow.b, xMin, xMax, xTo, yTo)
+      : "";
 
     return {
       xMin,
@@ -375,6 +458,7 @@ export default function Newton() {
       xAxisY,
       yAxisX,
       path,
+      tangentPath,
       xTo,
       yTo,
     };
@@ -388,34 +472,37 @@ export default function Newton() {
 
   const autoRangeFor = (items) => {
     const xs = items.length ? items.map((r) => r.xn) : [parseFloat(x0Input) || 0];
-    const xmin = Math.min(...xs),
-      xmax = Math.max(...xs);
+
+    const xmin = Math.min(...xs);
+    const xmax = Math.max(...xs);
+
     let span = Math.max(1e-6, xmax - xmin);
+
     if (span < 0.2) span = 0.2;
+
     return { xMin: xmin - span, xMax: xmax + span };
   };
 
   const [rangeA, setRangeA] = useState(() => autoRangeFor(first3));
   const [rangeB, setRangeB] = useState(() => autoRangeFor(last3));
+
   useEffect(() => {
     setRangeA(autoRangeFor(first3));
   }, [rows.length]);
+
   useEffect(() => {
     setRangeB(autoRangeFor(last3));
   }, [rows.length]);
 
-  const makeLinePath = (m, c, xMin, xMax, xTo, yTo) => {
-    const x1 = xMin,
-      x2 = xMax,
-      y1 = m * x1 + c,
-      y2 = m * x2 + c;
-    return `M ${xTo(x1)} ${yTo(y1)} L ${xTo(x2)} ${yTo(y2)}`;
-  };
-
   const buildTangentView = (items, rangeX) => {
     const { xMin, xMax } = rangeX;
 
+    if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin === xMax) {
+      return null;
+    }
+
     const cF = buildCompiled(fxInput);
+
     const f = (x) => {
       try {
         const r = cF ? cF.evaluate({ x }) : NaN;
@@ -425,30 +512,30 @@ export default function Newton() {
       }
     };
 
-    const steps = 160,
-      step = (xMax - xMin) / steps,
-      pts = [];
+    const steps = 160;
+    const step = (xMax - xMin) / steps;
+    const pts = [];
+
     for (let i = 0; i <= steps; i++) {
       const x = xMin + i * step;
       const y = f(x);
       if (Number.isFinite(y)) pts.push({ x, y });
     }
 
-    let yMin = Infinity,
-      yMax = -Infinity;
+    let yMin = Infinity;
+    let yMax = -Infinity;
+
     pts.forEach((p) => {
       yMin = Math.min(yMin, p.y);
       yMax = Math.max(yMax, p.y);
     });
 
-    // incluir tangentes en Y-range
     items.forEach((r) => {
-      const m = r.m;
-      const c = r.b;
-      const ya = m * xMin + c,
-        yb = m * xMax + c;
-      yMin = Math.min(yMin, ya, yb);
-      yMax = Math.max(yMax, ya, yb);
+      const ya = r.m * xMin + r.b;
+      const yb = r.m * xMax + r.b;
+
+      yMin = Math.min(yMin, ya, yb, 0, r.fxn);
+      yMax = Math.max(yMax, ya, yb, 0, r.fxn);
     });
 
     if (!Number.isFinite(yMin) || !Number.isFinite(yMax) || yMin === yMax) {
@@ -460,8 +547,9 @@ export default function Newton() {
       yMax += mm;
     }
 
-    const xTicks = buildTicks(xMin, xMax, 6),
-      yTicks = buildTicks(yMin, yMax, 6);
+    const xTicks = buildTicks(xMin, xMax, 6);
+    const yTicks = buildTicks(yMin, yMax, 6);
+
     const { xTo, yTo } = toXY(xMin, xMax, yMin, yMax);
 
     const basePath = pathFromPts(pts, xTo, yTo);
@@ -478,7 +566,12 @@ export default function Newton() {
       yTicks: yTicks.map((y) => ({ y, Y: yTo(y) })),
     };
 
-    return { basePath, tangents, axis, range: { xMin, xMax, yMin, yMax } };
+    return {
+      basePath,
+      tangents,
+      axis,
+      range: { xMin, xMax, yMin, yMax },
+    };
   };
 
   const viewA = buildTangentView(first3, rangeA);
@@ -486,7 +579,11 @@ export default function Newton() {
 
   const lastRow = rows.length ? rows[rows.length - 1] : null;
 
-  // Colores (mismos que ya usas en la gráfica)
+  const selectedRow = rows.length
+    ? rows[Math.max(0, Math.min(iterView, rows.length - 1))]
+    : null;
+
+  // Colores
   const colorA = ["#DC2626", "#F59E0B", "#10B981"];
   const colorB = ["#7C3AED", "#0EA5E9", "#EF4444"];
 
@@ -496,34 +593,36 @@ export default function Newton() {
     const s = (range.xMax - range.xMin) / 2 / 1.8;
     setRange({ xMin: c - s, xMax: c + s });
   };
+
   const zoomOut = (range, setRange) => {
     const c = (range.xMin + range.xMax) / 2;
-    const s = (range.xMax - range.xMin) / 2 * 1.8;
+    const s = ((range.xMax - range.xMin) / 2) * 1.8;
     setRange({ xMin: c - s, xMax: c + s });
   };
+
   const autoA = () => setRangeA(autoRangeFor(first3));
   const autoB = () => setRangeB(autoRangeFor(last3));
 
-  // Handlers pan/zoom
   const panZoomMain = makePanZoomHandlers(rangeMain, setRangeMain, width, padL, padR);
   const panZoomA = makePanZoomHandlers(rangeA, setRangeA, width, padL, padR);
   const panZoomB = makePanZoomHandlers(rangeB, setRangeB, width, padL, padR);
 
-  // ====== ecuación de tangente como texto ======
+  // Ecuación de tangente como texto
   const tangentText = (r) => {
     const m = r.m;
     const b = r.b;
     const bAbs = Math.abs(b);
     const sign = b >= 0 ? "+" : "-";
-    return `y${r.n}(x) = ${formatNumber(m)} x ${sign} ${formatNumber(bAbs)}`;
+
+    return `y${r.n}(x) = ${formatNumber(m)}x ${sign} ${formatNumber(bAbs)}`;
   };
 
-  // ✅ helper agregado: dibujar ejes + escalas + etiquetas
+  // Dibujar ejes + escalas + etiquetas
   const renderAxes = (axis) => {
     const { xAxisY, yAxisX, xTicks, yTicks } = axis;
+
     return (
       <>
-        {/* grid */}
         {xTicks.map((t, i) => (
           <line
             key={`grid-x-${i}`}
@@ -534,6 +633,7 @@ export default function Newton() {
             stroke="#e5e7eb"
           />
         ))}
+
         {yTicks.map((t, i) => (
           <line
             key={`grid-y-${i}`}
@@ -545,31 +645,68 @@ export default function Newton() {
           />
         ))}
 
-        {/* ejes */}
-        <line x1={padL} x2={width - padR} y1={xAxisY} y2={xAxisY} stroke="#9ca3af" strokeWidth="1.2" />
-        <line x1={yAxisX} x2={yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" strokeWidth="1.2" />
+        <line
+          x1={padL}
+          x2={width - padR}
+          y1={xAxisY}
+          y2={xAxisY}
+          stroke="#9ca3af"
+          strokeWidth="1.2"
+        />
 
-        {/* ticks x */}
+        <line
+          x1={yAxisX}
+          x2={yAxisX}
+          y1={padT}
+          y2={height - padB}
+          stroke="#9ca3af"
+          strokeWidth="1.2"
+        />
+
         {xTicks.map((t, i) => (
           <g key={`tick-x-${i}`}>
-            <line x1={t.X} x2={t.X} y1={height - padB} y2={height - padB + 5} stroke="#6b7280" />
-            <text x={t.X} y={height - 6} fontSize="9" textAnchor="middle" fill="#374151">
+            <line
+              x1={t.X}
+              x2={t.X}
+              y1={height - padB}
+              y2={height - padB + 5}
+              stroke="#6b7280"
+            />
+
+            <text
+              x={t.X}
+              y={height - 6}
+              fontSize="9"
+              textAnchor="middle"
+              fill="#374151"
+            >
               {t.x.toFixed(2)}
             </text>
           </g>
         ))}
 
-        {/* ticks y */}
         {yTicks.map((t, i) => (
           <g key={`tick-y-${i}`}>
-            <line x1={padL - 5} x2={padL} y1={t.Y} y2={t.Y} stroke="#6b7280" />
-            <text x={padL - 6} y={t.Y + 3} fontSize="9" textAnchor="end" fill="#374151">
+            <line
+              x1={padL - 5}
+              x2={padL}
+              y1={t.Y}
+              y2={t.Y}
+              stroke="#6b7280"
+            />
+
+            <text
+              x={padL - 6}
+              y={t.Y + 3}
+              fontSize="9"
+              textAnchor="end"
+              fill="#374151"
+            >
               {t.y.toFixed(2)}
             </text>
           </g>
         ))}
 
-        {/* nombres de ejes */}
         <text
           x={(padL + width - padR) / 2}
           y={height - 2}
@@ -582,11 +719,11 @@ export default function Newton() {
 
         <text
           x={16}
-          y={(padT + (height - padB)) / 2}
+          y={(padT + height - padB) / 2}
           fontSize="11"
           textAnchor="middle"
           fill="#374151"
-          transform={`rotate(-90 16 ${(padT + (height - padB)) / 2})`}
+          transform={`rotate(-90 16 ${(padT + height - padB) / 2})`}
         >
           f(x)
         </text>
@@ -594,60 +731,91 @@ export default function Newton() {
     );
   };
 
-  // ========= RENDER =========
   return (
     <div className="bisection-grid">
       {/* Formulario */}
       <div className="bisection-form">
         <h3>Método de Newton-Raphson</h3>
+
         <p className="bisection-hint">
-          Ingresa f(x) y su derivada f&apos;(x). Ej: <code>1-cos(x)</code> y <code>sin(x)</code>.
-          Acepta <code>ln(x)</code> y <code>sen(x)</code>.
+          Ingresa f(x) y su derivada f&apos;(x). Ej: <code>1-cos(x)</code> y{" "}
+          <code>sin(x)</code>. Acepta <code>ln(x)</code> y <code>sen(x)</code>.
         </p>
 
         <form onSubmit={handleCalculate}>
           <div className="bisection-form-row">
             <label>f(x) =</label>
-            <input type="text" value={fxInput} onChange={(e) => setFxInput(e.target.value)} />
+            <input
+              type="text"
+              value={fxInput}
+              onChange={(e) => setFxInput(e.target.value)}
+            />
           </div>
 
           <div className="bisection-form-row">
             <label>f&apos;(x) =</label>
-            <input type="text" value={dfxInput} onChange={(e) => setDfxInput(e.target.value)} />
+            <input
+              type="text"
+              value={dfxInput}
+              onChange={(e) => setDfxInput(e.target.value)}
+            />
           </div>
 
           <div className="bisection-form-row">
             <label>x₀ =</label>
-            <input type="number" step="any" value={x0Input} onChange={(e) => setX0Input(e.target.value)} />
+            <input
+              type="number"
+              step="any"
+              value={x0Input}
+              onChange={(e) => setX0Input(e.target.value)}
+            />
           </div>
 
           <div className="bisection-form-row">
             <label>Tolerancia =</label>
-            <input type="number" step="any" value={tolInput} onChange={(e) => setTolInput(e.target.value)} />
+            <input
+              type="number"
+              step="any"
+              value={tolInput}
+              onChange={(e) => setTolInput(e.target.value)}
+            />
           </div>
 
           <div className="bisection-form-row">
             <label>Iteraciones =</label>
-            <input type="number" value={maxIterInput} onChange={(e) => setMaxIterInput(e.target.value)} />
+            <input
+              type="number"
+              value={maxIterInput}
+              onChange={(e) => setMaxIterInput(e.target.value)}
+            />
           </div>
 
           <div className="bisection-form-row">
             <label>Decimales =</label>
-            <input type="number" value={decimalsInput} onChange={(e) => setDecimalsInput(e.target.value)} />
+            <input
+              type="number"
+              value={decimalsInput}
+              onChange={(e) => setDecimalsInput(e.target.value)}
+            />
           </div>
 
           <div className="bisection-buttons">
-            <button type="submit" className="btn-primary">CALCULAR</button>
-            <button type="button" className="btn-secondary" onClick={handleClear}>BORRAR CELDAS</button>
+            <button type="submit" className="btn-primary">
+              CALCULAR
+            </button>
+
+            <button type="button" className="btn-secondary" onClick={handleClear}>
+              BORRAR CELDAS
+            </button>
           </div>
         </form>
 
         {message && <p className="bisection-message">{message}</p>}
         {errorMsg && <p className="bisection-error">{errorMsg}</p>}
 
-        {/* ✅ Ecuación general */}
         <div className="graph-card" style={{ marginTop: "1rem" }}>
           <h4 className="graph-title">Recta tangente (general)</h4>
+
           <p style={{ margin: 0 }}>
             Para cada iteración n:
             <br />
@@ -664,11 +832,13 @@ export default function Newton() {
 
       {/* Resultados */}
       <div className="bisection-results">
-        {/* Tabla */}
         <div className="bisection-table-wrapper">
           <h4>Tabla de iteraciones</h4>
+
           {rows.length === 0 ? (
-            <p className="bisection-hint">Ingresa datos y presiona <strong>CALCULAR</strong>.</p>
+            <p className="bisection-hint">
+              Ingresa datos y presiona <strong>CALCULAR</strong>.
+            </p>
           ) : (
             <table className="bisection-table">
               <thead>
@@ -681,17 +851,24 @@ export default function Newton() {
                   <th>|xₙ₊₁ - xₙ|</th>
                 </tr>
               </thead>
+
               <tbody>
                 {rows.map((r, idx) => {
                   const isLast = idx === lastIndex && foundFinal;
+                  const isSelected = idx === iterView;
+
                   return (
-                    <tr key={r.n}>
+                    <tr key={r.n} className={isSelected ? "row-selected" : ""}>
                       <td>{r.n}</td>
                       <td>{formatNumber(r.xn)}</td>
                       <td>{formatNumber(r.fxn)}</td>
                       <td>{formatNumber(r.dfxn)}</td>
-                      <td className={isLast ? "cell-green" : ""}>{formatNumber(r.xNext)}</td>
-                      <td className={isLast ? "cell-red" : ""}>{formatNumber(r.error)}</td>
+                      <td className={isLast ? "cell-green" : ""}>
+                        {formatNumber(r.xNext)}
+                      </td>
+                      <td className={isLast ? "cell-red" : ""}>
+                        {formatNumber(r.error)}
+                      </td>
                     </tr>
                   );
                 })}
@@ -700,12 +877,83 @@ export default function Newton() {
           )}
         </div>
 
-        {/* Vista general f(x) con pan/zoom */}
+        {/* Vista general con tangente por iteración */}
         <div className="graph-card">
-          <h4 className="graph-title">f(x) — vista general (zoom y pan)</h4>
+          <h4 className="graph-title">Recta tangente por iteración</h4>
+
+          {rows.length > 0 && (
+            <div style={{ margin: "8px 0 12px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                  fontSize: 12,
+                }}
+              >
+                <span>
+                  Iteración: <strong>{rows[iterView]?.n}</strong>
+                </span>
+
+                <span>
+                  xₙ:{" "}
+                  <strong>{selectedRow ? formatNumber(selectedRow.xn) : "-"}</strong>
+                </span>
+
+                <span>
+                  xₙ₊₁:{" "}
+                  <strong>
+                    {selectedRow ? formatNumber(selectedRow.xNext) : "-"}
+                  </strong>
+                </span>
+
+                <span>
+                  Error:{" "}
+                  <strong>
+                    {selectedRow ? formatNumber(selectedRow.error) : "-"}
+                  </strong>
+                </span>
+              </div>
+
+              <input
+                type="range"
+                min="0"
+                max={Math.max(0, rows.length - 1)}
+                value={iterView}
+                onChange={(e) => setIterView(parseInt(e.target.value, 10))}
+                style={{ width: "100%" }}
+              />
+
+              {selectedRow && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: "0.65rem 0.75rem",
+                    background: "#f8fafc",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 12,
+                    fontSize: 13,
+                  }}
+                >
+                  <strong>Recta tangente actual:</strong>{" "}
+                  <code>{tangentText(selectedRow)}</code>
+                </div>
+              )}
+
+              <p className="bisection-hint" style={{ marginTop: 4 }}>
+                Slider: muestra la recta tangente correspondiente a cada iteración.
+              </p>
+            </div>
+          )}
+
           {(() => {
-            const v = buildMainView(rangeMain);
-            if (!v) return <p className="bisection-hint">No se pudo graficar f(x).</p>;
+            const v = buildMainView(rangeMain, selectedRow);
+
+            if (!v) {
+              return <p className="bisection-hint">No se pudo graficar f(x).</p>;
+            }
+
             return (
               <svg
                 className="graph-svg"
@@ -713,37 +961,88 @@ export default function Newton() {
                 preserveAspectRatio="none"
                 {...panZoomMain}
               >
-                {/* grid */}
                 {v.xTicks.map((t, i) => (
-                  <line key={`gx${i}`} x1={t.X} x2={t.X} y1={padT} y2={height - padB} stroke="#e5e7eb" />
+                  <line
+                    key={`gx${i}`}
+                    x1={t.X}
+                    x2={t.X}
+                    y1={padT}
+                    y2={height - padB}
+                    stroke="#e5e7eb"
+                  />
                 ))}
+
                 {v.yTicks.map((t, i) => (
-                  <line key={`gy${i}`} x1={padL} x2={width - padR} y1={t.Y} y2={t.Y} stroke="#e5e7eb" />
+                  <line
+                    key={`gy${i}`}
+                    x1={padL}
+                    x2={width - padR}
+                    y1={t.Y}
+                    y2={t.Y}
+                    stroke="#e5e7eb"
+                  />
                 ))}
 
-                {/* ejes */}
-                <line x1={padL} x2={width - padR} y1={v.xAxisY} y2={v.xAxisY} stroke="#9ca3af" />
-                <line x1={v.yAxisX} x2={v.yAxisX} y1={padT} y2={height - padB} stroke="#9ca3af" />
+                <line
+                  x1={padL}
+                  x2={width - padR}
+                  y1={v.xAxisY}
+                  y2={v.xAxisY}
+                  stroke="#9ca3af"
+                />
 
-                {/* ticks + labels */}
+                <line
+                  x1={v.yAxisX}
+                  x2={v.yAxisX}
+                  y1={padT}
+                  y2={height - padB}
+                  stroke="#9ca3af"
+                />
+
                 {v.xTicks.map((t, i) => (
                   <g key={`xt${i}`}>
-                    <line x1={t.X} x2={t.X} y1={v.xAxisY - 3} y2={v.xAxisY + 3} stroke="#6b7280" />
-                    <text x={t.X} y={height - 6} fontSize="9" textAnchor="middle" fill="#374151">
+                    <line
+                      x1={t.X}
+                      x2={t.X}
+                      y1={v.xAxisY - 3}
+                      y2={v.xAxisY + 3}
+                      stroke="#6b7280"
+                    />
+
+                    <text
+                      x={t.X}
+                      y={height - 6}
+                      fontSize="9"
+                      textAnchor="middle"
+                      fill="#374151"
+                    >
                       {t.x.toFixed(2)}
                     </text>
                   </g>
                 ))}
+
                 {v.yTicks.map((t, i) => (
                   <g key={`yt${i}`}>
-                    <line x1={v.yAxisX - 3} x2={v.yAxisX + 3} y1={t.Y} y2={t.Y} stroke="#6b7280" />
-                    <text x={padL - 6} y={t.Y + 3} fontSize="9" textAnchor="end" fill="#374151">
+                    <line
+                      x1={v.yAxisX - 3}
+                      x2={v.yAxisX + 3}
+                      y1={t.Y}
+                      y2={t.Y}
+                      stroke="#6b7280"
+                    />
+
+                    <text
+                      x={padL - 6}
+                      y={t.Y + 3}
+                      fontSize="9"
+                      textAnchor="end"
+                      fill="#374151"
+                    >
                       {t.y.toFixed(2)}
                     </text>
                   </g>
                 ))}
 
-                {/* ✅ etiquetas agregadas */}
                 <text
                   x={(padL + width - padR) / 2}
                   y={height - 2}
@@ -756,28 +1055,94 @@ export default function Newton() {
 
                 <text
                   x={16}
-                  y={(padT + (height - padB)) / 2}
+                  y={(padT + height - padB) / 2}
                   fontSize="11"
                   textAnchor="middle"
                   fill="#374151"
-                  transform={`rotate(-90 16 ${(padT + (height - padB)) / 2})`}
+                  transform={`rotate(-90 16 ${(padT + height - padB) / 2})`}
                 >
                   f(x)
                 </text>
 
-                {/* curva */}
+                {/* Curva f(x) */}
                 <path d={v.path} fill="none" stroke="#2563eb" strokeWidth="1.7" />
 
-                {/* última aproximación */}
+                {/* Tangente seleccionada */}
+                {selectedRow && (
+                  <>
+                    <path
+                      d={v.tangentPath}
+                      fill="none"
+                      stroke="#ef4444"
+                      strokeWidth="2.2"
+                    />
+
+                    <line
+                      x1={v.xTo(selectedRow.xn)}
+                      x2={v.xTo(selectedRow.xn)}
+                      y1={v.yTo(0)}
+                      y2={v.yTo(selectedRow.fxn)}
+                      stroke="#f59e0b"
+                      strokeWidth="1.3"
+                      strokeDasharray="4 3"
+                    />
+
+                    <line
+                      x1={v.xTo(selectedRow.xNext)}
+                      x2={v.xTo(selectedRow.xNext)}
+                      y1={padT}
+                      y2={height - padB}
+                      stroke="#16a34a"
+                      strokeWidth="1.2"
+                      strokeDasharray="4 3"
+                    />
+
+                    <circle
+                      cx={v.xTo(selectedRow.xn)}
+                      cy={v.yTo(selectedRow.fxn)}
+                      r="4.5"
+                      fill="#f59e0b"
+                    />
+
+                    <circle
+                      cx={v.xTo(selectedRow.xNext)}
+                      cy={v.yTo(0)}
+                      r="4.5"
+                      fill="#16a34a"
+                    />
+
+                    <text
+                      x={v.xTo(selectedRow.xn)}
+                      y={v.yTo(selectedRow.fxn) - 8}
+                      fontSize="10"
+                      textAnchor="middle"
+                      fill="#92400e"
+                    >
+                      xₙ
+                    </text>
+
+                    <text
+                      x={v.xTo(selectedRow.xNext)}
+                      y={v.yTo(0) - 8}
+                      fontSize="10"
+                      textAnchor="middle"
+                      fill="#166534"
+                    >
+                      xₙ₊₁
+                    </text>
+                  </>
+                )}
+
                 {lastRow && (
                   <line
                     x1={v.xTo(lastRow.xNext)}
                     x2={v.xTo(lastRow.xNext)}
                     y1={padT}
                     y2={height - padB}
-                    stroke="#ef4444"
-                    strokeWidth="1.3"
-                    strokeDasharray="4 3"
+                    stroke="#16a34a"
+                    strokeWidth="1"
+                    strokeDasharray="2 3"
+                    opacity="0.55"
                   />
                 )}
               </svg>
@@ -785,39 +1150,95 @@ export default function Newton() {
           })()}
         </div>
 
-        {/* ---- Tangentes: Primeras 3 ---- */}
-        {rows.length > 0 && (
+        {/* Primeras 3 tangentes */}
+        {rows.length > 0 && viewA && (
           <div className="graph-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 12,
+                flexWrap: "wrap",
+              }}
+            >
               <h4 className="graph-title">Primeras 3 rectas tangentes</h4>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <button className="btn-download" onClick={() => zoomIn(rangeA, setRangeA)}>Zoom +</button>
-                <button className="btn-download btn-download-secondary" onClick={() => zoomOut(rangeA, setRangeA)}>Zoom −</button>
-                <button className="btn-secondary" onClick={autoA}>Auto</button>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn-download"
+                  onClick={() => zoomIn(rangeA, setRangeA)}
+                >
+                  Zoom +
+                </button>
+
+                <button
+                  type="button"
+                  className="btn-download btn-download-secondary"
+                  onClick={() => zoomOut(rangeA, setRangeA)}
+                >
+                  Zoom −
+                </button>
+
+                <button type="button" className="btn-secondary" onClick={autoA}>
+                  Auto
+                </button>
+
                 <span style={{ fontSize: 12 }}>xMin</span>
+
                 <input
                   style={{ width: 90 }}
                   type="number"
                   step="any"
                   value={rangeA.xMin}
-                  onChange={(e) => setRangeA((r) => ({ ...r, xMin: parseFloat(e.target.value) }))}
+                  onChange={(e) =>
+                    setRangeA((r) => ({ ...r, xMin: parseFloat(e.target.value) }))
+                  }
                 />
+
                 <span style={{ fontSize: 12 }}>xMax</span>
+
                 <input
                   style={{ width: 90 }}
                   type="number"
                   step="any"
                   value={rangeA.xMax}
-                  onChange={(e) => setRangeA((r) => ({ ...r, xMax: parseFloat(e.target.value) }))}
+                  onChange={(e) =>
+                    setRangeA((r) => ({ ...r, xMax: parseFloat(e.target.value) }))
+                  }
                 />
               </div>
             </div>
 
-            {/* ✅ Ecuaciones y1,y2,y3 con color */}
             <div style={{ marginTop: 8 }}>
               {first3.map((r, i) => (
-                <div key={`eqA-${r.n}`} style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
-                  <span style={{ width: 14, height: 14, borderRadius: 4, background: colorA[i], display: "inline-block" }} />
+                <div
+                  key={`eqA-${r.n}`}
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "baseline",
+                    marginBottom: 4,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: 4,
+                      background: colorA[i],
+                      display: "inline-block",
+                    }}
+                  />
+
                   <code style={{ fontSize: 13 }}>{tangentText(r)}</code>
                 </div>
               ))}
@@ -829,58 +1250,118 @@ export default function Newton() {
               preserveAspectRatio="none"
               {...panZoomA}
             >
-              {(() => {
-                const v = viewA;
-                const { xAxisY, yAxisX } = v.axis;
-                return (
-                  <>
-                    {/* ✅ agregado: ejes, escalas y nombres */}
-                    {renderAxes(v.axis)}
+              {renderAxes(viewA.axis)}
 
-                    <path d={v.basePath} fill="none" stroke="#2563eb" strokeOpacity="0.5" strokeWidth="1.4" />
-                    {v.tangents.map((tg, i) => (
-                      <path key={tg.n} d={tg.path} fill="none" stroke={colorA[i]} strokeWidth="2" />
-                    ))}
-                  </>
-                );
-              })()}
+              <path
+                d={viewA.basePath}
+                fill="none"
+                stroke="#2563eb"
+                strokeOpacity="0.5"
+                strokeWidth="1.4"
+              />
+
+              {viewA.tangents.map((tg, i) => (
+                <path
+                  key={tg.n}
+                  d={tg.path}
+                  fill="none"
+                  stroke={colorA[i]}
+                  strokeWidth="2"
+                />
+              ))}
             </svg>
           </div>
         )}
 
-        {/* ---- Tangentes: Últimas 3 ---- */}
-        {rows.length > 0 && (
+        {/* Últimas 3 tangentes */}
+        {rows.length > 0 && viewB && (
           <div className="graph-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 12,
+                flexWrap: "wrap",
+              }}
+            >
               <h4 className="graph-title">Últimas 3 rectas tangentes</h4>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <button className="btn-download" onClick={() => zoomIn(rangeB, setRangeB)}>Zoom +</button>
-                <button className="btn-download btn-download-secondary" onClick={() => zoomOut(rangeB, setRangeB)}>Zoom −</button>
-                <button className="btn-secondary" onClick={autoB}>Auto</button>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn-download"
+                  onClick={() => zoomIn(rangeB, setRangeB)}
+                >
+                  Zoom +
+                </button>
+
+                <button
+                  type="button"
+                  className="btn-download btn-download-secondary"
+                  onClick={() => zoomOut(rangeB, setRangeB)}
+                >
+                  Zoom −
+                </button>
+
+                <button type="button" className="btn-secondary" onClick={autoB}>
+                  Auto
+                </button>
+
                 <span style={{ fontSize: 12 }}>xMin</span>
+
                 <input
                   style={{ width: 90 }}
                   type="number"
                   step="any"
                   value={rangeB.xMin}
-                  onChange={(e) => setRangeB((r) => ({ ...r, xMin: parseFloat(e.target.value) }))}
+                  onChange={(e) =>
+                    setRangeB((r) => ({ ...r, xMin: parseFloat(e.target.value) }))
+                  }
                 />
+
                 <span style={{ fontSize: 12 }}>xMax</span>
+
                 <input
                   style={{ width: 90 }}
                   type="number"
                   step="any"
                   value={rangeB.xMax}
-                  onChange={(e) => setRangeB((r) => ({ ...r, xMax: parseFloat(e.target.value) }))}
+                  onChange={(e) =>
+                    setRangeB((r) => ({ ...r, xMax: parseFloat(e.target.value) }))
+                  }
                 />
               </div>
             </div>
 
-            {/* ✅ Ecuaciones y_{n-2}, y_{n-1}, y_n con color */}
             <div style={{ marginTop: 8 }}>
               {last3.map((r, i) => (
-                <div key={`eqB-${r.n}`} style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
-                  <span style={{ width: 14, height: 14, borderRadius: 4, background: colorB[i], display: "inline-block" }} />
+                <div
+                  key={`eqB-${r.n}`}
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "baseline",
+                    marginBottom: 4,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: 4,
+                      background: colorB[i],
+                      display: "inline-block",
+                    }}
+                  />
+
                   <code style={{ fontSize: 13 }}>{tangentText(r)}</code>
                 </div>
               ))}
@@ -892,21 +1373,25 @@ export default function Newton() {
               preserveAspectRatio="none"
               {...panZoomB}
             >
-              {(() => {
-                const v = viewB;
-                const { xAxisY, yAxisX } = v.axis;
-                return (
-                  <>
-                    {/* ✅ agregado: ejes, escalas y nombres */}
-                    {renderAxes(v.axis)}
+              {renderAxes(viewB.axis)}
 
-                    <path d={v.basePath} fill="none" stroke="#2563eb" strokeOpacity="0.5" strokeWidth="1.4" />
-                    {v.tangents.map((tg, i) => (
-                      <path key={tg.n} d={tg.path} fill="none" stroke={colorB[i]} strokeWidth="2" />
-                    ))}
-                  </>
-                );
-              })()}
+              <path
+                d={viewB.basePath}
+                fill="none"
+                stroke="#2563eb"
+                strokeOpacity="0.5"
+                strokeWidth="1.4"
+              />
+
+              {viewB.tangents.map((tg, i) => (
+                <path
+                  key={tg.n}
+                  d={tg.path}
+                  fill="none"
+                  stroke={colorB[i]}
+                  strokeWidth="2"
+                />
+              ))}
             </svg>
           </div>
         )}

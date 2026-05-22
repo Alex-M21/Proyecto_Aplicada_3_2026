@@ -716,496 +716,506 @@ export default function NewtonDivididas() {
 
   const n = Math.max(2, parseInt(nInput, 10) || 2);
 
-  return (
-    <div className="bisection-grid">
-      <div className="bisection-form">
-        <h3>Diferencias divididas de Newton</h3>
+ return (
+  <div className="bisection-grid">
+    <div className="bisection-form">
+      <h3>Diferencias divididas de Newton</h3>
 
-        <p className="bisection-hint">
-          Ingresa los puntos conocidos y el valor de <strong>x</strong> a interpolar.
-          El programa ordena los puntos, construye la tabla, genera el polinomio y grafica el resultado.
-        </p>
+      <p className="bisection-hint">
+        Ingresa los puntos conocidos y el valor de <strong>x</strong> a interpolar.
+        El programa ordena los puntos, construye la tabla, genera el polinomio y grafica el resultado.
+      </p>
 
-        <form onSubmit={handleCalculate}>
-          <div className="method-section">
-            <h4>Configuración</h4>
+      <form onSubmit={handleCalculate}>
+        <div className="method-section">
+          <h4>Configuración</h4>
 
-            <div className="method-two-columns">
-              <div className="bisection-form-row">
-                <label>Valor de x =</label>
+          <div className="method-two-columns">
+            <div className="bisection-form-row">
+              <label>Valor de x =</label>
 
-                <input
-                  type="number"
-                  step="any"
-                  value={xEvalInput}
-                  onChange={(e) => {
-                    setXEvalInput(e.target.value);
-                    resetResults();
-                  }}
-                  placeholder="Ejemplo: 5"
-                />
-              </div>
+              <input
+                type="number"
+                step="any"
+                value={xEvalInput}
+                onChange={(e) => {
+                  setXEvalInput(e.target.value);
+                  resetResults();
+                }}
+                placeholder="Ejemplo: 5"
+              />
+            </div>
 
-              <div className="bisection-form-row">
-                <label>Número de puntos =</label>
+            <div className="bisection-form-row">
+              <label>Número de puntos =</label>
 
-                <input
-                  type="number"
-                  min="2"
-                  step="1"
-                  value={nInput}
-                  onChange={(e) => setNPoints(e.target.value)}
-                />
-              </div>
+              <input
+                type="number"
+                min="2"
+                step="1"
+                value={nInput}
+                onChange={(e) => setNPoints(e.target.value)}
+              />
+            </div>
 
-              <div className="bisection-form-row">
-                <label>Decimales =</label>
+            <div className="bisection-form-row">
+              <label>Decimales =</label>
 
-                <input
-                  type="number"
-                  min="0"
-                  value={decimalsInput}
-                  onChange={(e) => setDecimalsInput(e.target.value)}
-                />
-              </div>
+              <input
+                type="number"
+                min="0"
+                value={decimalsInput}
+                onChange={(e) => setDecimalsInput(e.target.value)}
+              />
             </div>
           </div>
-
-          <div className="method-section">
-            <div className="table-header-actions">
-              <h4>Tabla de puntos</h4>
-
-              <div className="chart-actions">
-                <button type="button" className="btn-export" onClick={addPoint}>
-                  Agregar punto
-                </button>
-
-                <button type="button" className="btn-export" onClick={removePoint}>
-                  Quitar punto
-                </button>
-
-                <button type="button" className="btn-export" onClick={sortPointsByX}>
-                  Ordenar por x
-                </button>
-              </div>
-            </div>
-
-            <div className="table-scroll">
-              <table className="bisection-table">
-                <thead>
-                  <tr>
-                    <th>Punto</th>
-                    <th>xᵢ</th>
-                    <th>f(xᵢ)</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {Array.from({ length: n }).map((_, i) => (
-                    <tr key={`point-${i}`}>
-                      <td>P{i + 1}</td>
-
-                      <td>
-                        <input
-                          type="number"
-                          step="any"
-                          value={points[i]?.x ?? ""}
-                          onChange={(e) => updatePoint(i, "x", e.target.value)}
-                          placeholder={`x${i + 1}`}
-                        />
-                      </td>
-
-                      <td>
-                        <input
-                          type="number"
-                          step="any"
-                          value={points[i]?.y ?? ""}
-                          onChange={(e) => updatePoint(i, "y", e.target.value)}
-                          placeholder={`f(x${i + 1})`}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="bisection-buttons">
-            <button type="submit" className="btn-primary">
-              CALCULAR
-            </button>
-
-            <button type="button" className="btn-secondary" onClick={handleClear}>
-              BORRAR CELDAS
-            </button>
-          </div>
-        </form>
-
-        {message && <p className="bisection-message">{message}</p>}
-        {warningMsg && <p className="bisection-warning">{warningMsg}</p>}
-        {errorMsg && <p className="bisection-error">{errorMsg}</p>}
-      </div>
-
-      <div className="bisection-results">
-        <div className="graph-card">
-          <h4 className="graph-title">Respuesta final</h4>
-
-          {result !== null ? (
-            <div className="method-result-grid">
-              <div className="mini-info-card">
-                <div className="mini-info-card-title">Valor evaluado</div>
-                <div className="mini-info-card-value">x = {fmt(parseNum(xEvalInput))}</div>
-              </div>
-
-              <div className="mini-info-card">
-                <div className="mini-info-card-title">Resultado</div>
-                <div className="mini-info-card-value">P(x) = {fmt(result)}</div>
-              </div>
-
-              <div className="mini-info-card">
-                <div className="mini-info-card-title">Puntos usados</div>
-                <div className="mini-info-card-value">{activeXs.length}</div>
-              </div>
-
-              <div className="mini-info-card">
-                <div className="mini-info-card-title">Grado máximo</div>
-                <div className="mini-info-card-value">{activeXs.length - 1}</div>
-              </div>
-            </div>
-          ) : (
-            <p className="bisection-hint">
-              Aún no hay resultado. Completa los datos y presiona <strong>CALCULAR</strong>.
-            </p>
-          )}
         </div>
 
-        <div className="graph-card">
-          <h4 className="graph-title">Polinomio interpolante</h4>
-
-          {!coeffs ? (
-            <p className="bisection-hint">
-              Aquí aparecerá el polinomio después de calcular.
-            </p>
-          ) : (
-            <div className="system-preview">
-              <p>
-                <strong>Forma de Newton:</strong>
-              </p>
-              <p>{polyStrings.product}</p>
-
-              <p>
-                <strong>Forma expandida:</strong>
-              </p>
-              <p>{polyStrings.expanded}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="graph-card">
-          <h4 className="graph-title">Coeficientes</h4>
-
-          {!coeffs ? (
-            <p className="bisection-hint">
-              Los coeficientes aparecerán después de calcular.
-            </p>
-          ) : (
-            <div className="method-result-grid">
-              {coeffs.map((c, i) => (
-                <div className="mini-info-card" key={`coef-${i}`}>
-                  <div className="mini-info-card-title">a{i}</div>
-                  <div className="mini-info-card-value">{fmt(c)}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="bisection-results full-width-results">
-        <div className="graph-card">
+        <div className="method-section">
           <div className="table-header-actions">
-            <h4 className="graph-title">Gráfica interactiva del polinomio</h4>
+            <h4>Tabla de puntos</h4>
 
             <div className="chart-actions">
-              <button type="button" className="btn-export" onClick={increaseZoom}>
-                +
+              <button type="button" className="btn-export" onClick={addPoint}>
+                Agregar punto
               </button>
 
-              <button type="button" className="btn-export" onClick={decreaseZoom}>
-                -
+              <button type="button" className="btn-export" onClick={removePoint}>
+                Quitar punto
               </button>
 
-              <button type="button" className="btn-export" onClick={resetChart}>
-                Reiniciar
-              </button>
-
-              <button
-                type="button"
-                className="btn-export"
-                onClick={downloadChartPNG}
-                disabled={!coeffs}
-              >
-                PNG
+              <button type="button" className="btn-export" onClick={sortPointsByX}>
+                Ordenar por x
               </button>
             </div>
           </div>
 
-          {!graph.ok ? (
-            <p className="bisection-hint">
-              La gráfica aparecerá después de ingresar puntos válidos.
-            </p>
-          ) : (
-            <>
-              <p className="bisection-hint">
-                Usa la rueda del mouse para acercar o alejar. Arrastra la gráfica para desplazarla.
-                Los valores de los ejes se actualizan con el zoom y el desplazamiento.
-              </p>
+          <div className="table-scroll">
+            <table className="bisection-table">
+              <thead>
+                <tr>
+                  <th>Punto</th>
+                  <th>xᵢ</th>
+                  <th>f(xᵢ)</th>
+                </tr>
+              </thead>
 
-              <div className="interactive-chart-wrapper">
-                <svg
-                  ref={svgRef}
-                  className="error-chart"
-                  viewBox={`0 0 ${width} ${height}`}
-                  role="img"
-                  aria-label="Gráfica del polinomio interpolante"
-                  onWheel={handleWheel}
-                  onMouseDown={startDrag}
-                  onMouseMove={moveDrag}
-                  onMouseUp={endDrag}
-                  onMouseLeave={endDrag}
-                >
-                  <style>
-                    {`
-                      .chart-axis { stroke: #334155; stroke-width: 1.5; }
-                      .chart-grid-line { stroke: #e2e8f0; stroke-width: 1; }
-                      .chart-line { stroke: #2563eb; stroke-width: 2.5; }
-                      .chart-point { fill: #111827; stroke: white; stroke-width: 1.5; }
-                      .chart-eval-point { fill: #dc2626; stroke: white; stroke-width: 1.5; }
-                      .chart-label { font-size: 11px; fill: #334155; }
-                      .chart-axis-title { font-size: 13px; fill: #0f172a; font-weight: 700; }
-                      .chart-title-text { font-size: 16px; fill: #111827; font-weight: 800; }
-                    `}
-                  </style>
+              <tbody>
+                {Array.from({ length: n }).map((_, i) => (
+                  <tr key={`point-${i}`}>
+                    <td>P{i + 1}</td>
 
-                  <rect x="0" y="0" width={width} height={height} fill="white" />
-
-                  <text x={width / 2 - 125} y="22" className="chart-title-text">
-                    Polinomio interpolante de Newton
-                  </text>
-
-                  {graph.yTicks.map((tick, index) => (
-                    <g key={`ytick-${index}`}>
-                      <line
-                        x1={marginLeft}
-                        y1={yToSvg(tick)}
-                        x2={marginLeft + graphWidth}
-                        y2={yToSvg(tick)}
-                        className="chart-grid-line"
+                    <td>
+                      <input
+                        type="number"
+                        step="any"
+                        value={points[i]?.x ?? ""}
+                        onChange={(e) => updatePoint(i, "x", e.target.value)}
+                        placeholder={`x${i + 1}`}
                       />
+                    </td>
 
-                      <text x="8" y={yToSvg(tick) + 4} className="chart-label">
-                        {fmt(tick)}
-                      </text>
-                    </g>
-                  ))}
-
-                  {graph.xTicks.map((tick, index) => (
-                    <g key={`xtick-${index}`}>
-                      <line
-                        x1={xToSvg(tick)}
-                        y1={marginTop}
-                        x2={xToSvg(tick)}
-                        y2={marginTop + graphHeight}
-                        className="chart-grid-line"
+                    <td>
+                      <input
+                        type="number"
+                        step="any"
+                        value={points[i]?.y ?? ""}
+                        onChange={(e) => updatePoint(i, "y", e.target.value)}
+                        placeholder={`f(x${i + 1})`}
                       />
-
-                      <text
-                        x={xToSvg(tick) - 8}
-                        y={marginTop + graphHeight + 22}
-                        className="chart-label"
-                      >
-                        {fmt(tick)}
-                      </text>
-                    </g>
-                  ))}
-
-                  <line
-                    x1={marginLeft}
-                    y1={marginTop + graphHeight}
-                    x2={marginLeft + graphWidth}
-                    y2={marginTop + graphHeight}
-                    className="chart-axis"
-                  />
-
-                  <line
-                    x1={marginLeft}
-                    y1={marginTop}
-                    x2={marginLeft}
-                    y2={marginTop + graphHeight}
-                    className="chart-axis"
-                  />
-
-                  <text
-                    x={width / 2 - 35}
-                    y={height - 18}
-                    className="chart-axis-title"
-                  >
-                    Eje X
-                  </text>
-
-                  <text
-                    x="-215"
-                    y="18"
-                    transform="rotate(-90)"
-                    className="chart-axis-title"
-                  >
-                    Eje Y
-                  </text>
-
-                  <defs>
-                    <clipPath id="plot-area-clip-newton-divididas">
-                      <rect
-                        x={marginLeft}
-                        y={marginTop}
-                        width={graphWidth}
-                        height={graphHeight}
-                      />
-                    </clipPath>
-                  </defs>
-
-                  <g
-                    clipPath="url(#plot-area-clip-newton-divididas)"
-                    className={dragging ? "chart-dragging" : "chart-draggable"}
-                  >
-                    {curvePath && (
-                      <path d={curvePath} className="chart-line" fill="none" />
-                    )}
-
-                    {graph.points.map((p, i) => (
-                      <circle
-                        key={`point-${i}`}
-                        cx={xToSvg(p.x)}
-                        cy={yToSvg(p.y)}
-                        r="4"
-                        className="chart-point"
-                      >
-                        <title>
-                          Punto {i + 1}: ({fmt(p.x)}, {fmt(p.y)})
-                        </title>
-                      </circle>
-                    ))}
-
-                    {Number.isFinite(graph.xEval) &&
-                      Number.isFinite(graph.yEval) && (
-                        <>
-                          <line
-                            x1={xToSvg(graph.xEval)}
-                            y1={marginTop}
-                            x2={xToSvg(graph.xEval)}
-                            y2={marginTop + graphHeight}
-                            stroke="#dc2626"
-                            strokeWidth="1.4"
-                            strokeDasharray="5 4"
-                          />
-
-                          <circle
-                            cx={xToSvg(graph.xEval)}
-                            cy={yToSvg(graph.yEval)}
-                            r="5"
-                            className="chart-eval-point"
-                          >
-                            <title>
-                              P({fmt(graph.xEval)}) = {fmt(graph.yEval)}
-                            </title>
-                          </circle>
-                        </>
-                      )}
-                  </g>
-                </svg>
-              </div>
-            </>
-          )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div className="bisection-table-wrapper">
-          <div className="table-header-actions">
-            <h4>Tabla de diferencias divididas</h4>
+        <div className="bisection-buttons">
+          <button type="submit" className="btn-primary">
+            CALCULAR
+          </button>
+
+          <button type="button" className="btn-secondary" onClick={handleClear}>
+            BORRAR CELDAS
+          </button>
+        </div>
+      </form>
+
+      {message && <p className="bisection-message">{message}</p>}
+      {warningMsg && <p className="bisection-warning">{warningMsg}</p>}
+      {errorMsg && <p className="bisection-error">{errorMsg}</p>}
+    </div>
+
+    <div className="bisection-results">
+      <div className="graph-card">
+        <h4 className="graph-title">Respuesta final</h4>
+
+        {result !== null ? (
+          <div className="method-result-grid">
+            <div className="mini-info-card">
+              <div className="mini-info-card-title">Valor evaluado</div>
+              <div className="mini-info-card-value">
+                x = {fmt(parseNum(xEvalInput))}
+              </div>
+            </div>
+
+            <div className="mini-info-card">
+              <div className="mini-info-card-title">Resultado</div>
+              <div className="mini-info-card-value">
+                P(x) = {fmt(result)}
+              </div>
+            </div>
+
+            <div className="mini-info-card">
+              <div className="mini-info-card-title">Puntos usados</div>
+              <div className="mini-info-card-value">{activeXs.length}</div>
+            </div>
+
+            <div className="mini-info-card">
+              <div className="mini-info-card-title">Grado máximo</div>
+              <div className="mini-info-card-value">{activeXs.length - 1}</div>
+            </div>
+          </div>
+        ) : (
+          <p className="bisection-hint">
+            Aún no hay resultado. Completa los datos y presiona{" "}
+            <strong>CALCULAR</strong>.
+          </p>
+        )}
+      </div>
+
+      <div className="graph-card">
+        <h4 className="graph-title">Polinomio interpolante</h4>
+
+        {!coeffs ? (
+          <p className="bisection-hint">
+            Aquí aparecerá el polinomio después de calcular.
+          </p>
+        ) : (
+          <div className="system-preview">
+            <p>
+              <strong>Forma de Newton:</strong>
+            </p>
+            <p>{polyStrings.product}</p>
+
+            <p>
+              <strong>Forma expandida:</strong>
+            </p>
+            <p>{polyStrings.expanded}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="graph-card">
+        <h4 className="graph-title">Coeficientes</h4>
+
+        {!coeffs ? (
+          <p className="bisection-hint">
+            Los coeficientes aparecerán después de calcular.
+          </p>
+        ) : (
+          <div className="method-result-grid">
+            {coeffs.map((c, i) => (
+              <div className="mini-info-card" key={`coef-${i}`}>
+                <div className="mini-info-card-title">a{i}</div>
+                <div className="mini-info-card-value">{fmt(c)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="graph-card">
+        <div className="table-header-actions">
+          <h4 className="graph-title">Gráfica interactiva del polinomio</h4>
+
+          <div className="chart-actions">
+            <button type="button" className="btn-export" onClick={increaseZoom}>
+              +
+            </button>
+
+            <button type="button" className="btn-export" onClick={decreaseZoom}>
+              -
+            </button>
+
+            <button type="button" className="btn-export" onClick={resetChart}>
+              Reiniciar
+            </button>
 
             <button
               type="button"
               className="btn-export"
-              onClick={exportCSV}
-              disabled={!table}
+              onClick={downloadChartPNG}
+              disabled={!coeffs}
             >
-              Descargar CSV
+              PNG
             </button>
           </div>
-
-          {!table ? (
-            <p className="bisection-hint">
-              Ingresa los datos y presiona <strong>CALCULAR</strong>.
-              Los coeficientes del polinomio son los valores de la primera fila.
-            </p>
-          ) : (
-            <div className="table-scroll">
-              <table className="bisection-table">
-                <thead>
-                  <tr>
-                    <th>
-                      <div className="dd-header">
-                        <span className="dd-header-title">Índice</span>
-                        <span className="dd-header-formula">i</span>
-                      </div>
-                    </th>
-
-                    <th>
-                      <div className="dd-header">
-                        <span className="dd-header-title">Dato x</span>
-                        <span className="dd-header-formula">xᵢ</span>
-                      </div>
-                    </th>
-
-                    {Array.from({ length: activeXs.length }).map((_, order) => (
-                      <th key={`header-${order}`}>
-                        {getDividedDifferenceHeader(order)}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {Array.from({ length: activeXs.length }).map((_, i) => (
-                    <tr key={`row-${i}`}>
-                      <td>{i}</td>
-                      <td>{fmt(activeXs[i])}</td>
-
-                      {Array.from({ length: activeXs.length }).map((_, j) => {
-                        const show =
-                          j === 0
-                            ? i < activeXs.length
-                            : i <= activeXs.length - j - 1;
-
-                        const val = table[i]?.[j];
-                        const isCoeff = i === 0 && val != null;
-
-                        return (
-                          <td
-                            key={`dd-${i}-${j}`}
-                            className={isCoeff ? "cell-green" : ""}
-                          >
-                            {show && val != null ? fmt(val) : ""}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
+
+        {!graph.ok ? (
+          <p className="bisection-hint">
+            La gráfica aparecerá después de ingresar puntos válidos.
+          </p>
+        ) : (
+          <>
+            <p className="bisection-hint">
+              Usa la rueda del mouse para acercar o alejar. Arrastra la gráfica
+              para desplazarla. Los valores de los ejes se actualizan con el zoom
+              y el desplazamiento.
+            </p>
+
+            <div className="interactive-chart-wrapper">
+              <svg
+                ref={svgRef}
+                className="error-chart"
+                viewBox={`0 0 ${width} ${height}`}
+                role="img"
+                aria-label="Gráfica del polinomio interpolante"
+                onWheel={handleWheel}
+                onMouseDown={startDrag}
+                onMouseMove={moveDrag}
+                onMouseUp={endDrag}
+                onMouseLeave={endDrag}
+              >
+                <style>
+                  {`
+                    .chart-axis { stroke: #334155; stroke-width: 1.5; }
+                    .chart-grid-line { stroke: #e2e8f0; stroke-width: 1; }
+                    .chart-line { stroke: #2563eb; stroke-width: 2.5; }
+                    .chart-point { fill: #111827; stroke: white; stroke-width: 1.5; }
+                    .chart-eval-point { fill: #dc2626; stroke: white; stroke-width: 1.5; }
+                    .chart-label { font-size: 11px; fill: #334155; }
+                    .chart-axis-title { font-size: 13px; fill: #0f172a; font-weight: 700; }
+                    .chart-title-text { font-size: 16px; fill: #111827; font-weight: 800; }
+                  `}
+                </style>
+
+                <rect x="0" y="0" width={width} height={height} fill="white" />
+
+                <text x={width / 2 - 125} y="22" className="chart-title-text">
+                  Polinomio interpolante de Newton
+                </text>
+
+                {graph.yTicks.map((tick, index) => (
+                  <g key={`ytick-${index}`}>
+                    <line
+                      x1={marginLeft}
+                      y1={yToSvg(tick)}
+                      x2={marginLeft + graphWidth}
+                      y2={yToSvg(tick)}
+                      className="chart-grid-line"
+                    />
+
+                    <text x="8" y={yToSvg(tick) + 4} className="chart-label">
+                      {fmt(tick)}
+                    </text>
+                  </g>
+                ))}
+
+                {graph.xTicks.map((tick, index) => (
+                  <g key={`xtick-${index}`}>
+                    <line
+                      x1={xToSvg(tick)}
+                      y1={marginTop}
+                      x2={xToSvg(tick)}
+                      y2={marginTop + graphHeight}
+                      className="chart-grid-line"
+                    />
+
+                    <text
+                      x={xToSvg(tick) - 8}
+                      y={marginTop + graphHeight + 22}
+                      className="chart-label"
+                    >
+                      {fmt(tick)}
+                    </text>
+                  </g>
+                ))}
+
+                <line
+                  x1={marginLeft}
+                  y1={marginTop + graphHeight}
+                  x2={marginLeft + graphWidth}
+                  y2={marginTop + graphHeight}
+                  className="chart-axis"
+                />
+
+                <line
+                  x1={marginLeft}
+                  y1={marginTop}
+                  x2={marginLeft}
+                  y2={marginTop + graphHeight}
+                  className="chart-axis"
+                />
+
+                <text
+                  x={width / 2 - 35}
+                  y={height - 18}
+                  className="chart-axis-title"
+                >
+                  Eje X
+                </text>
+
+                <text
+                  x="-215"
+                  y="18"
+                  transform="rotate(-90)"
+                  className="chart-axis-title"
+                >
+                  Eje Y
+                </text>
+
+                <defs>
+                  <clipPath id="plot-area-clip-newton-divididas">
+                    <rect
+                      x={marginLeft}
+                      y={marginTop}
+                      width={graphWidth}
+                      height={graphHeight}
+                    />
+                  </clipPath>
+                </defs>
+
+                <g
+                  clipPath="url(#plot-area-clip-newton-divididas)"
+                  className={dragging ? "chart-dragging" : "chart-draggable"}
+                >
+                  {curvePath && (
+                    <path d={curvePath} className="chart-line" fill="none" />
+                  )}
+
+                  {graph.points.map((p, i) => (
+                    <circle
+                      key={`point-${i}`}
+                      cx={xToSvg(p.x)}
+                      cy={yToSvg(p.y)}
+                      r="4"
+                      className="chart-point"
+                    >
+                      <title>
+                        Punto {i + 1}: ({fmt(p.x)}, {fmt(p.y)})
+                      </title>
+                    </circle>
+                  ))}
+
+                  {Number.isFinite(graph.xEval) &&
+                    Number.isFinite(graph.yEval) && (
+                      <>
+                        <line
+                          x1={xToSvg(graph.xEval)}
+                          y1={marginTop}
+                          x2={xToSvg(graph.xEval)}
+                          y2={marginTop + graphHeight}
+                          stroke="#dc2626"
+                          strokeWidth="1.4"
+                          strokeDasharray="5 4"
+                        />
+
+                        <circle
+                          cx={xToSvg(graph.xEval)}
+                          cy={yToSvg(graph.yEval)}
+                          r="5"
+                          className="chart-eval-point"
+                        >
+                          <title>
+                            P({fmt(graph.xEval)}) = {fmt(graph.yEval)}
+                          </title>
+                        </circle>
+                      </>
+                    )}
+                </g>
+              </svg>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="bisection-table-wrapper">
+        <div className="table-header-actions">
+          <h4>Tabla de diferencias divididas</h4>
+
+          <button
+            type="button"
+            className="btn-export"
+            onClick={exportCSV}
+            disabled={!table}
+          >
+            Descargar CSV
+          </button>
+        </div>
+
+        {!table ? (
+          <p className="bisection-hint">
+            Ingresa los datos y presiona <strong>CALCULAR</strong>.
+            Los coeficientes del polinomio son los valores de la primera fila.
+          </p>
+        ) : (
+          <div className="table-scroll">
+            <table className="bisection-table">
+              <thead>
+                <tr>
+                  <th>
+                    <div className="dd-header">
+                      <span className="dd-header-title">Índice</span>
+                      <span className="dd-header-formula">i</span>
+                    </div>
+                  </th>
+
+                  <th>
+                    <div className="dd-header">
+                      <span className="dd-header-title">Dato x</span>
+                      <span className="dd-header-formula">xᵢ</span>
+                    </div>
+                  </th>
+
+                  {Array.from({ length: activeXs.length }).map((_, order) => (
+                    <th key={`header-${order}`}>
+                      {getDividedDifferenceHeader(order)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+              <tbody>
+                {Array.from({ length: activeXs.length }).map((_, i) => (
+                  <tr key={`row-${i}`}>
+                    <td>{i}</td>
+                    <td>{fmt(activeXs[i])}</td>
+
+                    {Array.from({ length: activeXs.length }).map((_, j) => {
+                      const show =
+                        j === 0
+                          ? i < activeXs.length
+                          : i <= activeXs.length - j - 1;
+
+                      const val = table[i]?.[j];
+                      const isCoeff = i === 0 && val != null;
+
+                      return (
+                        <td
+                          key={`dd-${i}-${j}`}
+                          className={isCoeff ? "cell-green" : ""}
+                        >
+                          {show && val != null ? fmt(val) : ""}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {table && result !== null && (
+          <p className="bisection-message">
+            Resultado final: P({fmt(parseNum(xEvalInput))}) = {fmt(result)}
+          </p>
+        )}
       </div>
     </div>
-  );
+  </div>
+);
 }

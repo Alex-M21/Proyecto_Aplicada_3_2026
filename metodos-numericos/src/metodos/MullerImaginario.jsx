@@ -790,666 +790,677 @@ export default function MullerNoReal() {
   const endComplexDrag = () => setComplexDragging(false);
 
   return (
-    <div className="bisection-grid">
-      <div className="bisection-form">
-        <h3>Método de Muller Imaginario</h3>
+  <div className="bisection-grid">
+    <div className="bisection-form">
+      <h3>Método de Muller Imaginario</h3>
 
-        <p className="bisection-hint">
-          Este módulo trabaja con <strong>polinomios</strong> y permite raíces
-          complejas. Puedes ingresar valores iniciales reales o complejos como{" "}
-          <code>1+2i</code>, <code>-0.5i</code>, <code>2i</code> o <code>4-3i</code>.
-        </p>
+      <p className="bisection-hint">
+        Este módulo trabaja con <strong>polinomios</strong> y permite raíces
+        complejas. Puedes ingresar valores iniciales reales o complejos como{" "}
+        <code>1+2i</code>, <code>-0.5i</code>, <code>2i</code> o{" "}
+        <code>4-3i</code>.
+      </p>
 
-        <form onSubmit={handleCalculate}>
-          <div className="method-section">
-            <h4>Guía para ingresar el polinomio</h4>
+      <form onSubmit={handleCalculate}>
+        <div className="method-section">
+          <h4>Guía para ingresar el polinomio</h4>
 
-            <p className="bisection-hint">
-              Escribe el polinomio usando la variable <strong>x</strong>. Usa{" "}
-              <code>*</code> para multiplicar y <code>^</code> para potencias.
+          <p className="bisection-hint">
+            Escribe el polinomio usando la variable <strong>x</strong>. Usa{" "}
+            <code>*</code> para multiplicar y <code>^</code> para potencias.
+          </p>
+
+          <div className="system-preview">
+            <p>
+              <strong>Válidos:</strong> x^2 - 8*x + 25, x^2 + 1,
+              3*x^2 - x + 1, x^3 - 1
             </p>
 
-            <div className="system-preview">
-              <p>
-                <strong>Válidos:</strong> x^2 - 8*x + 25, x^2 + 1,
-                3*x^2 - x + 1, x^3 - 1
-              </p>
+            <p>
+              <strong>No usar aquí:</strong> ln(x), log(x), sen(x), sin(x),
+              cos(x), tan(x), exp(x), sqrt(x)
+            </p>
 
-              <p>
-                <strong>No usar aquí:</strong> ln(x), log(x), sen(x), sin(x),
-                cos(x), tan(x), exp(x), sqrt(x)
-              </p>
-
-              <p className="bisection-warning">
-                En este método sí se permite que el proceso genere números
-                imaginarios o complejos.
-              </p>
-            </div>
-
-            <div className="bisection-form-row">
-              <label>Ejemplo opcional =</label>
-
-              <select onChange={(e) => cargarEjemplo(e.target.value)} defaultValue="">
-                <option value="" disabled>
-                  Usar ejemplo de apoyo
-                </option>
-
-                {Object.entries(ejemplosMullerComplejo).map(([key, ejemplo]) => (
-                  <option key={key} value={key}>
-                    {ejemplo.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <p className="bisection-warning">
+              En este método sí se permite que el proceso genere números
+              imaginarios o complejos.
+            </p>
           </div>
 
-          <div className="method-section">
-            <h4>Datos de entrada</h4>
+          <div className="bisection-form-row">
+            <label>Ejemplo opcional =</label>
 
+            <select onChange={(e) => cargarEjemplo(e.target.value)} defaultValue="">
+              <option value="" disabled>
+                Usar ejemplo de apoyo
+              </option>
+
+              {Object.entries(ejemplosMullerComplejo).map(([key, ejemplo]) => (
+                <option key={key} value={key}>
+                  {ejemplo.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="method-section">
+          <h4>Datos de entrada</h4>
+
+          <div className="bisection-form-row">
+            <label>P(x) =</label>
+
+            <input
+              type="text"
+              value={fxInput}
+              onChange={(e) => {
+                setFxInput(e.target.value);
+                resetResults();
+              }}
+              placeholder="Ej: x^2 - 8*x + 25"
+            />
+          </div>
+
+          <div className="method-two-columns">
             <div className="bisection-form-row">
-              <label>P(x) =</label>
+              <label>x₀ =</label>
 
               <input
                 type="text"
-                value={fxInput}
+                value={x0Input}
                 onChange={(e) => {
-                  setFxInput(e.target.value);
+                  setX0Input(e.target.value);
                   resetResults();
                 }}
-                placeholder="Ej: x^2 - 8*x + 25"
+                placeholder="Ej: 3 o 1+2i"
               />
             </div>
 
-            <div className="method-two-columns">
-              <div className="bisection-form-row">
-                <label>x₀ =</label>
-
-                <input
-                  type="text"
-                  value={x0Input}
-                  onChange={(e) => {
-                    setX0Input(e.target.value);
-                    resetResults();
-                  }}
-                  placeholder="Ej: 3 o 1+2i"
-                />
-              </div>
-
-              <div className="bisection-form-row">
-                <label>x₁ =</label>
-
-                <input
-                  type="text"
-                  value={x1Input}
-                  onChange={(e) => {
-                    setX1Input(e.target.value);
-                    resetResults();
-                  }}
-                  placeholder="Ej: 4 o -0.5i"
-                />
-              </div>
-
-              <div className="bisection-form-row">
-                <label>x₂ =</label>
-
-                <input
-                  type="text"
-                  value={x2Input}
-                  onChange={(e) => {
-                    setX2Input(e.target.value);
-                    resetResults();
-                  }}
-                  placeholder="Ej: 5 o 4-3i"
-                />
-              </div>
-
-              <div className="bisection-form-row">
-                <label>Tolerancia =</label>
-
-                <input
-                  type="number"
-                  step="any"
-                  value={tolInput}
-                  onChange={(e) => {
-                    setTolInput(e.target.value);
-                    resetResults();
-                  }}
-                />
-              </div>
-
-              <div className="bisection-form-row">
-                <label>Iteraciones =</label>
-
-                <input
-                  type="number"
-                  value={maxIterInput}
-                  onChange={(e) => {
-                    setMaxIterInput(e.target.value);
-                    resetResults();
-                  }}
-                />
-              </div>
-
-              <div className="bisection-form-row">
-                <label>Decimales =</label>
-
-                <input
-                  type="number"
-                  value={decimalsInput}
-                  onChange={(e) => setDecimalsInput(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="bisection-buttons">
-            <button type="submit" className="btn-primary">
-              CALCULAR
-            </button>
-
-            <button type="button" className="btn-secondary" onClick={handleClear}>
-              BORRAR CELDAS
-            </button>
-          </div>
-        </form>
-
-        {message && <p className="bisection-message">{message}</p>}
-        {warningMsg && <p className="bisection-warning">{warningMsg}</p>}
-        {errorMsg && <p className="bisection-error">{errorMsg}</p>}
-      </div>
-
-      <div className="bisection-results">
-        <div className="graph-card">
-          <h4 className="graph-title">Respuesta final</h4>
-
-          {!finalRow ? (
-            <p className="bisection-hint">
-              Aún no hay resultado. Completa los datos y presiona{" "}
-              <strong>CALCULAR</strong>.
-            </p>
-          ) : (
-            <div className="method-result-grid">
-              <div className="mini-info-card">
-                <div className="mini-info-card-title">Raíz aproximada</div>
-                <div className="mini-info-card-value">
-                  {formatComplexExcelFixed(finalRow.p)}
-                </div>
-              </div>
-
-              <div className="mini-info-card">
-                <div className="mini-info-card-title">Parte real</div>
-                <div className="mini-info-card-value">
-                  {formatError(finalRow.p.re)}
-                </div>
-              </div>
-
-              <div className="mini-info-card">
-                <div className="mini-info-card-title">Parte imaginaria</div>
-                <div className="mini-info-card-value">
-                  {formatError(finalRow.p.im)}
-                </div>
-              </div>
-
-              <div className="mini-info-card">
-                <div className="mini-info-card-title">Error final</div>
-                <div className="mini-info-card-value">
-                  {formatError(finalRow.errorDisp)}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="graph-card">
-          <h4 className="graph-title">Iteración seleccionada</h4>
-
-          {rowView ? (
-            <>
-              <div className="method-result-grid">
-                <div className="mini-info-card">
-                  <div className="mini-info-card-title">Iteración</div>
-                  <div className="mini-info-card-value">{rowView.n}</div>
-                </div>
-
-                <div className="mini-info-card">
-                  <div className="mini-info-card-title">p</div>
-                  <div className="mini-info-card-value">
-                    {formatComplexExcelFixed(rowView.p)}
-                  </div>
-                </div>
-
-                <div className="mini-info-card">
-                  <div className="mini-info-card-title">Error</div>
-                  <div className="mini-info-card-value">
-                    {formatError(rowView.errorDisp)}
-                  </div>
-                </div>
-              </div>
+            <div className="bisection-form-row">
+              <label>x₁ =</label>
 
               <input
-                type="range"
-                min="0"
-                max={Math.max(0, rows.length - 1)}
-                value={iterView}
-                onChange={(e) => setIterView(parseInt(e.target.value, 10))}
-                style={{ width: "100%", marginTop: "1rem" }}
+                type="text"
+                value={x1Input}
+                onChange={(e) => {
+                  setX1Input(e.target.value);
+                  resetResults();
+                }}
+                placeholder="Ej: 4 o -0.5i"
               />
-            </>
-          ) : (
-            <p className="bisection-hint">
-              Calcula el método para visualizar una iteración específica.
-            </p>
-          )}
+            </div>
+
+            <div className="bisection-form-row">
+              <label>x₂ =</label>
+
+              <input
+                type="text"
+                value={x2Input}
+                onChange={(e) => {
+                  setX2Input(e.target.value);
+                  resetResults();
+                }}
+                placeholder="Ej: 5 o 4-3i"
+              />
+            </div>
+
+            <div className="bisection-form-row">
+              <label>Tolerancia =</label>
+
+              <input
+                type="number"
+                step="any"
+                value={tolInput}
+                onChange={(e) => {
+                  setTolInput(e.target.value);
+                  resetResults();
+                }}
+              />
+            </div>
+
+            <div className="bisection-form-row">
+              <label>Iteraciones =</label>
+
+              <input
+                type="number"
+                value={maxIterInput}
+                onChange={(e) => {
+                  setMaxIterInput(e.target.value);
+                  resetResults();
+                }}
+              />
+            </div>
+
+            <div className="bisection-form-row">
+              <label>Decimales =</label>
+
+              <input
+                type="number"
+                value={decimalsInput}
+                onChange={(e) => setDecimalsInput(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
+
+        <div className="bisection-buttons">
+          <button type="submit" className="btn-primary">
+            CALCULAR
+          </button>
+
+          <button type="button" className="btn-secondary" onClick={handleClear}>
+            BORRAR CELDAS
+          </button>
+        </div>
+      </form>
+
+      {message && <p className="bisection-message">{message}</p>}
+      {warningMsg && <p className="bisection-warning">{warningMsg}</p>}
+      {errorMsg && <p className="bisection-error">{errorMsg}</p>}
+    </div>
+
+    <div className="bisection-results">
+      <div className="graph-card">
+        <h4 className="graph-title">Respuesta final</h4>
+
+        {!finalRow ? (
+          <p className="bisection-hint">
+            Aún no hay resultado. Completa los datos y presiona{" "}
+            <strong>CALCULAR</strong>.
+          </p>
+        ) : (
+          <div className="method-result-grid">
+            <div className="mini-info-card">
+              <div className="mini-info-card-title">Raíz aproximada</div>
+              <div className="mini-info-card-value">
+                {formatComplexExcelFixed(finalRow.p)}
+              </div>
+            </div>
+
+            <div className="mini-info-card">
+              <div className="mini-info-card-title">Parte real</div>
+              <div className="mini-info-card-value">
+                {formatError(finalRow.p.re)}
+              </div>
+            </div>
+
+            <div className="mini-info-card">
+              <div className="mini-info-card-title">Parte imaginaria</div>
+              <div className="mini-info-card-value">
+                {formatError(finalRow.p.im)}
+              </div>
+            </div>
+
+            <div className="mini-info-card">
+              <div className="mini-info-card-title">Error final</div>
+              <div className="mini-info-card-value">
+                {formatError(finalRow.errorDisp)}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="bisection-results full-width-results">
-        <div className="bisection-table-wrapper">
-          <div className="table-header-actions">
-            <h4>Tabla de iteraciones</h4>
+      <div className="graph-card">
+        <h4 className="graph-title">Iteración seleccionada</h4>
+
+        {rowView ? (
+          <>
+            <div className="method-result-grid">
+              <div className="mini-info-card">
+                <div className="mini-info-card-title">Iteración</div>
+                <div className="mini-info-card-value">{rowView.n}</div>
+              </div>
+
+              <div className="mini-info-card">
+                <div className="mini-info-card-title">p</div>
+                <div className="mini-info-card-value">
+                  {formatComplexExcelFixed(rowView.p)}
+                </div>
+              </div>
+
+              <div className="mini-info-card">
+                <div className="mini-info-card-title">Error</div>
+                <div className="mini-info-card-value">
+                  {formatError(rowView.errorDisp)}
+                </div>
+              </div>
+            </div>
+
+            <input
+              type="range"
+              min="0"
+              max={Math.max(0, rows.length - 1)}
+              value={iterView}
+              onChange={(e) => setIterView(parseInt(e.target.value, 10))}
+              style={{ width: "100%", marginTop: "1rem" }}
+            />
+          </>
+        ) : (
+          <p className="bisection-hint">
+            Calcula el método para visualizar una iteración específica.
+          </p>
+        )}
+      </div>
+
+      <div className="bisection-table-wrapper">
+        <div className="table-header-actions">
+          <h4>Tabla de iteraciones</h4>
+
+          <button
+            type="button"
+            className="btn-export"
+            onClick={exportCSV}
+            disabled={rows.length === 0}
+          >
+            Descargar CSV
+          </button>
+        </div>
+
+        {rows.length === 0 ? (
+          <p className="bisection-hint">
+            Ingresa los datos y presiona <strong>CALCULAR</strong>.
+          </p>
+        ) : (
+          <div className="table-scroll">
+            <table className="bisection-table">
+              <thead>
+                <tr>
+                  <th>n</th>
+                  <th>x₀</th>
+                  <th>x₁</th>
+                  <th>x₂</th>
+                  <th>p</th>
+                  <th>Error</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {rows.map((row, index) => {
+                  const isLast = index === lastIndex && foundFinal;
+                  const isSelected = index === iterView;
+
+                  return (
+                    <tr key={row.n} className={isSelected ? "row-selected" : ""}>
+                      <td>{row.n}</td>
+                      <td>{formatComplexExcelFixed(row.x0)}</td>
+                      <td>{formatComplexExcelFixed(row.x1)}</td>
+                      <td>{formatComplexExcelFixed(row.x2)}</td>
+                      <td className={isLast ? "cell-green" : ""}>
+                        {formatComplexExcelFixed(row.p)}
+                      </td>
+                      <td className={isLast ? "cell-red" : ""}>
+                        {formatError(row.errorDisp)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {foundFinal && (
+          <p className="bisection-message">
+            SE ENCONTRÓ LA SOLUCIÓN porque{" "}
+            {formatError(rows[lastIndex].errorDisp)} &lt; {tolInput}
+          </p>
+        )}
+      </div>
+
+      <div className="graph-card">
+        <div className="table-header-actions">
+          <h4 className="graph-title">Vista real de P(x)</h4>
+
+          <div className="chart-actions">
+            <button type="button" className="btn-export" onClick={zoomInReal}>
+              +
+            </button>
+
+            <button type="button" className="btn-export" onClick={zoomOutReal}>
+              -
+            </button>
+
+            <button type="button" className="btn-export" onClick={resetCharts}>
+              Reiniciar
+            </button>
 
             <button
               type="button"
               className="btn-export"
-              onClick={exportCSV}
-              disabled={rows.length === 0}
+              onClick={() =>
+                downloadSVGAsPNG(realSvgRef, "muller_imaginario_vista_real.png")
+              }
+              disabled={!realCurvePath}
             >
-              Descargar CSV
+              PNG
             </button>
           </div>
-
-          {rows.length === 0 ? (
-            <p className="bisection-hint">
-              Ingresa los datos y presiona <strong>CALCULAR</strong>.
-            </p>
-          ) : (
-            <div className="table-scroll">
-              <table className="bisection-table">
-                <thead>
-                  <tr>
-                    <th>n</th>
-                    <th>x₀</th>
-                    <th>x₁</th>
-                    <th>x₂</th>
-                    <th>p</th>
-                    <th>Error</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {rows.map((row, index) => {
-                    const isLast = index === lastIndex && foundFinal;
-                    const isSelected = index === iterView;
-
-                    return (
-                      <tr
-                        key={row.n}
-                        style={
-                          isSelected
-                            ? { outline: "2px solid #93c5fd", outlineOffset: "-2px" }
-                            : undefined
-                        }
-                      >
-                        <td>{row.n}</td>
-                        <td>{formatComplexExcelFixed(row.x0)}</td>
-                        <td>{formatComplexExcelFixed(row.x1)}</td>
-                        <td>{formatComplexExcelFixed(row.x2)}</td>
-                        <td className={isLast ? "cell-green" : ""}>
-                          {formatComplexExcelFixed(row.p)}
-                        </td>
-                        <td className={isLast ? "cell-red" : ""}>
-                          {formatError(row.errorDisp)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {foundFinal && (
-            <p className="bisection-message">
-              SE ENCONTRÓ LA SOLUCIÓN porque {formatError(rows[lastIndex].errorDisp)} &lt;{" "}
-              {tolInput}
-            </p>
-          )}
         </div>
 
-        <div className="graph-card">
-          <div className="table-header-actions">
-            <h4 className="graph-title">Vista real de P(x)</h4>
+        <p className="bisection-hint">
+          Muestra la parte real de P(x) sobre el eje real. Los puntos marcados
+          sobre el eje X representan la parte real de las aproximaciones.
+        </p>
 
-            <div className="chart-actions">
-              <button type="button" className="btn-export" onClick={zoomInReal}>
-                +
-              </button>
+        <div className="interactive-chart-wrapper">
+          <svg
+            ref={realSvgRef}
+            className="error-chart"
+            viewBox={`0 0 ${width} ${height}`}
+            role="img"
+            aria-label="Vista real del método de Muller imaginario"
+            onWheel={handleRealWheel}
+            onMouseDown={startRealDrag}
+            onMouseMove={moveRealDrag}
+            onMouseUp={endRealDrag}
+            onMouseLeave={endRealDrag}
+          >
+            <style>
+              {`
+                .chart-axis { stroke: #334155; stroke-width: 1.5; }
+                .chart-grid-line { stroke: #e2e8f0; stroke-width: 1; }
+                .chart-line { stroke: #2563eb; stroke-width: 2.5; }
+                .chart-point { fill: #111827; stroke: white; stroke-width: 1.5; }
+                .chart-eval-point { fill: #dc2626; stroke: white; stroke-width: 1.5; }
+                .chart-label { font-size: 11px; fill: #334155; }
+                .chart-axis-title { font-size: 13px; fill: #0f172a; font-weight: 700; }
+                .chart-title-text { font-size: 16px; fill: #111827; font-weight: 800; }
+              `}
+            </style>
 
-              <button type="button" className="btn-export" onClick={zoomOutReal}>
-                -
-              </button>
+            <rect x="0" y="0" width={width} height={height} fill="white" />
 
-              <button type="button" className="btn-export" onClick={resetCharts}>
-                Reiniciar
-              </button>
+            <text x={width / 2 - 130} y="22" className="chart-title-text">
+              Vista real de P(x)
+            </text>
 
-              <button
-                type="button"
-                className="btn-export"
-                onClick={() => downloadSVGAsPNG(realSvgRef, "muller_imaginario_vista_real.png")}
-                disabled={!realCurvePath}
-              >
-                PNG
-              </button>
-            </div>
-          </div>
+            {realGraph.yTicks.map((tick, index) => (
+              <g key={`real-y-${index}`}>
+                <line
+                  x1={marginLeft}
+                  y1={yToSvg(tick, realGraph)}
+                  x2={marginLeft + graphWidth}
+                  y2={yToSvg(tick, realGraph)}
+                  className="chart-grid-line"
+                />
 
-          <p className="bisection-hint">
-            Muestra la parte real de P(x) sobre el eje real. Los puntos marcados
-            sobre el eje X representan la parte real de las aproximaciones.
-          </p>
-
-          <div className="interactive-chart-wrapper">
-            <svg
-              ref={realSvgRef}
-              className="error-chart"
-              viewBox={`0 0 ${width} ${height}`}
-              role="img"
-              aria-label="Vista real del método de Muller imaginario"
-              onWheel={handleRealWheel}
-              onMouseDown={startRealDrag}
-              onMouseMove={moveRealDrag}
-              onMouseUp={endRealDrag}
-              onMouseLeave={endRealDrag}
-            >
-              <style>
-                {`
-                  .chart-axis { stroke: #334155; stroke-width: 1.5; }
-                  .chart-grid-line { stroke: #e2e8f0; stroke-width: 1; }
-                  .chart-line { stroke: #2563eb; stroke-width: 2.5; }
-                  .chart-point { fill: #111827; stroke: white; stroke-width: 1.5; }
-                  .chart-eval-point { fill: #dc2626; stroke: white; stroke-width: 1.5; }
-                  .chart-label { font-size: 11px; fill: #334155; }
-                  .chart-axis-title { font-size: 13px; fill: #0f172a; font-weight: 700; }
-                  .chart-title-text { font-size: 16px; fill: #111827; font-weight: 800; }
-                `}
-              </style>
-
-              <rect x="0" y="0" width={width} height={height} fill="white" />
-
-              <text x={width / 2 - 130} y="22" className="chart-title-text">
-                Vista real de P(x)
-              </text>
-
-              {realGraph.yTicks.map((tick, index) => (
-                <g key={`real-y-${index}`}>
-                  <line
-                    x1={marginLeft}
-                    y1={yToSvg(tick, realGraph)}
-                    x2={marginLeft + graphWidth}
-                    y2={yToSvg(tick, realGraph)}
-                    className="chart-grid-line"
-                  />
-
-                  <text x="8" y={yToSvg(tick, realGraph) + 4} className="chart-label">
-                    {formatError(tick)}
-                  </text>
-                </g>
-              ))}
-
-              {realGraph.xTicks.map((tick, index) => (
-                <g key={`real-x-${index}`}>
-                  <line
-                    x1={xToSvg(tick, realGraph)}
-                    y1={marginTop}
-                    x2={xToSvg(tick, realGraph)}
-                    y2={marginTop + graphHeight}
-                    className="chart-grid-line"
-                  />
-
-                  <text
-                    x={xToSvg(tick, realGraph) - 8}
-                    y={marginTop + graphHeight + 22}
-                    className="chart-label"
-                  >
-                    {formatError(tick)}
-                  </text>
-                </g>
-              ))}
-
-              <line
-                x1={marginLeft}
-                y1={marginTop + graphHeight}
-                x2={marginLeft + graphWidth}
-                y2={marginTop + graphHeight}
-                className="chart-axis"
-              />
-
-              <line
-                x1={marginLeft}
-                y1={marginTop}
-                x2={marginLeft}
-                y2={marginTop + graphHeight}
-                className="chart-axis"
-              />
-
-              <text x={width / 2 - 35} y={height - 18} className="chart-axis-title">
-                Eje X
-              </text>
-
-              <text
-                x="-215"
-                y="18"
-                transform="rotate(-90)"
-                className="chart-axis-title"
-              >
-                Re(P(x))
-              </text>
-
-              <defs>
-                <clipPath id="plot-area-muller-real-imaginario">
-                  <rect
-                    x={marginLeft}
-                    y={marginTop}
-                    width={graphWidth}
-                    height={graphHeight}
-                  />
-                </clipPath>
-              </defs>
-
-              <g
-                clipPath="url(#plot-area-muller-real-imaginario)"
-                className={realDragging ? "chart-dragging" : "chart-draggable"}
-              >
-                {realCurvePath && (
-                  <path d={realCurvePath} className="chart-line" fill="none" />
-                )}
-
-                {pHistory.map((p, index) => (
-                  <circle
-                    key={`real-p-${index}`}
-                    cx={xToSvg(p.re, realGraph)}
-                    cy={yToSvg(0, realGraph)}
-                    r="4"
-                    className={index === lastIndex ? "chart-eval-point" : "chart-point"}
-                  >
-                    <title>
-                      Iteración {index + 1}: Re(p) = {formatError(p.re)}
-                    </title>
-                  </circle>
-                ))}
+                <text
+                  x="8"
+                  y={yToSvg(tick, realGraph) + 4}
+                  className="chart-label"
+                >
+                  {formatError(tick)}
+                </text>
               </g>
-            </svg>
+            ))}
+
+            {realGraph.xTicks.map((tick, index) => (
+              <g key={`real-x-${index}`}>
+                <line
+                  x1={xToSvg(tick, realGraph)}
+                  y1={marginTop}
+                  x2={xToSvg(tick, realGraph)}
+                  y2={marginTop + graphHeight}
+                  className="chart-grid-line"
+                />
+
+                <text
+                  x={xToSvg(tick, realGraph) - 8}
+                  y={marginTop + graphHeight + 22}
+                  className="chart-label"
+                >
+                  {formatError(tick)}
+                </text>
+              </g>
+            ))}
+
+            <line
+              x1={marginLeft}
+              y1={marginTop + graphHeight}
+              x2={marginLeft + graphWidth}
+              y2={marginTop + graphHeight}
+              className="chart-axis"
+            />
+
+            <line
+              x1={marginLeft}
+              y1={marginTop}
+              x2={marginLeft}
+              y2={marginTop + graphHeight}
+              className="chart-axis"
+            />
+
+            <text x={width / 2 - 35} y={height - 18} className="chart-axis-title">
+              Eje X
+            </text>
+
+            <text
+              x="-215"
+              y="18"
+              transform="rotate(-90)"
+              className="chart-axis-title"
+            >
+              Re(P(x))
+            </text>
+
+            <defs>
+              <clipPath id="plot-area-muller-real-imaginario">
+                <rect
+                  x={marginLeft}
+                  y={marginTop}
+                  width={graphWidth}
+                  height={graphHeight}
+                />
+              </clipPath>
+            </defs>
+
+            <g
+              clipPath="url(#plot-area-muller-real-imaginario)"
+              className={realDragging ? "chart-dragging" : "chart-draggable"}
+            >
+              {realCurvePath && (
+                <path d={realCurvePath} className="chart-line" fill="none" />
+              )}
+
+              {pHistory.map((p, index) => (
+                <circle
+                  key={`real-p-${index}`}
+                  cx={xToSvg(p.re, realGraph)}
+                  cy={yToSvg(0, realGraph)}
+                  r="4"
+                  className={
+                    index === lastIndex ? "chart-eval-point" : "chart-point"
+                  }
+                >
+                  <title>
+                    Iteración {index + 1}: Re(p) = {formatError(p.re)}
+                  </title>
+                </circle>
+              ))}
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <div className="graph-card">
+        <div className="table-header-actions">
+          <h4 className="graph-title">Recorrido en el plano complejo</h4>
+
+          <div className="chart-actions">
+            <button type="button" className="btn-export" onClick={zoomInComplex}>
+              +
+            </button>
+
+            <button type="button" className="btn-export" onClick={zoomOutComplex}>
+              -
+            </button>
+
+            <button type="button" className="btn-export" onClick={resetCharts}>
+              Reiniciar
+            </button>
+
+            <button
+              type="button"
+              className="btn-export"
+              onClick={() =>
+                downloadSVGAsPNG(
+                  complexSvgRef,
+                  "muller_imaginario_plano_complejo.png"
+                )
+              }
+              disabled={rows.length === 0}
+            >
+              PNG
+            </button>
           </div>
         </div>
 
-        <div className="graph-card">
-          <div className="table-header-actions">
-            <h4 className="graph-title">Recorrido en el plano complejo</h4>
+        <p className="bisection-hint">
+          Muestra el recorrido de las aproximaciones en el plano complejo:
+          Re(p) contra Im(p).
+        </p>
 
-            <div className="chart-actions">
-              <button type="button" className="btn-export" onClick={zoomInComplex}>
-                +
-              </button>
+        <div className="interactive-chart-wrapper">
+          <svg
+            ref={complexSvgRef}
+            className="error-chart"
+            viewBox={`0 0 ${width} ${height}`}
+            role="img"
+            aria-label="Recorrido de Muller en el plano complejo"
+            onWheel={handleComplexWheel}
+            onMouseDown={startComplexDrag}
+            onMouseMove={moveComplexDrag}
+            onMouseUp={endComplexDrag}
+            onMouseLeave={endComplexDrag}
+          >
+            <style>
+              {`
+                .chart-axis { stroke: #334155; stroke-width: 1.5; }
+                .chart-grid-line { stroke: #e2e8f0; stroke-width: 1; }
+                .chart-line { stroke: #2563eb; stroke-width: 2.5; }
+                .chart-point { fill: #111827; stroke: white; stroke-width: 1.5; }
+                .chart-eval-point { fill: #dc2626; stroke: white; stroke-width: 1.5; }
+                .chart-label { font-size: 11px; fill: #334155; }
+                .chart-axis-title { font-size: 13px; fill: #0f172a; font-weight: 700; }
+                .chart-title-text { font-size: 16px; fill: #111827; font-weight: 800; }
+              `}
+            </style>
 
-              <button type="button" className="btn-export" onClick={zoomOutComplex}>
-                -
-              </button>
+            <rect x="0" y="0" width={width} height={height} fill="white" />
 
-              <button type="button" className="btn-export" onClick={resetCharts}>
-                Reiniciar
-              </button>
+            <text x={width / 2 - 125} y="22" className="chart-title-text">
+              Recorrido en el plano complejo
+            </text>
 
-              <button
-                type="button"
-                className="btn-export"
-                onClick={() => downloadSVGAsPNG(complexSvgRef, "muller_imaginario_plano_complejo.png")}
-                disabled={rows.length === 0}
-              >
-                PNG
-              </button>
-            </div>
-          </div>
+            {complexGraph.yTicks.map((tick, index) => (
+              <g key={`complex-y-${index}`}>
+                <line
+                  x1={marginLeft}
+                  y1={yToSvg(tick, complexGraph)}
+                  x2={marginLeft + graphWidth}
+                  y2={yToSvg(tick, complexGraph)}
+                  className="chart-grid-line"
+                />
 
-          <p className="bisection-hint">
-            Muestra el recorrido de las aproximaciones en el plano complejo:
-            Re(p) contra Im(p).
-          </p>
-
-          <div className="interactive-chart-wrapper">
-            <svg
-              ref={complexSvgRef}
-              className="error-chart"
-              viewBox={`0 0 ${width} ${height}`}
-              role="img"
-              aria-label="Recorrido de Muller en el plano complejo"
-              onWheel={handleComplexWheel}
-              onMouseDown={startComplexDrag}
-              onMouseMove={moveComplexDrag}
-              onMouseUp={endComplexDrag}
-              onMouseLeave={endComplexDrag}
-            >
-              <style>
-                {`
-                  .chart-axis { stroke: #334155; stroke-width: 1.5; }
-                  .chart-grid-line { stroke: #e2e8f0; stroke-width: 1; }
-                  .chart-line { stroke: #2563eb; stroke-width: 2.5; }
-                  .chart-point { fill: #111827; stroke: white; stroke-width: 1.5; }
-                  .chart-eval-point { fill: #dc2626; stroke: white; stroke-width: 1.5; }
-                  .chart-label { font-size: 11px; fill: #334155; }
-                  .chart-axis-title { font-size: 13px; fill: #0f172a; font-weight: 700; }
-                  .chart-title-text { font-size: 16px; fill: #111827; font-weight: 800; }
-                `}
-              </style>
-
-              <rect x="0" y="0" width={width} height={height} fill="white" />
-
-              <text x={width / 2 - 125} y="22" className="chart-title-text">
-                Recorrido en el plano complejo
-              </text>
-
-              {complexGraph.yTicks.map((tick, index) => (
-                <g key={`complex-y-${index}`}>
-                  <line
-                    x1={marginLeft}
-                    y1={yToSvg(tick, complexGraph)}
-                    x2={marginLeft + graphWidth}
-                    y2={yToSvg(tick, complexGraph)}
-                    className="chart-grid-line"
-                  />
-
-                  <text x="8" y={yToSvg(tick, complexGraph) + 4} className="chart-label">
-                    {formatError(tick)}
-                  </text>
-                </g>
-              ))}
-
-              {complexGraph.xTicks.map((tick, index) => (
-                <g key={`complex-x-${index}`}>
-                  <line
-                    x1={xToSvg(tick, complexGraph)}
-                    y1={marginTop}
-                    x2={xToSvg(tick, complexGraph)}
-                    y2={marginTop + graphHeight}
-                    className="chart-grid-line"
-                  />
-
-                  <text
-                    x={xToSvg(tick, complexGraph) - 8}
-                    y={marginTop + graphHeight + 22}
-                    className="chart-label"
-                  >
-                    {formatError(tick)}
-                  </text>
-                </g>
-              ))}
-
-              <line
-                x1={marginLeft}
-                y1={marginTop + graphHeight}
-                x2={marginLeft + graphWidth}
-                y2={marginTop + graphHeight}
-                className="chart-axis"
-              />
-
-              <line
-                x1={marginLeft}
-                y1={marginTop}
-                x2={marginLeft}
-                y2={marginTop + graphHeight}
-                className="chart-axis"
-              />
-
-              <text x={width / 2 - 55} y={height - 18} className="chart-axis-title">
-                Re(p)
-              </text>
-
-              <text
-                x="-215"
-                y="18"
-                transform="rotate(-90)"
-                className="chart-axis-title"
-              >
-                Im(p)
-              </text>
-
-              <defs>
-                <clipPath id="plot-area-muller-complex-imaginario">
-                  <rect
-                    x={marginLeft}
-                    y={marginTop}
-                    width={graphWidth}
-                    height={graphHeight}
-                  />
-                </clipPath>
-              </defs>
-
-              <g
-                clipPath="url(#plot-area-muller-complex-imaginario)"
-                className={complexDragging ? "chart-dragging" : "chart-draggable"}
-              >
-                {complexPath && (
-                  <path d={complexPath} className="chart-line" fill="none" />
-                )}
-
-                {complexGraph.path.map((p, index) => (
-                  <circle
-                    key={`complex-p-${index}`}
-                    cx={xToSvg(p.re, complexGraph)}
-                    cy={yToSvg(p.im, complexGraph)}
-                    r="4"
-                    className={index === lastIndex ? "chart-eval-point" : "chart-point"}
-                  >
-                    <title>
-                      Iteración {index + 1}: {formatComplexExcelFixed(p)}
-                    </title>
-                  </circle>
-                ))}
+                <text
+                  x="8"
+                  y={yToSvg(tick, complexGraph) + 4}
+                  className="chart-label"
+                >
+                  {formatError(tick)}
+                </text>
               </g>
-            </svg>
-          </div>
+            ))}
+
+            {complexGraph.xTicks.map((tick, index) => (
+              <g key={`complex-x-${index}`}>
+                <line
+                  x1={xToSvg(tick, complexGraph)}
+                  y1={marginTop}
+                  x2={xToSvg(tick, complexGraph)}
+                  y2={marginTop + graphHeight}
+                  className="chart-grid-line"
+                />
+
+                <text
+                  x={xToSvg(tick, complexGraph) - 8}
+                  y={marginTop + graphHeight + 22}
+                  className="chart-label"
+                >
+                  {formatError(tick)}
+                </text>
+              </g>
+            ))}
+
+            <line
+              x1={marginLeft}
+              y1={marginTop + graphHeight}
+              x2={marginLeft + graphWidth}
+              y2={marginTop + graphHeight}
+              className="chart-axis"
+            />
+
+            <line
+              x1={marginLeft}
+              y1={marginTop}
+              x2={marginLeft}
+              y2={marginTop + graphHeight}
+              className="chart-axis"
+            />
+
+            <text x={width / 2 - 55} y={height - 18} className="chart-axis-title">
+              Re(p)
+            </text>
+
+            <text
+              x="-215"
+              y="18"
+              transform="rotate(-90)"
+              className="chart-axis-title"
+            >
+              Im(p)
+            </text>
+
+            <defs>
+              <clipPath id="plot-area-muller-complex-imaginario">
+                <rect
+                  x={marginLeft}
+                  y={marginTop}
+                  width={graphWidth}
+                  height={graphHeight}
+                />
+              </clipPath>
+            </defs>
+
+            <g
+              clipPath="url(#plot-area-muller-complex-imaginario)"
+              className={complexDragging ? "chart-dragging" : "chart-draggable"}
+            >
+              {complexPath && (
+                <path d={complexPath} className="chart-line" fill="none" />
+              )}
+
+              {complexGraph.path.map((p, index) => (
+                <circle
+                  key={`complex-p-${index}`}
+                  cx={xToSvg(p.re, complexGraph)}
+                  cy={yToSvg(p.im, complexGraph)}
+                  r="4"
+                  className={
+                    index === lastIndex ? "chart-eval-point" : "chart-point"
+                  }
+                >
+                  <title>
+                    Iteración {index + 1}: {formatComplexExcelFixed(p)}
+                  </title>
+                </circle>
+              ))}
+            </g>
+          </svg>
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }

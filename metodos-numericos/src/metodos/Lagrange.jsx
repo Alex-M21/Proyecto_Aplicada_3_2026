@@ -716,471 +716,469 @@ export default function Lagrange() {
   const n = Math.max(2, parseInt(nInput, 10) || 2);
 
   return (
-    <div className="bisection-grid">
-      <div className="bisection-form">
-        <h3>Interpolación de Lagrange</h3>
+  <div className="bisection-grid">
+    <div className="bisection-form">
+      <h3>Interpolación de Lagrange</h3>
 
-        <p className="bisection-hint">
-          Ingresa los puntos conocidos y el valor de <strong>x</strong> que deseas interpolar.
-          El programa construye las bases Lᵢ(x), arma el polinomio y evalúa el resultado.
-        </p>
+      <p className="bisection-hint">
+        Ingresa los puntos conocidos y el valor de <strong>x</strong> que deseas interpolar.
+        El programa construye las bases Lᵢ(x), arma el polinomio y evalúa el resultado.
+      </p>
 
-        <form onSubmit={handleCalculate}>
-          <div className="method-section">
-            <h4>Configuración</h4>
+      <form onSubmit={handleCalculate}>
+        <div className="method-section">
+          <h4>Configuración</h4>
 
-            <div className="method-two-columns">
-              <div className="bisection-form-row">
-                <label>Valor de x =</label>
+          <div className="method-two-columns">
+            <div className="bisection-form-row">
+              <label>Valor de x =</label>
 
-                <input
-                  type="number"
-                  step="any"
-                  value={xEvalInput}
-                  onChange={(e) => {
-                    setXEvalInput(e.target.value);
-                    resetResults();
-                  }}
-                  placeholder="Ejemplo: 7"
-                />
-              </div>
-
-              <div className="bisection-form-row">
-                <label>Número de puntos =</label>
-
-                <input
-                  type="number"
-                  min="2"
-                  step="1"
-                  value={nInput}
-                  onChange={(e) => setNPoints(e.target.value)}
-                />
-              </div>
-
-              <div className="bisection-form-row">
-                <label>Decimales =</label>
-
-                <input
-                  type="number"
-                  min="0"
-                  value={decimalsInput}
-                  onChange={(e) => setDecimalsInput(e.target.value)}
-                />
-              </div>
+              <input
+                type="number"
+                step="any"
+                value={xEvalInput}
+                onChange={(e) => {
+                  setXEvalInput(e.target.value);
+                  resetResults();
+                }}
+                placeholder="Ejemplo: 7"
+              />
             </div>
 
-            <p className="bisection-hint">
-              Grado máximo del polinomio: <strong>{n - 1}</strong>
-            </p>
-          </div>
+            <div className="bisection-form-row">
+              <label>Número de puntos =</label>
 
-          <div className="method-section">
-            <div className="table-header-actions">
-              <h4>Tabla de puntos</h4>
-
-              <div className="chart-actions">
-                <button type="button" className="btn-export" onClick={addPoint}>
-                  Agregar punto
-                </button>
-
-                <button type="button" className="btn-export" onClick={removePoint}>
-                  Quitar punto
-                </button>
-
-                <button type="button" className="btn-export" onClick={sortPointsByX}>
-                  Ordenar por x
-                </button>
-              </div>
+              <input
+                type="number"
+                min="2"
+                step="1"
+                value={nInput}
+                onChange={(e) => setNPoints(e.target.value)}
+              />
             </div>
 
-            <div className="table-scroll">
-              <table className="bisection-table">
-                <thead>
-                  <tr>
-                    <th>Punto</th>
-                    <th>xᵢ</th>
-                    <th>f(xᵢ)</th>
-                  </tr>
-                </thead>
+            <div className="bisection-form-row">
+              <label>Decimales =</label>
 
-                <tbody>
-                  {Array.from({ length: n }).map((_, i) => (
-                    <tr key={`point-${i}`}>
-                      <td>P{i + 1}</td>
-
-                      <td>
-                        <input
-                          type="number"
-                          step="any"
-                          value={points[i]?.x ?? ""}
-                          onChange={(e) => updatePoint(i, "x", e.target.value)}
-                          placeholder={`x${i + 1}`}
-                        />
-                      </td>
-
-                      <td>
-                        <input
-                          type="number"
-                          step="any"
-                          value={points[i]?.y ?? ""}
-                          onChange={(e) => updatePoint(i, "y", e.target.value)}
-                          placeholder={`f(x${i + 1})`}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <input
+                type="number"
+                min="0"
+                value={decimalsInput}
+                onChange={(e) => setDecimalsInput(e.target.value)}
+              />
             </div>
           </div>
 
-          <div className="bisection-buttons">
-            <button type="submit" className="btn-primary">
-              CALCULAR
-            </button>
-
-            <button type="button" className="btn-secondary" onClick={handleClear}>
-              BORRAR CELDAS
-            </button>
-          </div>
-        </form>
-
-        {message && <p className="bisection-message">{message}</p>}
-        {warningMsg && <p className="bisection-warning">{warningMsg}</p>}
-        {errorMsg && <p className="bisection-error">{errorMsg}</p>}
-      </div>
-
-      <div className="bisection-results">
-        <div className="graph-card">
-          <h4 className="graph-title">Respuesta final</h4>
-
-          {resultValue !== null ? (
-            <div className="method-result-grid">
-              <div className="mini-info-card">
-                <div className="mini-info-card-title">Valor evaluado</div>
-                <div className="mini-info-card-value">
-                  x = {fmt(parseNum(xEvalInput))}
-                </div>
-              </div>
-
-              <div className="mini-info-card">
-                <div className="mini-info-card-title">Resultado</div>
-                <div className="mini-info-card-value">
-                  P(x) = {fmt(resultValue)}
-                </div>
-              </div>
-
-              <div className="mini-info-card">
-                <div className="mini-info-card-title">Puntos usados</div>
-                <div className="mini-info-card-value">{activeXs.length}</div>
-              </div>
-
-              <div className="mini-info-card">
-                <div className="mini-info-card-title">Grado máximo</div>
-                <div className="mini-info-card-value">{activeXs.length - 1}</div>
-              </div>
-            </div>
-          ) : (
-            <p className="bisection-hint">
-              Aún no hay resultado. Completa los datos y presiona{" "}
-              <strong>CALCULAR</strong>.
-            </p>
-          )}
+          <p className="bisection-hint">
+            Grado máximo del polinomio: <strong>{n - 1}</strong>
+          </p>
         </div>
 
-        <div className="graph-card">
-          <h4 className="graph-title">Polinomio interpolante</h4>
-
-          {!polyLagrange && !polyFactorized && !polyExpanded ? (
-            <p className="bisection-hint">
-              Aquí aparecerá el polinomio después de calcular.
-            </p>
-          ) : (
-            <div className="system-preview">
-              <p>
-                <strong>Forma de Lagrange:</strong>
-              </p>
-              <p>{polyLagrange}</p>
-
-              <p>
-                <strong>Forma factorizada:</strong>
-              </p>
-              <p>{polyFactorized}</p>
-
-              <p>
-                <strong>Forma expandida:</strong>
-              </p>
-              <p>{polyExpanded}</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="bisection-results full-width-results">
-        <div className="graph-card">
+        <div className="method-section">
           <div className="table-header-actions">
-            <h4 className="graph-title">Gráfica interactiva de Lagrange</h4>
+            <h4>Tabla de puntos</h4>
 
             <div className="chart-actions">
-              <button type="button" className="btn-export" onClick={increaseZoom}>
-                +
+              <button type="button" className="btn-export" onClick={addPoint}>
+                Agregar punto
               </button>
 
-              <button type="button" className="btn-export" onClick={decreaseZoom}>
-                -
+              <button type="button" className="btn-export" onClick={removePoint}>
+                Quitar punto
               </button>
 
-              <button type="button" className="btn-export" onClick={resetChart}>
-                Reiniciar
-              </button>
-
-              <button
-                type="button"
-                className="btn-export"
-                onClick={downloadChartPNG}
-                disabled={!expandedCoeffs}
-              >
-                PNG
+              <button type="button" className="btn-export" onClick={sortPointsByX}>
+                Ordenar por x
               </button>
             </div>
           </div>
 
-          {!graph.ok ? (
-            <p className="bisection-hint">
-              La gráfica aparecerá después de ingresar puntos válidos.
-            </p>
-          ) : (
-            <>
-              <p className="bisection-hint">
-                Usa la rueda del mouse para acercar o alejar. Arrastra la gráfica
-                para desplazarla. Los valores de los ejes se actualizan con el zoom
-                y el desplazamiento.
-              </p>
+          <div className="table-scroll">
+            <table className="bisection-table">
+              <thead>
+                <tr>
+                  <th>Punto</th>
+                  <th>xᵢ</th>
+                  <th>f(xᵢ)</th>
+                </tr>
+              </thead>
 
-              <div className="interactive-chart-wrapper">
-                <svg
-                  ref={svgRef}
-                  className="error-chart"
-                  viewBox={`0 0 ${width} ${height}`}
-                  role="img"
-                  aria-label="Gráfica del polinomio de Lagrange"
-                  onWheel={handleWheel}
-                  onMouseDown={startDrag}
-                  onMouseMove={moveDrag}
-                  onMouseUp={endDrag}
-                  onMouseLeave={endDrag}
-                >
-                  <style>
-                    {`
-                      .chart-axis { stroke: #334155; stroke-width: 1.5; }
-                      .chart-grid-line { stroke: #e2e8f0; stroke-width: 1; }
-                      .chart-line { stroke: #2563eb; stroke-width: 2.5; }
-                      .chart-point { fill: #111827; stroke: white; stroke-width: 1.5; }
-                      .chart-eval-point { fill: #dc2626; stroke: white; stroke-width: 1.5; }
-                      .chart-label { font-size: 11px; fill: #334155; }
-                      .chart-axis-title { font-size: 13px; fill: #0f172a; font-weight: 700; }
-                      .chart-title-text { font-size: 16px; fill: #111827; font-weight: 800; }
-                    `}
-                  </style>
+              <tbody>
+                {Array.from({ length: n }).map((_, i) => (
+                  <tr key={`point-${i}`}>
+                    <td>P{i + 1}</td>
 
-                  <rect x="0" y="0" width={width} height={height} fill="white" />
-
-                  <text x={width / 2 - 130} y="22" className="chart-title-text">
-                    Polinomio interpolante de Lagrange
-                  </text>
-
-                  {graph.yTicks.map((tick, index) => (
-                    <g key={`ytick-${index}`}>
-                      <line
-                        x1={marginLeft}
-                        y1={yToSvg(tick)}
-                        x2={marginLeft + graphWidth}
-                        y2={yToSvg(tick)}
-                        className="chart-grid-line"
+                    <td>
+                      <input
+                        type="number"
+                        step="any"
+                        value={points[i]?.x ?? ""}
+                        onChange={(e) => updatePoint(i, "x", e.target.value)}
+                        placeholder={`x${i + 1}`}
                       />
+                    </td>
 
-                      <text x="8" y={yToSvg(tick) + 4} className="chart-label">
-                        {fmt(tick)}
-                      </text>
-                    </g>
-                  ))}
-
-                  {graph.xTicks.map((tick, index) => (
-                    <g key={`xtick-${index}`}>
-                      <line
-                        x1={xToSvg(tick)}
-                        y1={marginTop}
-                        x2={xToSvg(tick)}
-                        y2={marginTop + graphHeight}
-                        className="chart-grid-line"
+                    <td>
+                      <input
+                        type="number"
+                        step="any"
+                        value={points[i]?.y ?? ""}
+                        onChange={(e) => updatePoint(i, "y", e.target.value)}
+                        placeholder={`f(x${i + 1})`}
                       />
-
-                      <text
-                        x={xToSvg(tick) - 8}
-                        y={marginTop + graphHeight + 22}
-                        className="chart-label"
-                      >
-                        {fmt(tick)}
-                      </text>
-                    </g>
-                  ))}
-
-                  <line
-                    x1={marginLeft}
-                    y1={marginTop + graphHeight}
-                    x2={marginLeft + graphWidth}
-                    y2={marginTop + graphHeight}
-                    className="chart-axis"
-                  />
-
-                  <line
-                    x1={marginLeft}
-                    y1={marginTop}
-                    x2={marginLeft}
-                    y2={marginTop + graphHeight}
-                    className="chart-axis"
-                  />
-
-                  <text
-                    x={width / 2 - 35}
-                    y={height - 18}
-                    className="chart-axis-title"
-                  >
-                    Eje X
-                  </text>
-
-                  <text
-                    x="-215"
-                    y="18"
-                    transform="rotate(-90)"
-                    className="chart-axis-title"
-                  >
-                    Eje Y
-                  </text>
-
-                  <defs>
-                    <clipPath id="plot-area-clip-lagrange">
-                      <rect
-                        x={marginLeft}
-                        y={marginTop}
-                        width={graphWidth}
-                        height={graphHeight}
-                      />
-                    </clipPath>
-                  </defs>
-
-                  <g
-                    clipPath="url(#plot-area-clip-lagrange)"
-                    className={dragging ? "chart-dragging" : "chart-draggable"}
-                  >
-                    {curvePath && (
-                      <path d={curvePath} className="chart-line" fill="none" />
-                    )}
-
-                    {graph.points.map((point, index) => (
-                      <circle
-                        key={`point-${index}`}
-                        cx={xToSvg(point.x)}
-                        cy={yToSvg(point.y)}
-                        r="4"
-                        className="chart-point"
-                      >
-                        <title>
-                          Punto {index + 1}: ({fmt(point.x)}, {fmt(point.y)})
-                        </title>
-                      </circle>
-                    ))}
-
-                    {Number.isFinite(graph.xEval) &&
-                      Number.isFinite(graph.yEval) && (
-                        <>
-                          <line
-                            x1={xToSvg(graph.xEval)}
-                            y1={marginTop}
-                            x2={xToSvg(graph.xEval)}
-                            y2={marginTop + graphHeight}
-                            stroke="#dc2626"
-                            strokeWidth="1.4"
-                            strokeDasharray="5 4"
-                          />
-
-                          <circle
-                            cx={xToSvg(graph.xEval)}
-                            cy={yToSvg(graph.yEval)}
-                            r="5"
-                            className="chart-eval-point"
-                          >
-                            <title>
-                              P({fmt(graph.xEval)}) = {fmt(graph.yEval)}
-                            </title>
-                          </circle>
-                        </>
-                      )}
-                  </g>
-                </svg>
-              </div>
-            </>
-          )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div className="bisection-table-wrapper">
-          <div className="table-header-actions">
-            <h4>Construcción paso a paso de Lagrange</h4>
+        <div className="bisection-buttons">
+          <button type="submit" className="btn-primary">
+            CALCULAR
+          </button>
+
+          <button type="button" className="btn-secondary" onClick={handleClear}>
+            BORRAR CELDAS
+          </button>
+        </div>
+      </form>
+
+      {message && <p className="bisection-message">{message}</p>}
+      {warningMsg && <p className="bisection-warning">{warningMsg}</p>}
+      {errorMsg && <p className="bisection-error">{errorMsg}</p>}
+    </div>
+
+    <div className="bisection-results">
+      <div className="graph-card">
+        <h4 className="graph-title">Respuesta final</h4>
+
+        {resultValue !== null ? (
+          <div className="method-result-grid">
+            <div className="mini-info-card">
+              <div className="mini-info-card-title">Valor evaluado</div>
+              <div className="mini-info-card-value">
+                x = {fmt(parseNum(xEvalInput))}
+              </div>
+            </div>
+
+            <div className="mini-info-card">
+              <div className="mini-info-card-title">Resultado</div>
+              <div className="mini-info-card-value">
+                P(x) = {fmt(resultValue)}
+              </div>
+            </div>
+
+            <div className="mini-info-card">
+              <div className="mini-info-card-title">Puntos usados</div>
+              <div className="mini-info-card-value">{activeXs.length}</div>
+            </div>
+
+            <div className="mini-info-card">
+              <div className="mini-info-card-title">Grado máximo</div>
+              <div className="mini-info-card-value">{activeXs.length - 1}</div>
+            </div>
+          </div>
+        ) : (
+          <p className="bisection-hint">
+            Aún no hay resultado. Completa los datos y presiona{" "}
+            <strong>CALCULAR</strong>.
+          </p>
+        )}
+      </div>
+
+      <div className="graph-card">
+        <h4 className="graph-title">Polinomio interpolante</h4>
+
+        {!polyLagrange && !polyFactorized && !polyExpanded ? (
+          <p className="bisection-hint">
+            Aquí aparecerá el polinomio después de calcular.
+          </p>
+        ) : (
+          <div className="system-preview">
+            <p>
+              <strong>Forma de Lagrange:</strong>
+            </p>
+            <p>{polyLagrange}</p>
+
+            <p>
+              <strong>Forma factorizada:</strong>
+            </p>
+            <p>{polyFactorized}</p>
+
+            <p>
+              <strong>Forma expandida:</strong>
+            </p>
+            <p>{polyExpanded}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="graph-card">
+        <div className="table-header-actions">
+          <h4 className="graph-title">Gráfica interactiva de Lagrange</h4>
+
+          <div className="chart-actions">
+            <button type="button" className="btn-export" onClick={increaseZoom}>
+              +
+            </button>
+
+            <button type="button" className="btn-export" onClick={decreaseZoom}>
+              -
+            </button>
+
+            <button type="button" className="btn-export" onClick={resetChart}>
+              Reiniciar
+            </button>
 
             <button
               type="button"
               className="btn-export"
-              onClick={exportCSV}
-              disabled={!basisDetails.length}
+              onClick={downloadChartPNG}
+              disabled={!expandedCoeffs}
             >
-              Descargar CSV
+              PNG
             </button>
           </div>
-
-          {!basisDetails.length ? (
-            <p className="bisection-hint">
-              Ingresa los datos y presiona <strong>CALCULAR</strong>.
-              Aquí aparecerá la construcción de cada base Lᵢ(x).
-            </p>
-          ) : (
-            <div className="table-scroll">
-              <table className="bisection-table">
-                <thead>
-                  <tr>
-                    <th>i</th>
-                    <th>xᵢ</th>
-                    <th>f(xᵢ)</th>
-                    <th>Denominador</th>
-                    <th>Lᵢ(x)</th>
-                    <th>Coeficiente</th>
-                    <th>Término</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {basisDetails.map((detail) => (
-                    <tr key={`basis-${detail.index}`}>
-                      <td>{detail.index}</td>
-                      <td>{fmt(detail.xi)}</td>
-                      <td>{fmt(detail.yi)}</td>
-                      <td>{fmt(detail.denominator)}</td>
-                      <td>{detail.Li}</td>
-                      <td>{fmt(detail.termCoefficient)}</td>
-                      <td>{detail.factorizedTerm}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {resultValue !== null && (
-            <p className="bisection-message">
-              Resultado final: P({fmt(parseNum(xEvalInput))}) = {fmt(resultValue)}
-            </p>
-          )}
         </div>
+
+        {!graph.ok ? (
+          <p className="bisection-hint">
+            La gráfica aparecerá después de ingresar puntos válidos.
+          </p>
+        ) : (
+          <>
+            <p className="bisection-hint">
+              Usa la rueda del mouse para acercar o alejar. Arrastra la gráfica
+              para desplazarla. Los valores de los ejes se actualizan con el zoom
+              y el desplazamiento.
+            </p>
+
+            <div className="interactive-chart-wrapper">
+              <svg
+                ref={svgRef}
+                className="error-chart"
+                viewBox={`0 0 ${width} ${height}`}
+                role="img"
+                aria-label="Gráfica del polinomio de Lagrange"
+                onWheel={handleWheel}
+                onMouseDown={startDrag}
+                onMouseMove={moveDrag}
+                onMouseUp={endDrag}
+                onMouseLeave={endDrag}
+              >
+                <style>
+                  {`
+                    .chart-axis { stroke: #334155; stroke-width: 1.5; }
+                    .chart-grid-line { stroke: #e2e8f0; stroke-width: 1; }
+                    .chart-line { stroke: #2563eb; stroke-width: 2.5; }
+                    .chart-point { fill: #111827; stroke: white; stroke-width: 1.5; }
+                    .chart-eval-point { fill: #dc2626; stroke: white; stroke-width: 1.5; }
+                    .chart-label { font-size: 11px; fill: #334155; }
+                    .chart-axis-title { font-size: 13px; fill: #0f172a; font-weight: 700; }
+                    .chart-title-text { font-size: 16px; fill: #111827; font-weight: 800; }
+                  `}
+                </style>
+
+                <rect x="0" y="0" width={width} height={height} fill="white" />
+
+                <text x={width / 2 - 130} y="22" className="chart-title-text">
+                  Polinomio interpolante de Lagrange
+                </text>
+
+                {graph.yTicks.map((tick, index) => (
+                  <g key={`ytick-${index}`}>
+                    <line
+                      x1={marginLeft}
+                      y1={yToSvg(tick)}
+                      x2={marginLeft + graphWidth}
+                      y2={yToSvg(tick)}
+                      className="chart-grid-line"
+                    />
+
+                    <text x="8" y={yToSvg(tick) + 4} className="chart-label">
+                      {fmt(tick)}
+                    </text>
+                  </g>
+                ))}
+
+                {graph.xTicks.map((tick, index) => (
+                  <g key={`xtick-${index}`}>
+                    <line
+                      x1={xToSvg(tick)}
+                      y1={marginTop}
+                      x2={xToSvg(tick)}
+                      y2={marginTop + graphHeight}
+                      className="chart-grid-line"
+                    />
+
+                    <text
+                      x={xToSvg(tick) - 8}
+                      y={marginTop + graphHeight + 22}
+                      className="chart-label"
+                    >
+                      {fmt(tick)}
+                    </text>
+                  </g>
+                ))}
+
+                <line
+                  x1={marginLeft}
+                  y1={marginTop + graphHeight}
+                  x2={marginLeft + graphWidth}
+                  y2={marginTop + graphHeight}
+                  className="chart-axis"
+                />
+
+                <line
+                  x1={marginLeft}
+                  y1={marginTop}
+                  x2={marginLeft}
+                  y2={marginTop + graphHeight}
+                  className="chart-axis"
+                />
+
+                <text
+                  x={width / 2 - 35}
+                  y={height - 18}
+                  className="chart-axis-title"
+                >
+                  Eje X
+                </text>
+
+                <text
+                  x="-215"
+                  y="18"
+                  transform="rotate(-90)"
+                  className="chart-axis-title"
+                >
+                  Eje Y
+                </text>
+
+                <defs>
+                  <clipPath id="plot-area-clip-lagrange">
+                    <rect
+                      x={marginLeft}
+                      y={marginTop}
+                      width={graphWidth}
+                      height={graphHeight}
+                    />
+                  </clipPath>
+                </defs>
+
+                <g
+                  clipPath="url(#plot-area-clip-lagrange)"
+                  className={dragging ? "chart-dragging" : "chart-draggable"}
+                >
+                  {curvePath && (
+                    <path d={curvePath} className="chart-line" fill="none" />
+                  )}
+
+                  {graph.points.map((point, index) => (
+                    <circle
+                      key={`point-${index}`}
+                      cx={xToSvg(point.x)}
+                      cy={yToSvg(point.y)}
+                      r="4"
+                      className="chart-point"
+                    >
+                      <title>
+                        Punto {index + 1}: ({fmt(point.x)}, {fmt(point.y)})
+                      </title>
+                    </circle>
+                  ))}
+
+                  {Number.isFinite(graph.xEval) &&
+                    Number.isFinite(graph.yEval) && (
+                      <>
+                        <line
+                          x1={xToSvg(graph.xEval)}
+                          y1={marginTop}
+                          x2={xToSvg(graph.xEval)}
+                          y2={marginTop + graphHeight}
+                          stroke="#dc2626"
+                          strokeWidth="1.4"
+                          strokeDasharray="5 4"
+                        />
+
+                        <circle
+                          cx={xToSvg(graph.xEval)}
+                          cy={yToSvg(graph.yEval)}
+                          r="5"
+                          className="chart-eval-point"
+                        >
+                          <title>
+                            P({fmt(graph.xEval)}) = {fmt(graph.yEval)}
+                          </title>
+                        </circle>
+                      </>
+                    )}
+                </g>
+              </svg>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="bisection-table-wrapper">
+        <div className="table-header-actions">
+          <h4>Construcción paso a paso de Lagrange</h4>
+
+          <button
+            type="button"
+            className="btn-export"
+            onClick={exportCSV}
+            disabled={!basisDetails.length}
+          >
+            Descargar CSV
+          </button>
+        </div>
+
+        {!basisDetails.length ? (
+          <p className="bisection-hint">
+            Ingresa los datos y presiona <strong>CALCULAR</strong>.
+            Aquí aparecerá la construcción de cada base Lᵢ(x).
+          </p>
+        ) : (
+          <div className="table-scroll">
+            <table className="bisection-table">
+              <thead>
+                <tr>
+                  <th>i</th>
+                  <th>xᵢ</th>
+                  <th>f(xᵢ)</th>
+                  <th>Denominador</th>
+                  <th>Lᵢ(x)</th>
+                  <th>Coeficiente</th>
+                  <th>Término</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {basisDetails.map((detail) => (
+                  <tr key={`basis-${detail.index}`}>
+                    <td>{detail.index}</td>
+                    <td>{fmt(detail.xi)}</td>
+                    <td>{fmt(detail.yi)}</td>
+                    <td>{fmt(detail.denominator)}</td>
+                    <td>{detail.Li}</td>
+                    <td>{fmt(detail.termCoefficient)}</td>
+                    <td>{detail.factorizedTerm}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {resultValue !== null && (
+          <p className="bisection-message">
+            Resultado final: P({fmt(parseNum(xEvalInput))}) = {fmt(resultValue)}
+          </p>
+        )}
       </div>
     </div>
-  );
+  </div>
+);
 }
