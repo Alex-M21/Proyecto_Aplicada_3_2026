@@ -1,0 +1,1 @@
+import{t as e}from"./index-CXOO87s1.js";export default e();
