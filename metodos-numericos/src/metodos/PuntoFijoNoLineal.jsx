@@ -9,10 +9,7 @@ const ejemplosPuntoFijo = {
   2: {
     nombre: "Ejemplo 2x2 trigonométrico",
     variables: "x,y",
-    funciones: [
-      "y/(5)^(1/2)",
-      "(sin(x)+2*cos(y))/4"
-    ],
+    funciones: ["y/(5)^(1/2)", "(sin(x)+2*cos(y))/4"],
     inicial: "0.1,0.25",
     tolerancia: "0.01",
     iteraciones: "25",
@@ -571,433 +568,415 @@ export default function PuntoFijoNoLineal() {
   });
 
   return (
-  <div className="bisection-grid">
-    <div className="bisection-form">
-      <h3>Método de Punto Fijo No Lineal {dimension}x{dimension}</h3>
+    <div className="bisection-grid">
+      <div className="bisection-form">
+        <h3>Método de Punto Fijo No Lineal {dimension}x{dimension}</h3>
 
-      <p className="bisection-hint">
-        Resuelve sistemas cuadrados de la forma <strong>X = G(X)</strong>.
-        Cada función G calcula una nueva variable del sistema.
-      </p>
+        <p className="bisection-hint">
+          Resuelve sistemas cuadrados de la forma <strong>X = G(X)</strong>.
+          Cada función G calcula una nueva variable del sistema.
+        </p>
 
-      <form onSubmit={calcularPuntoFijo}>
-        <div className="bisection-form-row">
-          <label>Tamaño del sistema =</label>
-
-          <select
-            value={dimension}
-            onChange={(e) => cambiarDimension(e.target.value)}
-          >
-            <option value="2">2x2</option>
-            <option value="3">3x3</option>
-            <option value="4">4x4</option>
-            <option value="5">5x5</option>
-            <option value="6">6x6</option>
-          </select>
-        </div>
-
-        <div className="bisection-form-row">
-          <label>Variables =</label>
-
-          <input
-            type="text"
-            value={variablesInput}
-            onChange={(e) => {
-              setVariablesInput(e.target.value);
-              limpiarResultados();
-            }}
-            placeholder="Ej: x,y,z,w,v,u"
-          />
-        </div>
-
-        <div className="method-section">
-          <h4>Funciones del sistema</h4>
-
-          {funcionesInput.map((funcion, index) => (
-            <div className="bisection-form-row" key={index}>
-              <label>
-                G<sub>{index + 1}</sub>({variables.join(",")}) =
-              </label>
-
-              <input
-                type="text"
-                value={funcion}
-                onChange={(e) => cambiarFuncion(index, e.target.value)}
-                placeholder={`Función G${index + 1}`}
-              />
-            </div>
-          ))}
-        </div>
-
-        <div className="method-two-columns">
+        <form onSubmit={calcularPuntoFijo}>
           <div className="bisection-form-row">
-            <label>Vector inicial =</label>
+            <label>Tamaño del sistema =</label>
+
+            <select
+              value={dimension}
+              onChange={(e) => cambiarDimension(e.target.value)}
+            >
+              <option value="2">2x2</option>
+              <option value="3">3x3</option>
+              <option value="4">4x4</option>
+              <option value="5">5x5</option>
+              <option value="6">6x6</option>
+            </select>
+          </div>
+
+          <div className="bisection-form-row">
+            <label>Variables =</label>
 
             <input
               type="text"
-              value={inicialInput}
+              value={variablesInput}
               onChange={(e) => {
-                setInicialInput(e.target.value);
+                setVariablesInput(e.target.value);
                 limpiarResultados();
               }}
-              placeholder="Ej: 0.1,0.25"
+              placeholder="Ej: x,y,z,w,v,u"
             />
           </div>
 
-          <div className="bisection-form-row">
-            <label>Tolerancia =</label>
+          <div className="method-section">
+            <h4>Funciones del sistema</h4>
 
-            <input
-              type="number"
-              step="any"
-              value={toleranciaInput}
-              onChange={(e) => {
-                setToleranciaInput(e.target.value);
-                limpiarResultados();
-              }}
-            />
+            {funcionesInput.map((funcion, index) => (
+              <div className="bisection-form-row" key={index}>
+                <label>
+                  G<sub>{index + 1}</sub>({variables.join(",")}) =
+                </label>
+
+                <input
+                  type="text"
+                  value={funcion}
+                  onChange={(e) => cambiarFuncion(index, e.target.value)}
+                  placeholder={`Función G${index + 1}`}
+                />
+              </div>
+            ))}
           </div>
 
-          <div className="bisection-form-row">
-            <label>Iteraciones =</label>
+          <div className="method-two-columns">
+            <div className="bisection-form-row">
+              <label>Vector inicial =</label>
 
-            <input
-              type="number"
-              value={iteracionesInput}
-              onChange={(e) => {
-                setIteracionesInput(e.target.value);
-                limpiarResultados();
-              }}
-            />
+              <input
+                type="text"
+                value={inicialInput}
+                onChange={(e) => {
+                  setInicialInput(e.target.value);
+                  limpiarResultados();
+                }}
+                placeholder="Ej: 0.1,0.25"
+              />
+            </div>
+
+            <div className="bisection-form-row">
+              <label>Tolerancia =</label>
+
+              <input
+                type="number"
+                step="any"
+                value={toleranciaInput}
+                onChange={(e) => {
+                  setToleranciaInput(e.target.value);
+                  limpiarResultados();
+                }}
+              />
+            </div>
+
+            <div className="bisection-form-row">
+              <label>Iteraciones =</label>
+
+              <input
+                type="number"
+                value={iteracionesInput}
+                onChange={(e) => {
+                  setIteracionesInput(e.target.value);
+                  limpiarResultados();
+                }}
+              />
+            </div>
+
+            <div className="bisection-form-row">
+              <label>Decimales =</label>
+
+              <input
+                type="number"
+                value={decimalesInput}
+                onChange={(e) => setDecimalesInput(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="bisection-form-row">
-            <label>Decimales =</label>
+          <div className="bisection-buttons">
+            <button type="submit" className="btn-primary">
+              CALCULAR
+            </button>
 
-            <input
-              type="number"
-              value={decimalesInput}
-              onChange={(e) => setDecimalesInput(e.target.value)}
-            />
+            <button type="button" className="btn-secondary" onClick={limpiar}>
+              BORRAR CELDAS
+            </button>
           </div>
-        </div>
+        </form>
 
-        <div className="bisection-buttons">
-          <button type="submit" className="btn-primary">
-            CALCULAR
-          </button>
-
-          <button type="button" className="btn-secondary" onClick={limpiar}>
-            BORRAR CELDAS
-          </button>
-        </div>
-      </form>
-
-      {mensaje && <p className="bisection-message">{mensaje}</p>}
-      {advertenciaMsg && <p className="bisection-warning">{advertenciaMsg}</p>}
-      {analisisMsg && <p className="bisection-warning">{analisisMsg}</p>}
-      {errorMsg && <p className="bisection-error">{errorMsg}</p>}
-    </div>
-
-    <div className="bisection-results">
-      <div className="graph-card">
-        <h4 className="graph-title">Sistema ingresado</h4>
-
-        <div className="system-preview">
-          {funcionesInput.map((funcion, index) => (
-            <p key={`sistema-${index}`}>
-              <strong>
-                {variables[index] || `x${index + 1}`} = G
-                <sub>{index + 1}</sub>({variables.join(",")}) =
-              </strong>{" "}
-              {funcion || "—"}
-            </p>
-          ))}
-        </div>
+        {mensaje && <p className="bisection-message">{mensaje}</p>}
+        {advertenciaMsg && <p className="bisection-warning">{advertenciaMsg}</p>}
+        {analisisMsg && <p className="bisection-warning">{analisisMsg}</p>}
+        {errorMsg && <p className="bisection-error">{errorMsg}</p>}
       </div>
 
-      <div className="graph-card">
-        <h4 className="graph-title">Forma del método</h4>
+      <div className="bisection-results">
+        <div className="graph-card">
+          <h4 className="graph-title">Sistema ingresado</h4>
 
-        <p className="bisection-hint">En cada iteración se evalúa:</p>
-
-        <p>
-          <strong>Xₙ₊₁ = G(Xₙ)</strong>
-        </p>
-
-        <p className="bisection-hint">Error por variable:</p>
-
-        <p>
-          <strong>Eᵢ = |xᵢ,n+1 - xᵢ,n|</strong>
-        </p>
-
-        <p className="bisection-hint">Criterio de parada:</p>
-
-        <p>
-          <strong>Error = max(E₁, E₂, ..., Eₙ) &lt; tolerancia</strong>
-        </p>
-      </div>
-
-      <div className="graph-card">
-        <h4 className="graph-title">Vector inicial</h4>
-
-        <div className="system-preview">
-          {variables.map((variable, index) => {
-            const vectorInicial = leerVector(inicialInput);
-
-            return (
-              <p key={`x0-${variable}`}>
+          <div className="system-preview">
+            {funcionesInput.map((funcion, index) => (
+              <p key={`sistema-${index}`}>
                 <strong>
-                  {variable}
-                  <sub>0</sub> =
+                  {variables[index] || `x${index + 1}`} = G
+                  <sub>{index + 1}</sub>({variables.join(",")}) =
                 </strong>{" "}
-                {Number.isFinite(vectorInicial[index])
-                  ? vectorInicial[index]
-                  : "—"}
+                {funcion || "—"}
               </p>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div className="graph-card">
-        <div className="table-header-actions">
-          <h4 className="graph-title">Gráfica interactiva de error</h4>
+        <div className="graph-card">
+          <h4 className="graph-title">Vector inicial</h4>
 
-          <div className="chart-actions">
-            <button type="button" className="btn-export" onClick={aumentarZoom}>
-              +
-            </button>
+          <div className="system-preview">
+            {variables.map((variable, index) => {
+              const vectorInicial = leerVector(inicialInput);
 
-            <button type="button" className="btn-export" onClick={disminuirZoom}>
-              -
-            </button>
+              return (
+                <p key={`x0-${variable}`}>
+                  <strong>
+                    {variable}
+                    <sub>0</sub> =
+                  </strong>{" "}
+                  {Number.isFinite(vectorInicial[index])
+                    ? vectorInicial[index]
+                    : "—"}
+                </p>
+              );
+            })}
+          </div>
+        </div>
 
-            <button type="button" className="btn-export" onClick={reiniciarGrafica}>
-              Reiniciar
-            </button>
+        <div className="graph-card">
+          <div className="table-header-actions">
+            <h4 className="graph-title">Gráfica interactiva de error</h4>
+
+            <div className="chart-actions">
+              <button type="button" className="btn-export" onClick={aumentarZoom}>
+                +
+              </button>
+
+              <button type="button" className="btn-export" onClick={disminuirZoom}>
+                -
+              </button>
+
+              <button
+                type="button"
+                className="btn-export"
+                onClick={reiniciarGrafica}
+              >
+                Reiniciar
+              </button>
+
+              <button
+                type="button"
+                className="btn-export"
+                onClick={descargarGraficaPNG}
+                disabled={filas.length === 0}
+              >
+                PNG
+              </button>
+            </div>
+          </div>
+
+          {filas.length === 0 ? (
+            <p className="bisection-hint">
+              La gráfica aparecerá después de calcular.
+            </p>
+          ) : (
+            <>
+              <p className="bisection-hint">
+                Usa la rueda del mouse para acercar o alejar. Arrastra la gráfica
+                para desplazarla.
+              </p>
+
+              <div className="interactive-chart-wrapper">
+                <svg
+                  ref={svgRef}
+                  className="error-chart"
+                  viewBox={`0 0 ${width} ${height}`}
+                  role="img"
+                  aria-label="Gráfica de error contra iteración"
+                  onWheel={manejarWheel}
+                  onMouseDown={iniciarArrastre}
+                  onMouseMove={moverArrastre}
+                  onMouseUp={terminarArrastre}
+                  onMouseLeave={terminarArrastre}
+                >
+                  <rect x="0" y="0" width={width} height={height} fill="white" />
+
+                  <text x={width / 2 - 80} y="22" className="chart-title-text">
+                    Error vs Iteración
+                  </text>
+
+                  <line
+                    x1={marginLeft}
+                    y1={marginTop + graphHeight}
+                    x2={marginLeft + graphWidth}
+                    y2={marginTop + graphHeight}
+                    className="chart-axis"
+                  />
+
+                  <line
+                    x1={marginLeft}
+                    y1={marginTop}
+                    x2={marginLeft}
+                    y2={marginTop + graphHeight}
+                    className="chart-axis"
+                  />
+
+                  {yTicks.map((tick, index) => (
+                    <g key={`ytick-${index}`}>
+                      <line
+                        x1={marginLeft}
+                        y1={tick.y}
+                        x2={marginLeft + graphWidth}
+                        y2={tick.y}
+                        className="chart-grid-line"
+                      />
+
+                      <text x="8" y={tick.y + 4} className="chart-label">
+                        {formatearNumero(tick.value)}
+                      </text>
+                    </g>
+                  ))}
+
+                  {xTicks.map((punto) => (
+                    <g key={`xtick-${punto.iteracion}`}>
+                      <line
+                        x1={punto.x}
+                        y1={marginTop + graphHeight}
+                        x2={punto.x}
+                        y2={marginTop + graphHeight + 6}
+                        className="chart-axis"
+                      />
+
+                      <text
+                        x={punto.x - 4}
+                        y={marginTop + graphHeight + 22}
+                        className="chart-label"
+                      >
+                        {punto.iteracion}
+                      </text>
+                    </g>
+                  ))}
+
+                  <text
+                    x={width / 2 - 40}
+                    y={height - 18}
+                    className="chart-axis-title"
+                  >
+                    Eje X: Iteración
+                  </text>
+
+                  <text
+                    x="-220"
+                    y="18"
+                    transform="rotate(-90)"
+                    className="chart-axis-title"
+                  >
+                    Eje Y: Error máximo
+                  </text>
+
+                  <g
+                    transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}
+                    className={dragging ? "chart-dragging" : "chart-draggable"}
+                  >
+                    <path d={pathGrafica} className="chart-line" fill="none" />
+
+                    {puntosGrafica.map((punto, index) => (
+                      <g key={`punto-${index}`}>
+                        <circle
+                          cx={punto.x}
+                          cy={punto.y}
+                          r="4"
+                          className="chart-point"
+                        />
+
+                        <title>
+                          Iteración {punto.iteracion} | Error:{" "}
+                          {formatearNumero(punto.error)}
+                        </title>
+                      </g>
+                    ))}
+                  </g>
+                </svg>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="bisection-table-wrapper">
+          <div className="table-header-actions">
+            <h4>Tabla de iteraciones</h4>
 
             <button
               type="button"
               className="btn-export"
-              onClick={descargarGraficaPNG}
+              onClick={exportarCSV}
               disabled={filas.length === 0}
             >
-              PNG
+              Descargar CSV
             </button>
           </div>
-        </div>
 
-        {filas.length === 0 ? (
-          <p className="bisection-hint">
-            La gráfica aparecerá después de calcular.
-          </p>
-        ) : (
-          <>
+          {filas.length === 0 ? (
             <p className="bisection-hint">
-              Usa la rueda del mouse para acercar o alejar. Arrastra la gráfica
-              para desplazarla.
+              Ingresa los datos y presiona <strong>CALCULAR</strong>.
             </p>
+          ) : (
+            <div className="table-scroll">
+              <table className="bisection-table">
+                <thead>
+                  <tr>
+                    <th>n</th>
 
-            <div className="interactive-chart-wrapper">
-              <svg
-                ref={svgRef}
-                className="error-chart"
-                viewBox={`0 0 ${width} ${height}`}
-                role="img"
-                aria-label="Gráfica de error contra iteración"
-                onWheel={manejarWheel}
-                onMouseDown={iniciarArrastre}
-                onMouseMove={moverArrastre}
-                onMouseUp={terminarArrastre}
-                onMouseLeave={terminarArrastre}
-              >
-                <rect x="0" y="0" width={width} height={height} fill="white" />
+                    {variables.map((variable) => (
+                      <th key={`var-${variable}`}>{variable}</th>
+                    ))}
 
-                <text x={width / 2 - 80} y="22" className="chart-title-text">
-                  Error vs Iteración
-                </text>
+                    {variables.map((variable) => (
+                      <th key={`err-${variable}`}>
+                        E<sub>{variable}</sub>
+                      </th>
+                    ))}
 
-                <line
-                  x1={marginLeft}
-                  y1={marginTop + graphHeight}
-                  x2={marginLeft + graphWidth}
-                  y2={marginTop + graphHeight}
-                  className="chart-axis"
-                />
+                    <th>Error</th>
+                  </tr>
+                </thead>
 
-                <line
-                  x1={marginLeft}
-                  y1={marginTop}
-                  x2={marginLeft}
-                  y2={marginTop + graphHeight}
-                  className="chart-axis"
-                />
+                <tbody>
+                  {filas.map((fila, index) => {
+                    const esUltima =
+                      index === ultimaFilaIndex && solucionEncontrada;
 
-                {yTicks.map((tick, index) => (
-                  <g key={`ytick-${index}`}>
-                    <line
-                      x1={marginLeft}
-                      y1={tick.y}
-                      x2={marginLeft + graphWidth}
-                      y2={tick.y}
-                      className="chart-grid-line"
-                    />
+                    return (
+                      <tr key={fila.iteracion}>
+                        <td>{fila.iteracion}</td>
 
-                    <text x="8" y={tick.y + 4} className="chart-label">
-                      {formatearNumero(tick.value)}
-                    </text>
-                  </g>
-                ))}
+                        {fila.valoresSiguientes.map((valor, i) => (
+                          <td
+                            key={`valor-${fila.iteracion}-${i}`}
+                            className={esUltima ? "cell-green" : ""}
+                          >
+                            {formatearNumero(valor)}
+                          </td>
+                        ))}
 
-                {xTicks.map((punto) => (
-                  <g key={`xtick-${punto.iteracion}`}>
-                    <line
-                      x1={punto.x}
-                      y1={marginTop + graphHeight}
-                      x2={punto.x}
-                      y2={marginTop + graphHeight + 6}
-                      className="chart-axis"
-                    />
+                        {fila.errores.map((valor, i) => (
+                          <td key={`error-${fila.iteracion}-${i}`}>
+                            {formatearNumero(valor)}
+                          </td>
+                        ))}
 
-                    <text
-                      x={punto.x - 4}
-                      y={marginTop + graphHeight + 22}
-                      className="chart-label"
-                    >
-                      {punto.iteracion}
-                    </text>
-                  </g>
-                ))}
-
-                <text
-                  x={width / 2 - 40}
-                  y={height - 18}
-                  className="chart-axis-title"
-                >
-                  Eje X: Iteración
-                </text>
-
-                <text
-                  x="-220"
-                  y="18"
-                  transform="rotate(-90)"
-                  className="chart-axis-title"
-                >
-                  Eje Y: Error máximo
-                </text>
-
-                <g
-                  transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}
-                  className={dragging ? "chart-dragging" : "chart-draggable"}
-                >
-                  <path d={pathGrafica} className="chart-line" fill="none" />
-
-                  {puntosGrafica.map((punto, index) => (
-                    <g key={`punto-${index}`}>
-                      <circle
-                        cx={punto.x}
-                        cy={punto.y}
-                        r="4"
-                        className="chart-point"
-                      />
-
-                      <title>
-                        Iteración {punto.iteracion} | Error:{" "}
-                        {formatearNumero(punto.error)}
-                      </title>
-                    </g>
-                  ))}
-                </g>
-              </svg>
+                        <td className={esUltima ? "cell-red" : ""}>
+                          {formatearNumero(fila.error)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          </>
-        )}
-      </div>
+          )}
 
-      <div className="bisection-table-wrapper">
-        <div className="table-header-actions">
-          <h4>Tabla de iteraciones</h4>
-
-          <button
-            type="button"
-            className="btn-export"
-            onClick={exportarCSV}
-            disabled={filas.length === 0}
-          >
-            Descargar CSV
-          </button>
+          {solucionEncontrada && (
+            <p className="bisection-message">
+              SE ENCONTRÓ LA SOLUCIÓN porque{" "}
+              {formatearNumero(filas[ultimaFilaIndex].error)} &lt;{" "}
+              {toleranciaInput}
+            </p>
+          )}
         </div>
-
-        {filas.length === 0 ? (
-          <p className="bisection-hint">
-            Ingresa los datos y presiona <strong>CALCULAR</strong>.
-          </p>
-        ) : (
-          <div className="table-scroll">
-            <table className="bisection-table">
-              <thead>
-                <tr>
-                  <th>n</th>
-
-                  {variables.map((variable) => (
-                    <th key={`var-${variable}`}>{variable}</th>
-                  ))}
-
-                  {variables.map((variable) => (
-                    <th key={`err-${variable}`}>
-                      E<sub>{variable}</sub>
-                    </th>
-                  ))}
-
-                  <th>Error</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {filas.map((fila, index) => {
-                  const esUltima =
-                    index === ultimaFilaIndex && solucionEncontrada;
-
-                  return (
-                    <tr key={fila.iteracion}>
-                      <td>{fila.iteracion}</td>
-
-                      {fila.valoresSiguientes.map((valor, i) => (
-                        <td
-                          key={`valor-${fila.iteracion}-${i}`}
-                          className={esUltima ? "cell-green" : ""}
-                        >
-                          {formatearNumero(valor)}
-                        </td>
-                      ))}
-
-                      {fila.errores.map((valor, i) => (
-                        <td key={`error-${fila.iteracion}-${i}`}>
-                          {formatearNumero(valor)}
-                        </td>
-                      ))}
-
-                      <td className={esUltima ? "cell-red" : ""}>
-                        {formatearNumero(fila.error)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {solucionEncontrada && (
-          <p className="bisection-message">
-            SE ENCONTRÓ LA SOLUCIÓN porque{" "}
-            {formatearNumero(filas[ultimaFilaIndex].error)} &lt;{" "}
-            {toleranciaInput}
-          </p>
-        )}
       </div>
     </div>
-  </div>
-);
+  );
 }

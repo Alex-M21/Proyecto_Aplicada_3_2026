@@ -9,10 +9,7 @@ const ejemplosNewton = {
   2: {
     nombre: "Ejemplo 2x2 trigonométrico",
     variables: "x,y",
-    funciones: [
-      "5*x^2-y^2",
-      "y-0.25*(sin(x)+cos(y))"
-    ],
+    funciones: ["5*x^2-y^2", "y-0.25*(sin(x)+cos(y))"],
     inicial: "0.1,0.5",
     tolerancia: "0.0001",
     iteraciones: "25",
@@ -36,12 +33,7 @@ const ejemplosNewton = {
   4: {
     nombre: "Ejemplo 4x4 cuadrático",
     variables: "x,y,z,w",
-    funciones: [
-      "x^2-4",
-      "y^2-9",
-      "z^2-16",
-      "w^2-25"
-    ],
+    funciones: ["x^2-4", "y^2-9", "z^2-16", "w^2-25"],
     inicial: "1,2,3,4",
     tolerancia: "0.0001",
     iteraciones: "25",
@@ -51,13 +43,7 @@ const ejemplosNewton = {
   5: {
     nombre: "Ejemplo 5x5 cuadrático",
     variables: "x,y,z,w,v",
-    funciones: [
-      "x^2-4",
-      "y^2-9",
-      "z^2-16",
-      "w^2-25",
-      "v^2-36"
-    ],
+    funciones: ["x^2-4", "y^2-9", "z^2-16", "w^2-25", "v^2-36"],
     inicial: "1,2,3,4,5",
     tolerancia: "0.0001",
     iteraciones: "25",
@@ -84,15 +70,24 @@ const ejemplosNewton = {
 
 export default function NewtonNoLineal() {
   const [dimension, setDimension] = useState("2");
-  const [variablesInput, setVariablesInput] = useState(ejemplosNewton[2].variables);
-  const [funcionesInput, setFuncionesInput] = useState([...ejemplosNewton[2].funciones]);
+  const [variablesInput, setVariablesInput] = useState(
+    ejemplosNewton[2].variables
+  );
+  const [funcionesInput, setFuncionesInput] = useState([
+    ...ejemplosNewton[2].funciones
+  ]);
   const [inicialInput, setInicialInput] = useState(ejemplosNewton[2].inicial);
-  const [toleranciaInput, setToleranciaInput] = useState(ejemplosNewton[2].tolerancia);
-  const [iteracionesInput, setIteracionesInput] = useState(ejemplosNewton[2].iteraciones);
-  const [decimalesInput, setDecimalesInput] = useState(ejemplosNewton[2].decimales);
+  const [toleranciaInput, setToleranciaInput] = useState(
+    ejemplosNewton[2].tolerancia
+  );
+  const [iteracionesInput, setIteracionesInput] = useState(
+    ejemplosNewton[2].iteraciones
+  );
+  const [decimalesInput, setDecimalesInput] = useState(
+    ejemplosNewton[2].decimales
+  );
 
   const [filas, setFilas] = useState([]);
-  const [jacobianoSimbolico, setJacobianoSimbolico] = useState([]);
   const [mensaje, setMensaje] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [advertenciaMsg, setAdvertenciaMsg] = useState("");
@@ -187,7 +182,6 @@ export default function NewtonNoLineal() {
     setDecimalesInput(ejemplo.decimales);
 
     setFilas([]);
-    setJacobianoSimbolico([]);
     setMensaje("");
     setErrorMsg("");
     setAdvertenciaMsg("");
@@ -213,7 +207,6 @@ export default function NewtonNoLineal() {
     });
 
     setFilas([]);
-    setJacobianoSimbolico([]);
     setMensaje("");
     setErrorMsg("");
     setAdvertenciaMsg("");
@@ -224,7 +217,6 @@ export default function NewtonNoLineal() {
     e.preventDefault();
 
     setFilas([]);
-    setJacobianoSimbolico([]);
     setMensaje("");
     setErrorMsg("");
     setAdvertenciaMsg("");
@@ -269,7 +261,6 @@ export default function NewtonNoLineal() {
 
     let funcionesCompiladas = [];
     let jacobianoCompilado = [];
-    let jacobianoTexto = [];
 
     try {
       funcionesCompiladas = funcionesInput.map((funcion) =>
@@ -283,16 +274,6 @@ export default function NewtonNoLineal() {
           math.derivative(nodo, variable).compile()
         );
       });
-
-      jacobianoTexto = funcionesInput.map((funcion) => {
-        const nodo = math.parse(normalizarExpresion(funcion));
-
-        return variables.map((variable) =>
-          math.derivative(nodo, variable).toString()
-        );
-      });
-
-      setJacobianoSimbolico(jacobianoTexto);
     } catch {
       setErrorMsg("No se pudieron interpretar las funciones o sus derivadas.");
       return;
@@ -593,421 +574,375 @@ export default function NewtonNoLineal() {
   });
 
   return (
-  <div className="bisection-grid">
-    <div className="bisection-form">
-      <h3>Método de Newton No Lineal {dimension}x{dimension}</h3>
+    <div className="bisection-grid">
+      <div className="bisection-form">
+        <h3>Método de Newton No Lineal {dimension}x{dimension}</h3>
 
-      <p className="bisection-hint">
-        Resuelve sistemas cuadrados de la forma <strong>F(X) = 0</strong>.
-        En cada iteración se usa el Jacobiano del sistema.
-      </p>
+        <p className="bisection-hint">
+          Resuelve sistemas cuadrados de la forma <strong>F(X) = 0</strong>.
+          En cada iteración se usa el Jacobiano del sistema.
+        </p>
 
-      <form onSubmit={calcularNewton}>
-        <div className="bisection-form-row">
-          <label>Tamaño del sistema =</label>
-
-          <select
-            value={dimension}
-            onChange={(e) => cambiarDimension(e.target.value)}
-          >
-            <option value="2">2x2</option>
-            <option value="3">3x3</option>
-            <option value="4">4x4</option>
-            <option value="5">5x5</option>
-            <option value="6">6x6</option>
-          </select>
-        </div>
-
-        <div className="bisection-form-row">
-          <label>Variables =</label>
-
-          <input
-            type="text"
-            value={variablesInput}
-            onChange={(e) => setVariablesInput(e.target.value)}
-            placeholder="Ej: x,y,z,w,v,u"
-          />
-        </div>
-
-        <div className="method-section">
-          <h4>Funciones del sistema</h4>
-
-          {funcionesInput.map((funcion, index) => (
-            <div className="bisection-form-row" key={index}>
-              <label>
-                F<sub>{index + 1}</sub>({variables.join(",")}) =
-              </label>
-
-              <input
-                type="text"
-                value={funcion}
-                onChange={(e) => cambiarFuncion(index, e.target.value)}
-                placeholder={`Función F${index + 1}`}
-              />
-            </div>
-          ))}
-        </div>
-
-        <div className="method-two-columns">
+        <form onSubmit={calcularNewton}>
           <div className="bisection-form-row">
-            <label>Vector inicial =</label>
+            <label>Tamaño del sistema =</label>
+
+            <select
+              value={dimension}
+              onChange={(e) => cambiarDimension(e.target.value)}
+            >
+              <option value="2">2x2</option>
+              <option value="3">3x3</option>
+              <option value="4">4x4</option>
+              <option value="5">5x5</option>
+              <option value="6">6x6</option>
+            </select>
+          </div>
+
+          <div className="bisection-form-row">
+            <label>Variables =</label>
 
             <input
               type="text"
-              value={inicialInput}
-              onChange={(e) => setInicialInput(e.target.value)}
-              placeholder="Ej: 0.1,0.5"
+              value={variablesInput}
+              onChange={(e) => setVariablesInput(e.target.value)}
+              placeholder="Ej: x,y,z,w,v,u"
             />
           </div>
 
-          <div className="bisection-form-row">
-            <label>Tolerancia =</label>
+          <div className="method-section">
+            <h4>Funciones del sistema</h4>
 
-            <input
-              type="number"
-              step="any"
-              value={toleranciaInput}
-              onChange={(e) => setToleranciaInput(e.target.value)}
-            />
+            {funcionesInput.map((funcion, index) => (
+              <div className="bisection-form-row" key={index}>
+                <label>
+                  F<sub>{index + 1}</sub>({variables.join(",")}) =
+                </label>
+
+                <input
+                  type="text"
+                  value={funcion}
+                  onChange={(e) => cambiarFuncion(index, e.target.value)}
+                  placeholder={`Función F${index + 1}`}
+                />
+              </div>
+            ))}
           </div>
 
-          <div className="bisection-form-row">
-            <label>Iteraciones =</label>
+          <div className="method-two-columns">
+            <div className="bisection-form-row">
+              <label>Vector inicial =</label>
 
-            <input
-              type="number"
-              value={iteracionesInput}
-              onChange={(e) => setIteracionesInput(e.target.value)}
-            />
+              <input
+                type="text"
+                value={inicialInput}
+                onChange={(e) => setInicialInput(e.target.value)}
+                placeholder="Ej: 0.1,0.5"
+              />
+            </div>
+
+            <div className="bisection-form-row">
+              <label>Tolerancia =</label>
+
+              <input
+                type="number"
+                step="any"
+                value={toleranciaInput}
+                onChange={(e) => setToleranciaInput(e.target.value)}
+              />
+            </div>
+
+            <div className="bisection-form-row">
+              <label>Iteraciones =</label>
+
+              <input
+                type="number"
+                value={iteracionesInput}
+                onChange={(e) => setIteracionesInput(e.target.value)}
+              />
+            </div>
+
+            <div className="bisection-form-row">
+              <label>Decimales =</label>
+
+              <input
+                type="number"
+                value={decimalesInput}
+                onChange={(e) => setDecimalesInput(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="bisection-form-row">
-            <label>Decimales =</label>
+          <div className="bisection-buttons">
+            <button type="submit" className="btn-primary">
+              CALCULAR
+            </button>
 
-            <input
-              type="number"
-              value={decimalesInput}
-              onChange={(e) => setDecimalesInput(e.target.value)}
-            />
+            <button type="button" className="btn-secondary" onClick={limpiar}>
+              BORRAR CELDAS
+            </button>
+          </div>
+        </form>
+
+        {mensaje && <p className="bisection-message">{mensaje}</p>}
+        {advertenciaMsg && <p className="bisection-warning">{advertenciaMsg}</p>}
+        {errorMsg && <p className="bisection-error">{errorMsg}</p>}
+      </div>
+
+      <div className="bisection-results">
+        <div className="graph-card">
+          <h4 className="graph-title">Sistema ingresado</h4>
+
+          <div className="system-preview">
+            {funcionesInput.map((funcion, index) => (
+              <p key={`sistema-${index}`}>
+                <strong>
+                  F<sub>{index + 1}</sub>({variables.join(",")}) =
+                </strong>{" "}
+                {funcion || "—"}
+              </p>
+            ))}
           </div>
         </div>
 
-        <div className="bisection-buttons">
-          <button type="submit" className="btn-primary">
-            CALCULAR
-          </button>
+        <div className="graph-card">
+          <div className="table-header-actions">
+            <h4 className="graph-title">Gráfica interactiva de error</h4>
 
-          <button type="button" className="btn-secondary" onClick={limpiar}>
-            BORRAR CELDAS
-          </button>
-        </div>
-      </form>
+            <div className="chart-actions">
+              <button type="button" className="btn-export" onClick={aumentarZoom}>
+                +
+              </button>
 
-      {mensaje && <p className="bisection-message">{mensaje}</p>}
-      {advertenciaMsg && <p className="bisection-warning">{advertenciaMsg}</p>}
-      {errorMsg && <p className="bisection-error">{errorMsg}</p>}
-    </div>
+              <button type="button" className="btn-export" onClick={disminuirZoom}>
+                -
+              </button>
 
-    <div className="bisection-results">
-      <div className="graph-card">
-        <h4 className="graph-title">Sistema ingresado</h4>
+              <button type="button" className="btn-export" onClick={reiniciarGrafica}>
+                Reiniciar
+              </button>
 
-        <div className="system-preview">
-          {funcionesInput.map((funcion, index) => (
-            <p key={`sistema-${index}`}>
-              <strong>
-                F<sub>{index + 1}</sub>({variables.join(",")}) =
-              </strong>{" "}
-              {funcion || "—"}
+              <button
+                type="button"
+                className="btn-export"
+                onClick={descargarGraficaPNG}
+                disabled={filas.length === 0}
+              >
+                PNG
+              </button>
+            </div>
+          </div>
+
+          {filas.length === 0 ? (
+            <p className="bisection-hint">
+              La gráfica aparecerá después de calcular.
             </p>
-          ))}
-        </div>
-      </div>
+          ) : (
+            <>
+              <p className="bisection-hint">
+                Usa la rueda del mouse para acercar o alejar. Arrastra la gráfica
+                para desplazarla.
+              </p>
 
-      <div className="graph-card">
-        <h4 className="graph-title">Jacobiano simbólico</h4>
+              <div className="interactive-chart-wrapper">
+                <svg
+                  ref={svgRef}
+                  className="error-chart"
+                  viewBox={`0 0 ${width} ${height}`}
+                  role="img"
+                  aria-label="Gráfica de error contra iteración"
+                  onWheel={manejarWheel}
+                  onMouseDown={iniciarArrastre}
+                  onMouseMove={moverArrastre}
+                  onMouseUp={terminarArrastre}
+                  onMouseLeave={terminarArrastre}
+                >
+                  <rect x="0" y="0" width={width} height={height} fill="white" />
 
-        {jacobianoSimbolico.length === 0 ? (
-          <p className="bisection-hint">
-            Presiona <strong>CALCULAR</strong> para generar el Jacobiano.
-          </p>
-        ) : (
-          <div className="jacobian-box">
-            <table className="jacobian-table">
-              <tbody>
-                {jacobianoSimbolico.map((fila, i) => (
-                  <tr key={`jac-row-${i}`}>
-                    {fila.map((valor, j) => (
-                      <td key={`jac-${i}-${j}`}>{valor}</td>
+                  <text x={width / 2 - 80} y="22" className="chart-title-text">
+                    Error vs Iteración
+                  </text>
+
+                  <line
+                    x1={marginLeft}
+                    y1={marginTop + graphHeight}
+                    x2={marginLeft + graphWidth}
+                    y2={marginTop + graphHeight}
+                    className="chart-axis"
+                  />
+
+                  <line
+                    x1={marginLeft}
+                    y1={marginTop}
+                    x2={marginLeft}
+                    y2={marginTop + graphHeight}
+                    className="chart-axis"
+                  />
+
+                  {yTicks.map((tick, index) => (
+                    <g key={`ytick-${index}`}>
+                      <line
+                        x1={marginLeft}
+                        y1={tick.y}
+                        x2={marginLeft + graphWidth}
+                        y2={tick.y}
+                        className="chart-grid-line"
+                      />
+
+                      <text x="8" y={tick.y + 4} className="chart-label">
+                        {formatearNumero(tick.value)}
+                      </text>
+                    </g>
+                  ))}
+
+                  {xTicks.map((punto) => (
+                    <g key={`xtick-${punto.iteracion}`}>
+                      <line
+                        x1={punto.x}
+                        y1={marginTop + graphHeight}
+                        x2={punto.x}
+                        y2={marginTop + graphHeight + 6}
+                        className="chart-axis"
+                      />
+
+                      <text
+                        x={punto.x - 4}
+                        y={marginTop + graphHeight + 22}
+                        className="chart-label"
+                      >
+                        {punto.iteracion}
+                      </text>
+                    </g>
+                  ))}
+
+                  <text
+                    x={width / 2 - 40}
+                    y={height - 18}
+                    className="chart-axis-title"
+                  >
+                    Eje X: Iteración
+                  </text>
+
+                  <text
+                    x="-220"
+                    y="18"
+                    transform="rotate(-90)"
+                    className="chart-axis-title"
+                  >
+                    Eje Y: Error máximo
+                  </text>
+
+                  <g
+                    transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}
+                    className={dragging ? "chart-dragging" : "chart-draggable"}
+                  >
+                    <path d={pathGrafica} className="chart-line" fill="none" />
+
+                    {puntosGrafica.map((punto, index) => (
+                      <g key={`punto-${index}`}>
+                        <circle
+                          cx={punto.x}
+                          cy={punto.y}
+                          r="4"
+                          className="chart-point"
+                        />
+
+                        <title>
+                          Iteración {punto.iteracion} | Error:{" "}
+                          {formatearNumero(punto.error)}
+                        </title>
+                      </g>
                     ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                  </g>
+                </svg>
+              </div>
+            </>
+          )}
+        </div>
 
-      <div className="graph-card">
-        <h4 className="graph-title">Forma del método</h4>
-
-        <p className="bisection-hint">En cada iteración se resuelve:</p>
-
-        <p>
-          <strong>J(Xₙ) ΔX = -F(Xₙ)</strong>
-        </p>
-
-        <p className="bisection-hint">Luego se actualiza:</p>
-
-        <p>
-          <strong>Xₙ₊₁ = Xₙ + ΔX</strong>
-        </p>
-
-        <p className="bisection-hint">Criterio de parada:</p>
-
-        <p>
-          <strong>Error = max(E₁, E₂, ..., Eₙ) &lt; tolerancia</strong>
-        </p>
-      </div>
-
-      <div className="graph-card">
-        <div className="table-header-actions">
-          <h4 className="graph-title">Gráfica interactiva de error</h4>
-
-          <div className="chart-actions">
-            <button type="button" className="btn-export" onClick={aumentarZoom}>
-              +
-            </button>
-
-            <button type="button" className="btn-export" onClick={disminuirZoom}>
-              -
-            </button>
-
-            <button type="button" className="btn-export" onClick={reiniciarGrafica}>
-              Reiniciar
-            </button>
+        <div className="bisection-table-wrapper">
+          <div className="table-header-actions">
+            <h4>Tabla de iteraciones</h4>
 
             <button
               type="button"
               className="btn-export"
-              onClick={descargarGraficaPNG}
+              onClick={exportarCSV}
               disabled={filas.length === 0}
             >
-              PNG
+              Descargar CSV
             </button>
           </div>
-        </div>
 
-        {filas.length === 0 ? (
-          <p className="bisection-hint">
-            La gráfica aparecerá después de calcular.
-          </p>
-        ) : (
-          <>
+          {filas.length === 0 ? (
             <p className="bisection-hint">
-              Usa la rueda del mouse para acercar o alejar. Arrastra la gráfica
-              para desplazarla.
+              Ingresa los datos y presiona <strong>CALCULAR</strong>.
             </p>
+          ) : (
+            <div className="table-scroll">
+              <table className="bisection-table">
+                <thead>
+                  <tr>
+                    <th>n</th>
 
-            <div className="interactive-chart-wrapper">
-              <svg
-                ref={svgRef}
-                className="error-chart"
-                viewBox={`0 0 ${width} ${height}`}
-                role="img"
-                aria-label="Gráfica de error contra iteración"
-                onWheel={manejarWheel}
-                onMouseDown={iniciarArrastre}
-                onMouseMove={moverArrastre}
-                onMouseUp={terminarArrastre}
-                onMouseLeave={terminarArrastre}
-              >
-                <rect x="0" y="0" width={width} height={height} fill="white" />
+                    {variables.map((variable) => (
+                      <th key={`var-${variable}`}>{variable}</th>
+                    ))}
 
-                <text x={width / 2 - 80} y="22" className="chart-title-text">
-                  Error vs Iteración
-                </text>
+                    {variables.map((variable) => (
+                      <th key={`err-${variable}`}>
+                        E<sub>{variable}</sub>
+                      </th>
+                    ))}
 
-                <line
-                  x1={marginLeft}
-                  y1={marginTop + graphHeight}
-                  x2={marginLeft + graphWidth}
-                  y2={marginTop + graphHeight}
-                  className="chart-axis"
-                />
+                    <th>Error</th>
+                  </tr>
+                </thead>
 
-                <line
-                  x1={marginLeft}
-                  y1={marginTop}
-                  x2={marginLeft}
-                  y2={marginTop + graphHeight}
-                  className="chart-axis"
-                />
+                <tbody>
+                  {filas.map((fila, index) => {
+                    const esUltima =
+                      index === ultimaFilaIndex && solucionEncontrada;
 
-                {yTicks.map((tick, index) => (
-                  <g key={`ytick-${index}`}>
-                    <line
-                      x1={marginLeft}
-                      y1={tick.y}
-                      x2={marginLeft + graphWidth}
-                      y2={tick.y}
-                      className="chart-grid-line"
-                    />
+                    return (
+                      <tr key={fila.iteracion}>
+                        <td>{fila.iteracion}</td>
 
-                    <text x="8" y={tick.y + 4} className="chart-label">
-                      {formatearNumero(tick.value)}
-                    </text>
-                  </g>
-                ))}
+                        {fila.valoresSiguientes.map((valor, i) => (
+                          <td
+                            key={`valor-${fila.iteracion}-${i}`}
+                            className={esUltima ? "cell-green" : ""}
+                          >
+                            {formatearNumero(valor)}
+                          </td>
+                        ))}
 
-                {xTicks.map((punto) => (
-                  <g key={`xtick-${punto.iteracion}`}>
-                    <line
-                      x1={punto.x}
-                      y1={marginTop + graphHeight}
-                      x2={punto.x}
-                      y2={marginTop + graphHeight + 6}
-                      className="chart-axis"
-                    />
+                        {fila.errores.map((valor, i) => (
+                          <td key={`error-${fila.iteracion}-${i}`}>
+                            {formatearNumero(valor)}
+                          </td>
+                        ))}
 
-                    <text
-                      x={punto.x - 4}
-                      y={marginTop + graphHeight + 22}
-                      className="chart-label"
-                    >
-                      {punto.iteracion}
-                    </text>
-                  </g>
-                ))}
-
-                <text
-                  x={width / 2 - 40}
-                  y={height - 18}
-                  className="chart-axis-title"
-                >
-                  Eje X: Iteración
-                </text>
-
-                <text
-                  x="-220"
-                  y="18"
-                  transform="rotate(-90)"
-                  className="chart-axis-title"
-                >
-                  Eje Y: Error máximo
-                </text>
-
-                <g
-                  transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}
-                  className={dragging ? "chart-dragging" : "chart-draggable"}
-                >
-                  <path d={pathGrafica} className="chart-line" fill="none" />
-
-                  {puntosGrafica.map((punto, index) => (
-                    <g key={`punto-${index}`}>
-                      <circle
-                        cx={punto.x}
-                        cy={punto.y}
-                        r="4"
-                        className="chart-point"
-                      />
-
-                      <title>
-                        Iteración {punto.iteracion} | Error:{" "}
-                        {formatearNumero(punto.error)}
-                      </title>
-                    </g>
-                  ))}
-                </g>
-              </svg>
+                        <td className={esUltima ? "cell-red" : ""}>
+                          {formatearNumero(fila.error)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          </>
-        )}
-      </div>
+          )}
 
-      <div className="bisection-table-wrapper">
-        <div className="table-header-actions">
-          <h4>Tabla de iteraciones</h4>
-
-          <button
-            type="button"
-            className="btn-export"
-            onClick={exportarCSV}
-            disabled={filas.length === 0}
-          >
-            Descargar CSV
-          </button>
+          {solucionEncontrada && (
+            <p className="bisection-message">
+              SE ENCONTRÓ LA SOLUCIÓN porque{" "}
+              {formatearNumero(filas[ultimaFilaIndex].error)} &lt;{" "}
+              {toleranciaInput}
+            </p>
+          )}
         </div>
-
-        {filas.length === 0 ? (
-          <p className="bisection-hint">
-            Ingresa los datos y presiona <strong>CALCULAR</strong>.
-          </p>
-        ) : (
-          <div className="table-scroll">
-            <table className="bisection-table">
-              <thead>
-                <tr>
-                  <th>n</th>
-
-                  {variables.map((variable) => (
-                    <th key={`var-${variable}`}>{variable}</th>
-                  ))}
-
-                  {variables.map((variable) => (
-                    <th key={`err-${variable}`}>
-                      E<sub>{variable}</sub>
-                    </th>
-                  ))}
-
-                  <th>Error</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {filas.map((fila, index) => {
-                  const esUltima =
-                    index === ultimaFilaIndex && solucionEncontrada;
-
-                  return (
-                    <tr key={fila.iteracion}>
-                      <td>{fila.iteracion}</td>
-
-                      {fila.valoresSiguientes.map((valor, i) => (
-                        <td
-                          key={`valor-${fila.iteracion}-${i}`}
-                          className={esUltima ? "cell-green" : ""}
-                        >
-                          {formatearNumero(valor)}
-                        </td>
-                      ))}
-
-                      {fila.errores.map((valor, i) => (
-                        <td key={`error-${fila.iteracion}-${i}`}>
-                          {formatearNumero(valor)}
-                        </td>
-                      ))}
-
-                      <td className={esUltima ? "cell-red" : ""}>
-                        {formatearNumero(fila.error)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {solucionEncontrada && (
-          <p className="bisection-message">
-            SE ENCONTRÓ LA SOLUCIÓN porque{" "}
-            {formatearNumero(filas[ultimaFilaIndex].error)} &lt;{" "}
-            {toleranciaInput}
-          </p>
-        )}
       </div>
     </div>
-  </div>
-);
+  );
 }
