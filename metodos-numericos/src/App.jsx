@@ -274,8 +274,8 @@ export default function App() {
             </Col>
             <Col lg={3} md={6} className="text-center text-lg-start">
               <ul className="list-unstyled d-flex flex-column gap-2">
-                <li><a href="https://matematica.fi.usac.edu.gt" target="_blank" className="text-decoration-none text-secondary">🌐 Página Departamento</a></li>
-                <li><a href="https://www.facebook.com/DepartamentoMatematicaUSAC" target="_blank" className="text-decoration-none text-secondary"><FaFacebook className="me-1"/> Facebook</a></li>
+                <li><a href="https://mate.ingenieria.usac.edu.gt" target="_blank" className="text-decoration-none text-secondary">🌐 Página Departamento</a></li>
+                <li><a href="https://www.facebook.com/p/Departamento-de-Matemática-Fiusac-100085499082819/" target="_blank" className="text-decoration-none text-secondary"><FaFacebook className="me-1"/> Facebook</a></li>
                 <li><a href="https://www.youtube.com/@Math4Ingenieria" target="_blank" className="text-decoration-none text-secondary"><FaYoutube className="me-1"/> YouTube</a></li>
                 <li><a href="mailto:b.alex.mejia@gmail.com" className="text-decoration-none text-secondary"><FaEnvelope className="me-1"/> Soporte</a></li>
               </ul>
