@@ -1,0 +1,1 @@
+import{t as e}from"./index-BTOFduEu.js";export default e();
