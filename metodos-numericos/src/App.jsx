@@ -335,7 +335,7 @@ export default function App() {
               <span className="method-badge">
                 <FaGraduationCap className="me-2" />
                 {selectedMethod?.course}
-                {selectedMethod?.unit ? ` · ${selectedMethod.unit}` : ""}
+                {selectedMethod?.unit ? ` - ${selectedMethod.unit}` : ""}
               </span>
 
               <h1>{selectedMethod?.name}</h1>
@@ -381,7 +381,7 @@ export default function App() {
               <FaUniversity />
               <div>
                 <span>Institución</span>
-                <strong>USAC · FIUSAC</strong>
+                <strong>USAC  FIUSAC</strong>
               </div>
             </article>
           </section>
