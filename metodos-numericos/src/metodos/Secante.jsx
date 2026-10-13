@@ -234,7 +234,7 @@ export default function Secante() {
   // =========================
   const handleDownloadTable = () => {
     if (!rows.length) return;
-    const headers = ["n", "x_{n-1}", "x_n", "x_{n+1}", "f(x_{n-1})", "f(x_n)", "Error"];
+    const headers = ["n", "x_{n-1}", "x_n", "x_{n+1}", "f(x_{n-1})", "f(x_n)", "Error absoluto"];
     const csv = [headers.join(",")]
       .concat(
         rows.map((r) =>
@@ -553,6 +553,7 @@ export default function Secante() {
     <div className="bisection-grid">
       <div className="bisection-form">
         <h3>Método de la Secante</h3>
+        <p className="bisection-hint">Error absoluto: E = |xₙ₊₁ − xₙ|.</p>
         <p className="bisection-hint">
           Ingresa f(x) y dos aproximaciones iniciales x₀ (xₙ₋₁) y x₁ (xₙ). Acepta <code>ln(x)</code> y <code>sen(x)</code>.
         </p>
@@ -616,7 +617,7 @@ export default function Secante() {
                     <th>xₙ₊₁</th>
                     <th>f(xₙ₋₁)</th>
                     <th>f(xₙ)</th>
-                    <th>Error = |xₙ₊₁ - xₙ|</th>
+                    <th>Error absoluto = |xₙ₊₁ - xₙ|</th>
                   </tr>
                 </thead>
                 <tbody>

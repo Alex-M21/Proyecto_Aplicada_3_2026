@@ -255,7 +255,7 @@ export default function Steffensen() {
       "p1 = g(p0)",
       "p2 = g(p1)",
       "p_n+1",
-      "Error |p_n+1 - p0|",
+      "Error absoluto |p_n+1 - p0|",
     ];
 
     const csvRows = rows.map((row) => [
@@ -494,6 +494,7 @@ export default function Steffensen() {
     <div className="bisection-grid">
       <div className="bisection-form">
         <h3>Método de Steffensen</h3>
+        <p className="bisection-hint">Error absoluto: E = |pₙ₊₁ − p₀| en cada paso acelerado.</p>
 
         <p className="bisection-hint">
           Ingresa <strong>g(x)</strong> y un valor inicial <strong>p₀</strong>.
@@ -658,7 +659,7 @@ export default function Steffensen() {
                     <th>p₁ = g(p₀)</th>
                     <th>p₂ = g(p₁)</th>
                     <th>pₙ₊₁</th>
-                    <th>Error</th>
+                    <th>Error absoluto</th>
                   </tr>
                 </thead>
 

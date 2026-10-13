@@ -6,6 +6,7 @@ export default function NewtonDivididas() {
   const [xEvalInput, setXEvalInput] = useState("5");
   const [nInput, setNInput] = useState("4");
   const [decimalsInput, setDecimalsInput] = useState("4");
+  const [methodType, setMethodType] = useState("progresiva");
 
   const [points, setPoints] = useState([
     { x: "2", y: "4" },
@@ -19,6 +20,7 @@ export default function NewtonDivididas() {
   const [result, setResult] = useState(null);
   const [activeXs, setActiveXs] = useState([]);
   const [activeYs, setActiveYs] = useState([]);
+  const [tableXs, setTableXs] = useState([]);
 
   const [message, setMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -69,6 +71,7 @@ export default function NewtonDivididas() {
     setResult(null);
     setActiveXs([]);
     setActiveYs([]);
+    setTableXs([]);
     setMessage("");
     setErrorMsg("");
     setWarningMsg("");
@@ -166,8 +169,9 @@ export default function NewtonDivididas() {
     }
 
     const a = Array.from({ length: n }, (_, j) => dd[0][j]);
+    const b = Array.from({ length: n }, (_, j) => dd[n - 1 - j][j]);
 
-    return { dd, a };
+    return { dd, a, b };
   };
 
   const evalNewton = (xs, a, x) => {
@@ -373,14 +377,18 @@ export default function NewtonDivididas() {
 
     setPoints(sortedPoints.map((p) => ({ x: String(p.x), y: String(p.y) })));
 
-    const { dd, a } = buildDividedDifferences(xs, ys);
+    const { dd, a, b } = buildDividedDifferences(xs, ys);
 
     if (!dd || !a) {
       setErrorMsg("No se pudo construir la tabla de diferencias divididas.");
       return;
     }
 
-    const yEval = evalNewton(xs, a, xEval);
+    const useBackward = methodType === "regresiva";
+    const calculationXs = useBackward ? [...xs].reverse() : xs;
+    const calculationYs = useBackward ? [...ys].reverse() : ys;
+    const calculationCoeffs = useBackward ? b : a;
+    const yEval = evalNewton(calculationXs, calculationCoeffs, xEval);
 
     if (!Number.isFinite(yEval)) {
       setErrorMsg("No se pudo evaluar el polinomio.");
@@ -402,23 +410,29 @@ export default function NewtonDivididas() {
         : "El valor evaluado está fuera del intervalo de datos; esto es extrapolación.";
     }
 
-    setActiveXs(xs);
-    setActiveYs(ys);
+    setActiveXs(calculationXs);
+    setActiveYs(calculationYs);
+    setTableXs(xs);
     setTable(dd);
-    setCoeffs(a);
+    setCoeffs(calculationCoeffs);
     setResult(yEval);
 
     if (warning) {
       setWarningMsg(warning);
     }
 
-    setMessage(`Se evaluó correctamente el polinomio interpolante en x = ${fmt(xEval)}.`);
+    setMessage(
+      `Se evaluó correctamente el polinomio de Newton ${methodType} en x = ${fmt(
+        xEval
+      )}.`
+    );
   };
 
   const handleClear = () => {
     setXEvalInput("");
     setNInput("4");
     setDecimalsInput("4");
+    setMethodType("progresiva");
     setPoints([
       { x: "", y: "" },
       { x: "", y: "" },
@@ -431,7 +445,7 @@ export default function NewtonDivididas() {
   const exportCSV = () => {
     if (!table || !activeXs.length) return;
 
-    const n = activeXs.length;
+    const n = tableXs.length;
 
     const headers = [
       "Indice i",
@@ -441,10 +455,10 @@ export default function NewtonDivididas() {
       ),
     ];
 
-    const csvRows = [headers.join(",")];
+    const csvRows = [headers.map((header) => `"${header.replace(/"/g, '""')}"`).join(",")];
 
     for (let i = 0; i < n; i++) {
-      const row = [i, fmt(activeXs[i])];
+      const row = [i, fmt(tableXs[i])];
 
       for (let j = 0; j < n; j++) {
         const show = j === 0 ? i < n : i <= n - j - 1;
@@ -768,6 +782,21 @@ export default function NewtonDivididas() {
                 onChange={(e) => setDecimalsInput(e.target.value)}
               />
             </div>
+
+            <div className="bisection-form-row">
+              <label>Tipo de diferencias =</label>
+
+              <select
+                value={methodType}
+                onChange={(e) => {
+                  setMethodType(e.target.value);
+                  resetResults();
+                }}
+              >
+                <option value="progresiva">Diferencias progresivas</option>
+                <option value="regresiva">Diferencias regresivas</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -886,7 +915,9 @@ export default function NewtonDivididas() {
       </div>
 
       <div className="graph-card">
-        <h4 className="graph-title">Polinomio interpolante</h4>
+        <h4 className="graph-title">
+          Polinomio interpolante {methodType}
+        </h4>
 
         {!coeffs ? (
           <p className="bisection-hint">
@@ -895,7 +926,7 @@ export default function NewtonDivididas() {
         ) : (
           <div className="system-preview">
             <p>
-              <strong>Forma de Newton:</strong>
+              <strong>Forma de Newton {methodType}:</strong>
             </p>
             <p>{polyStrings.product}</p>
 
@@ -918,7 +949,9 @@ export default function NewtonDivididas() {
           <div className="method-result-grid">
             {coeffs.map((c, i) => (
               <div className="mini-info-card" key={`coef-${i}`}>
-                <div className="mini-info-card-title">a{i}</div>
+                <div className="mini-info-card-title">
+                  {methodType === "regresiva" ? "b" : "a"}{i}
+                </div>
                 <div className="mini-info-card-value">{fmt(c)}</div>
               </div>
             ))}
@@ -1149,7 +1182,9 @@ export default function NewtonDivididas() {
         {!table ? (
           <p className="bisection-hint">
             Ingresa los datos y presiona <strong>CALCULAR</strong>.
-            Los coeficientes del polinomio son los valores de la primera fila.
+            {methodType === "regresiva"
+              ? "Los coeficientes se toman desde la última fila hacia arriba, al final de cada columna."
+              : "Los coeficientes del polinomio son los valores de la primera fila."}
           </p>
         ) : (
           <div className="table-scroll">
@@ -1179,19 +1214,21 @@ export default function NewtonDivididas() {
               </thead>
 
               <tbody>
-                {Array.from({ length: activeXs.length }).map((_, i) => (
+                {Array.from({ length: tableXs.length }).map((_, i) => (
                   <tr key={`row-${i}`}>
                     <td>{i}</td>
-                    <td>{fmt(activeXs[i])}</td>
+                    <td>{fmt(tableXs[i])}</td>
 
-                    {Array.from({ length: activeXs.length }).map((_, j) => {
+                    {Array.from({ length: tableXs.length }).map((_, j) => {
                       const show =
                         j === 0
-                          ? i < activeXs.length
-                          : i <= activeXs.length - j - 1;
+                          ? i < tableXs.length
+                          : i <= tableXs.length - j - 1;
 
                       const val = table[i]?.[j];
-                      const isCoeff = i === 0 && val != null;
+                      const isCoeff = val != null && (
+                        methodType === "regresiva" ? i === tableXs.length - 1 - j : i === 0
+                      );
 
                       return (
                         <td

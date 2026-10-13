@@ -1,0 +1,40 @@
+/* Mantiene el estilo compartido y permite que las columnas del nuevo módulo
+   se ajusten al espacio disponible sin recortar las tarjetas de resultados. */
+.valores-propios-grid {
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1.35fr);
+  overflow-wrap: anywhere;
+}
+
+.valores-propios-grid > * {
+  min-width: 0;
+}
+
+.valores-propios-grid .matriz-propia {
+  min-width: 100%;
+  width: max-content;
+  table-layout: auto;
+}
+
+.valores-propios-grid .matriz-propia input {
+  width: 6rem;
+  min-width: 6rem;
+}
+
+.propios-cas-fila {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--table-border);
+}
+
+.propios-cas-fila code {
+  color: var(--text-main);
+  font-size: 0.95rem;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 1024px) {
+  .valores-propios-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

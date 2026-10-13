@@ -490,7 +490,7 @@ export default function GaussSeidel() {
       "n",
       ...variables,
       ...variables.map((variable) => `E_${variable}`),
-      "Error",
+      "Error absoluto",
     ];
 
     const content = rows.map((row) => {
@@ -664,6 +664,7 @@ export default function GaussSeidel() {
   <div className="bisection-grid">
     <div className="bisection-form">
       <h3>Método de Gauss-Seidel</h3>
+      <p className="bisection-hint">Error absoluto por componente: Eᵢ = |xᵢ⁽ᵏ⁺¹⁾ − xᵢ⁽ᵏ⁾|. El error global es el máximo de Eᵢ.</p>
 
       <p className="bisection-hint">
         Ingresa la dimensión de la matriz cuadrada. Si es de 2x2 a 6x6,
@@ -1078,7 +1079,7 @@ export default function GaussSeidel() {
                     </th>
                   ))}
 
-                  <th>Error</th>
+                  <th>Error absoluto</th>
                 </tr>
               </thead>
 

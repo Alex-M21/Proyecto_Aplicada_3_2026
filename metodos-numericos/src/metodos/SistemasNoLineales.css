@@ -1,0 +1,86 @@
+/* Las columnas dependen del espacio disponible junto al menú lateral. */
+.bisection-grid.sistemas-no-lineales {
+  width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
+}
+
+.sistemas-no-lineales > *,
+.sistemas-no-lineales .bisection-form-row,
+.sistemas-no-lineales .method-section,
+.sistemas-no-lineales .graph-card,
+.sistemas-no-lineales .bisection-table-wrapper {
+  min-width: 0;
+}
+
+.sistemas-no-lineales .bisection-form-row {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 0.4rem;
+}
+
+/* Los estilos compartidos también definen filas dentro del vector inicial. */
+.sistemas-no-lineales .method-vector-grid .bisection-form-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* La tabla y la gráfica no deben participar en el ancho mínimo del formulario. */
+.sistemas-no-lineales .bisection-results {
+  width: 100%;
+  max-width: 100%;
+  contain: inline-size;
+}
+
+.sistemas-no-lineales .bisection-form-row label {
+  overflow-wrap: anywhere;
+}
+
+.sistemas-no-lineales .method-vector-grid,
+.sistemas-no-lineales .method-two-columns {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: 0.85rem;
+}
+
+.sistemas-no-lineales .method-two-columns .bisection-form-row {
+  margin-bottom: 0;
+}
+
+.sistemas-no-lineales .bisection-form input,
+.sistemas-no-lineales .bisection-form select {
+  min-height: 3rem;
+  font-size: 1rem;
+}
+
+.sistemas-no-lineales .table-header-actions {
+  flex-wrap: wrap;
+}
+
+.sistemas-no-lineales .table-header-actions > * {
+  min-width: 0;
+}
+
+.sistemas-no-lineales .bisection-message {
+  overflow-wrap: anywhere;
+}
+
+.sistemas-no-lineales .error-chart {
+  display: block;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 760 / 360;
+}
+
+@media (max-width: 640px) {
+  .sistemas-no-lineales .bisection-form {
+    padding: 1rem;
+  }
+
+  .sistemas-no-lineales .method-section {
+    padding: 0.75rem;
+  }
+
+  .sistemas-no-lineales .chart-actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -401,6 +401,7 @@ export default function PuntoFijo() {
       {/* Columna: formulario + análisis de g'(x) */}
       <div className="bisection-form">
         <h3>Método de Punto Fijo</h3>
+        <p className="bisection-hint">Error absoluto: E = |g(xₙ) − xₙ|.</p>
         <p className="bisection-hint">
           Ingresa g(x) para resolver f(x)=0 reescrita como x=g(x). Ejemplos:{" "}
           <code>(sin(x)+2*cos(x))/2</code>, <code>exp(-x)</code>, <code>(x^2+1)/3</code>.
@@ -495,7 +496,7 @@ export default function PuntoFijo() {
                   <th>n</th>
                   <th>xₙ</th>
                   <th>g(xₙ)</th>
-                  <th>Error = |g(xₙ) - xₙ|</th>
+                  <th>Error absoluto = |g(xₙ) - xₙ|</th>
                 </tr>
               </thead>
               <tbody>

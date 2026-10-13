@@ -2,6 +2,7 @@
 import { useMemo, useRef, useState } from "react";
 import { create, all } from "mathjs";
 import "./Biseccion.css";
+import "./SistemasNoLineales.css";
 
 const math = create(all, {});
 
@@ -76,7 +77,7 @@ export default function NewtonNoLineal() {
   const [funcionesInput, setFuncionesInput] = useState([
     ...ejemplosNewton[2].funciones
   ]);
-  const [inicialInput, setInicialInput] = useState(ejemplosNewton[2].inicial);
+  const [inicialInput, setInicialInput] = useState(() => ejemplosNewton[2].inicial.split(","));
   const [toleranciaInput, setToleranciaInput] = useState(
     ejemplosNewton[2].tolerancia
   );
@@ -116,11 +117,11 @@ export default function NewtonNoLineal() {
       .filter((v) => v.length > 0);
   };
 
-  const leerVector = (texto) => {
-    return texto
-      .split(",")
-      .map((v) => parseFloat(v.trim()))
-      .filter((v) => Number.isFinite(v));
+  const leerVector = (valores) => {
+    return valores.map((valor) => {
+      const numero = Number(valor.trim());
+      return valor.trim() !== "" && Number.isFinite(numero) ? numero : NaN;
+    });
   };
 
   const crearScope = (variables, valores) => {
@@ -160,10 +161,14 @@ export default function NewtonNoLineal() {
 
     if (!Number.isFinite(valor)) return "NaN";
 
+    if (valor !== 0 && Math.abs(valor) < 0.5 * 10 ** -decimales) {
+      return valor.toExponential(Math.min(decimales, 6));
+    }
+    if (Object.is(valor, -0)) return (0).toFixed(decimales);
     return valor.toFixed(decimales);
   };
 
-  const variables = useMemo(() => leerVariables(), [variablesInput]);
+  const variables = leerVariables();
 
   const toleranciaNumerica = useMemo(() => {
     const t = parseFloat(toleranciaInput);
@@ -176,7 +181,7 @@ export default function NewtonNoLineal() {
     setDimension(String(n));
     setVariablesInput(ejemplo.variables);
     setFuncionesInput([...ejemplo.funciones]);
-    setInicialInput(ejemplo.inicial);
+    setInicialInput(ejemplo.inicial.split(","));
     setToleranciaInput(ejemplo.tolerancia);
     setIteracionesInput(ejemplo.iteraciones);
     setDecimalesInput(ejemplo.decimales);
@@ -213,6 +218,19 @@ export default function NewtonNoLineal() {
     reiniciarGrafica();
   };
 
+  const limpiarResultados = () => {
+    setFilas([]);
+    setMensaje("");
+    setErrorMsg("");
+    setAdvertenciaMsg("");
+    reiniciarGrafica();
+  };
+
+  const cambiarValorInicial = (index, value) => {
+    setInicialInput((prev) => prev.map((valor, i) => i === index ? value : valor));
+    limpiarResultados();
+  };
+
   const calcularNewton = (e) => {
     e.preventDefault();
 
@@ -239,13 +257,26 @@ export default function NewtonNoLineal() {
       return;
     }
 
+    if (new Set(variables).size !== variables.length) {
+      setErrorMsg("Las variables deben ser distintas. Por ejemplo: x,y; no uses x,x.");
+      return;
+    }
+
     if (funcionesInput.length !== n || funcionesInput.some((f) => !f.trim())) {
       setErrorMsg(`Debes ingresar exactamente ${n} funciones.`);
       return;
     }
 
     if (vectorInicial.length !== n) {
-      setErrorMsg(`El vector inicial debe tener exactamente ${n} valores.`);
+      setErrorMsg(`El vector inicial debe tener exactamente ${n} valores numéricos.`);
+      return;
+    }
+
+    const inicialInvalido = vectorInicial.findIndex((valor) => !Number.isFinite(valor));
+    if (inicialInvalido !== -1) {
+      setErrorMsg(inicialInput[inicialInvalido].trim() === ""
+        ? `El campo inicial de ${variables[inicialInvalido]} está vacío.`
+        : `El valor inicial de ${variables[inicialInvalido]} debe ser numérico y finito.`);
       return;
     }
 
@@ -345,6 +376,11 @@ export default function NewtonNoLineal() {
           (valor, index) => valor + delta[index]
         );
 
+        if (valoresSiguientes.some((valor) => !Number.isFinite(valor))) {
+          setErrorMsg("El nuevo vector contiene valores no finitos. Revisa el vector inicial o las funciones.");
+          return;
+        }
+
         const errores = valoresSiguientes.map((valor, index) =>
           Math.abs(valor - valoresActuales[index])
         );
@@ -353,10 +389,10 @@ export default function NewtonNoLineal() {
 
         nuevasFilas.push({
           iteracion: k,
-          valoresActuales,
+          valoresActuales: [...valoresActuales],
           fValores,
           delta,
-          valoresSiguientes,
+          valoresSiguientes: [...valoresSiguientes],
           errores,
           error
         });
@@ -396,7 +432,7 @@ export default function NewtonNoLineal() {
       "n",
       ...variables,
       ...variables.map((v) => `E_${v}`),
-      "Error"
+      "Error absoluto"
     ];
 
     const contenido = filas.map((fila) => {
@@ -531,7 +567,7 @@ export default function NewtonNoLineal() {
 
   const width = 760;
   const height = 360;
-  const marginLeft = 75;
+  const marginLeft = 120;
   const marginRight = 30;
   const marginTop = 35;
   const marginBottom = 70;
@@ -574,16 +610,11 @@ export default function NewtonNoLineal() {
   });
 
   return (
-    <div className="bisection-grid">
+    <div className="bisection-grid sistemas-no-lineales">
       <div className="bisection-form">
         <h3>Método de Newton No Lineal {dimension}x{dimension}</h3>
 
-        <p className="bisection-hint">
-          Resuelve sistemas cuadrados de la forma <strong>F(X) = 0</strong>.
-          En cada iteración se usa el Jacobiano del sistema.
-        </p>
-
-        <form onSubmit={calcularNewton}>
+        <form onSubmit={calcularNewton} noValidate>
           <div className="bisection-form-row">
             <label>Tamaño del sistema =</label>
 
@@ -605,7 +636,10 @@ export default function NewtonNoLineal() {
             <input
               type="text"
               value={variablesInput}
-              onChange={(e) => setVariablesInput(e.target.value)}
+              onChange={(e) => {
+                setVariablesInput(e.target.value);
+                limpiarResultados();
+              }}
               placeholder="Ej: x,y,z,w,v,u"
             />
           </div>
@@ -629,18 +663,28 @@ export default function NewtonNoLineal() {
             ))}
           </div>
 
-          <div className="method-two-columns">
-            <div className="bisection-form-row">
-              <label>Vector inicial =</label>
-
-              <input
-                type="text"
-                value={inicialInput}
-                onChange={(e) => setInicialInput(e.target.value)}
-                placeholder="Ej: 0.1,0.5"
-              />
+          <div className="method-section">
+            <h4>Vector inicial</h4>
+            <div className="method-vector-grid">
+              {inicialInput.map((valor, index) => (
+                <div className="bisection-form-row" key={index}>
+                  <label htmlFor={`newton-inicial-${index}`}>
+                    {variables[index] || `x${index + 1}`}<sub>0</sub> =
+                  </label>
+                  <input
+                    id={`newton-inicial-${index}`}
+                    type="number"
+                    step="any"
+                    value={valor}
+                    onChange={(e) => cambiarValorInicial(index, e.target.value)}
+                    placeholder="Valor inicial"
+                  />
+                </div>
+              ))}
             </div>
+          </div>
 
+          <div className="method-two-columns">
             <div className="bisection-form-row">
               <label>Tolerancia =</label>
 
@@ -648,7 +692,10 @@ export default function NewtonNoLineal() {
                 type="number"
                 step="any"
                 value={toleranciaInput}
-                onChange={(e) => setToleranciaInput(e.target.value)}
+                onChange={(e) => {
+                  setToleranciaInput(e.target.value);
+                  limpiarResultados();
+                }}
               />
             </div>
 
@@ -658,7 +705,10 @@ export default function NewtonNoLineal() {
               <input
                 type="number"
                 value={iteracionesInput}
-                onChange={(e) => setIteracionesInput(e.target.value)}
+                onChange={(e) => {
+                  setIteracionesInput(e.target.value);
+                  limpiarResultados();
+                }}
               />
             </div>
 
@@ -703,6 +753,15 @@ export default function NewtonNoLineal() {
               </p>
             ))}
           </div>
+        </div>
+
+        <div className="graph-card">
+          <h4 className="graph-title">Vector inicial utilizado</h4>
+          <p className="system-preview" data-testid="newton-vector-utilizado">
+            {filas.length > 0
+              ? `X₀ = (${filas[0].valoresActuales.join(", ")})`
+              : "Presiona CALCULAR para comprobar el vector inicial utilizado."}
+          </p>
         </div>
 
         <div className="graph-card">
@@ -759,7 +818,7 @@ export default function NewtonNoLineal() {
                 >
                   <rect x="0" y="0" width={width} height={height} fill="white" />
 
-                  <text x={width / 2 - 80} y="22" className="chart-title-text">
+                  <text x={width / 2} y="22" textAnchor="middle" className="chart-title-text">
                     Error vs Iteración
                   </text>
 
@@ -789,7 +848,7 @@ export default function NewtonNoLineal() {
                         className="chart-grid-line"
                       />
 
-                      <text x="8" y={tick.y + 4} className="chart-label">
+                      <text x={marginLeft - 10} y={tick.y + 4} textAnchor="end" className="chart-label">
                         {formatearNumero(tick.value)}
                       </text>
                     </g>
@@ -816,7 +875,8 @@ export default function NewtonNoLineal() {
                   ))}
 
                   <text
-                    x={width / 2 - 40}
+                    x={width / 2}
+                    textAnchor="middle"
                     y={height - 18}
                     className="chart-axis-title"
                   >
@@ -895,7 +955,7 @@ export default function NewtonNoLineal() {
                       </th>
                     ))}
 
-                    <th>Error</th>
+                    <th>Error absoluto</th>
                   </tr>
                 </thead>
 

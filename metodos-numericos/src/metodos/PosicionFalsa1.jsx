@@ -188,6 +188,8 @@ export default function PosicionFalsa1() {
     }
 
     const newRows = [];
+    // La primera comparación usa el extremo izquierdo; después, la última aproximación.
+    let ultimaAproximacion = xPrev;
     let found = false;
     let hadError = false;
 
@@ -228,7 +230,7 @@ export default function PosicionFalsa1() {
         }
 
         const prod = fPrev * fNext;
-        const error = Math.abs(xNext - xPrev_i);
+        const error = Math.abs(xNext - ultimaAproximacion);
 
         newRows.push({
           n,
@@ -247,13 +249,14 @@ export default function PosicionFalsa1() {
           fCurrRaw: fCurr,
         });
 
-        if (Math.abs(fNext) < tol || error < tol) {
+        if (fNext === 0 || error < tol) {
           found = true;
           break;
         }
 
         if (prod < 0) xCurr = xNext;
         else xPrev = xNext;
+        ultimaAproximacion = xNext;
       }
     } catch {
       setErrorMsg("Ocurrió un error inesperado durante las iteraciones.");
@@ -301,7 +304,7 @@ export default function PosicionFalsa1() {
       "f(x_n)",
       "f(x_{n+1})",
       "f(x_{n-1})*f(x_{n+1})",
-      "Error",
+      "Error absoluto",
     ];
 
     const csvRows = [headers.join(",")];
@@ -754,7 +757,7 @@ export default function PosicionFalsa1() {
   const converged =
     rows.length > 0 &&
     Number.isFinite(tolNum) &&
-    (Math.abs(rows[lastIndex]?.fNext) < tolNum ||
+    (rows[lastIndex]?.fNext === 0 ||
       rows[lastIndex]?.error < tolNum);
 
   const rowView = rows.length
@@ -770,6 +773,7 @@ export default function PosicionFalsa1() {
     <div className="bisection-grid">
       <div className="bisection-form">
         <h3>Método de la Posición Falsa I</h3>
+        <p className="bisection-hint">Error absoluto entre aproximaciones consecutivas. En la primera fila se compara con el extremo izquierdo.</p>
         <p className="bisection-hint">
           Ingresa <strong>f(x)</strong> y un intervalo inicial{" "}
           <strong>[xₙ₋₁, xₙ]</strong> con cambio de signo. También acepta{" "}
@@ -874,7 +878,7 @@ export default function PosicionFalsa1() {
                     <th>f(xₙ)</th>
                     <th>f(xₙ₊₁)</th>
                     <th>f(xₙ₋₁)·f(xₙ₊₁)</th>
-                    <th>Error</th>
+                    <th>Error absoluto</th>
                   </tr>
                 </thead>
 

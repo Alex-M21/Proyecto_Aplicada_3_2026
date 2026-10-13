@@ -109,6 +109,7 @@ export default function Newton() {
     return Number.isNaN(d) || d < 0 ? 6 : Math.min(12, d);
   };
 
+  // La referencia de Excel redondea también los valores intermedios.
   const roundTo = (v) => {
     const f = 10 ** getDecimals();
     return Math.round(v * f) / f;
@@ -736,6 +737,7 @@ export default function Newton() {
       {/* Formulario */}
       <div className="bisection-form">
         <h3>Método de Newton-Raphson</h3>
+        <p className="bisection-hint">Error absoluto: E = |xₙ₊₁ − xₙ|. Se redondean los valores intermedios al número de decimales indicado.</p>
 
         <p className="bisection-hint">
           Ingresa f(x) y su derivada f&apos;(x). Ej: <code>1-cos(x)</code> y{" "}
@@ -848,7 +850,7 @@ export default function Newton() {
                   <th>f(xₙ)</th>
                   <th>f&apos;(xₙ)</th>
                   <th>xₙ₊₁</th>
-                  <th>|xₙ₊₁ - xₙ|</th>
+                  <th>Error absoluto = |xₙ₊₁ - xₙ|</th>
                 </tr>
               </thead>
 

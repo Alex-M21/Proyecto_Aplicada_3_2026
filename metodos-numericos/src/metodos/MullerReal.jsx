@@ -396,7 +396,7 @@ export default function MullerReal() {
   const exportCSV = () => {
     if (rows.length === 0) return;
 
-    const headers = ["n", "x0", "x1", "x2", "p", "Error"];
+    const headers = ["n", "x0", "x1", "x2", "p", "Error absoluto"];
 
     const csvRows = rows.map((row) => [
       row.n,
@@ -654,6 +654,7 @@ export default function MullerReal() {
   <div className="bisection-grid">
     <div className="bisection-form">
       <h3>Método de Muller Real</h3>
+      <p className="bisection-hint">Error absoluto: E = |p − x₂|.</p>
 
       <p className="bisection-hint">
         Este módulo está orientado a funciones polinomiales de la forma{" "}
@@ -931,7 +932,7 @@ export default function MullerReal() {
                   <th>x₁</th>
                   <th>x₂</th>
                   <th>p</th>
-                  <th>Error</th>
+                  <th>Error absoluto</th>
                 </tr>
               </thead>
 

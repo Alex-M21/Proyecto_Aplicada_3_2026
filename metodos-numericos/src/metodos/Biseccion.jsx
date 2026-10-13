@@ -256,7 +256,7 @@ export default function Biseccion() {
   const handleDownloadTableCsv = () => {
     if (!rows.length) return;
 
-    const headers = ["n", "a", "b", "p", "f(a)", "f(b)", "f(p)", "f(a)*f(p)", "error"];
+    const headers = ["n", "a", "b", "p", "f(a)", "f(b)", "f(p)", "f(a)*f(p)", "Error absoluto"];
     const csvRows = [headers.join(",")];
 
     rows.forEach((row) => {
@@ -494,6 +494,7 @@ export default function Biseccion() {
     <div className="bisection-grid">
       <div className="bisection-form">
         <h3>Método de Bisección</h3>
+        <p className="bisection-hint">Error absoluto acotado por la mitad del intervalo: E = |b − a| / 2.</p>
         <p className="bisection-hint">
           Ingresa cualquier función f(x) usando sintaxis de JavaScript/mathjs.
           Ejemplos: <code>x^3 - x - 1</code>, <code>sin(x)</code>,{" "}
@@ -566,7 +567,7 @@ export default function Biseccion() {
                   <th>f(b)</th>
                   <th>f(p)</th>
                   <th>f(a)·f(p)</th>
-                  <th>Error</th>
+                  <th>Error absoluto</th>
                 </tr>
               </thead>
 

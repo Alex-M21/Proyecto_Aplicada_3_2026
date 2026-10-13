@@ -252,10 +252,11 @@ export default function PosicionFalsa2() {
           fPrev: roundTo(fa),
           fCurr: roundTo(fb),
           fNext: roundTo(fc),
+          errorRaw: error,
           error: roundTo(error),
         });
 
-        if (Math.abs(fc) < tol || error < tol) {
+        if (fc === 0 || error < tol) {
           found = true;
           break;
         }
@@ -308,7 +309,7 @@ export default function PosicionFalsa2() {
       "f(x_{n-1})",
       "f(x_n)",
       "f(x_{n+1})",
-      "Error",
+      "Error absoluto",
     ];
     const csvRows = [headers.join(",")];
 
@@ -606,8 +607,8 @@ export default function PosicionFalsa2() {
   const converged =
     rows.length > 0 &&
     Number.isFinite(tolNum) &&
-    (Math.abs(rows[lastIndex]?.fNext) < tolNum ||
-      rows[lastIndex]?.error < tolNum);
+    (rows[lastIndex]?.fcRaw === 0 ||
+      rows[lastIndex]?.errorRaw < tolNum);
 
   const rowView = rows.length
     ? rows[Math.max(0, Math.min(iterView, rows.length - 1))]
@@ -774,6 +775,7 @@ export default function PosicionFalsa2() {
     <div className="bisection-grid">
       <div className="bisection-form">
         <h3>Método de la Posición Falsa II</h3>
+        <p className="bisection-hint">Error absoluto entre aproximaciones consecutivas. En la primera fila se compara con el extremo derecho.</p>
         <p className="bisection-hint">
           En este método <strong>b queda fijo</strong> y corresponde al valor ingresado como{" "}
           <strong>xₙ</strong>. El valor <strong>a</strong> se actualiza en cada iteración.
@@ -869,7 +871,7 @@ export default function PosicionFalsa2() {
                     <th>xₙ₋₁ (a)</th>
                     <th>xₙ (b fijo)</th>
                     <th>xₙ₊₁ (c)</th>
-                    <th>Error</th>
+                    <th>Error absoluto</th>
                   </tr>
                 </thead>
                 <tbody>

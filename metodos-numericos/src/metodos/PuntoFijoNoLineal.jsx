@@ -2,6 +2,7 @@
 import { useMemo, useRef, useState } from "react";
 import { create, all } from "mathjs";
 import "./Biseccion.css";
+import "./SistemasNoLineales.css";
 
 const math = create(all, {});
 
@@ -88,7 +89,7 @@ export default function PuntoFijoNoLineal() {
     ...ejemplosPuntoFijo[2].funciones
   ]);
   const [inicialInput, setInicialInput] = useState(
-    ejemplosPuntoFijo[2].inicial
+    () => ejemplosPuntoFijo[2].inicial.split(",")
   );
   const [toleranciaInput, setToleranciaInput] = useState(
     ejemplosPuntoFijo[2].tolerancia
@@ -104,7 +105,6 @@ export default function PuntoFijoNoLineal() {
   const [mensaje, setMensaje] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [advertenciaMsg, setAdvertenciaMsg] = useState("");
-  const [analisisMsg, setAnalisisMsg] = useState("");
 
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -130,11 +130,11 @@ export default function PuntoFijoNoLineal() {
       .filter((v) => v.length > 0);
   };
 
-  const leerVector = (texto) => {
-    return texto
-      .split(",")
-      .map((v) => parseFloat(v.trim()))
-      .filter((v) => Number.isFinite(v));
+  const leerVector = (valores) => {
+    return valores.map((valor) => {
+      const numero = Number(valor.trim());
+      return valor.trim() !== "" && Number.isFinite(numero) ? numero : NaN;
+    });
   };
 
   const crearScope = (variables, valores) => {
@@ -164,10 +164,14 @@ export default function PuntoFijoNoLineal() {
 
     if (!Number.isFinite(valor)) return "NaN";
 
+    if (valor !== 0 && Math.abs(valor) < 0.5 * 10 ** -decimales) {
+      return valor.toExponential(Math.min(decimales, 6));
+    }
+    if (Object.is(valor, -0)) return (0).toFixed(decimales);
     return valor.toFixed(decimales);
   };
 
-  const variables = useMemo(() => leerVariables(), [variablesInput]);
+  const variables = leerVariables();
 
   const toleranciaNumerica = useMemo(() => {
     const t = parseFloat(toleranciaInput);
@@ -186,7 +190,6 @@ export default function PuntoFijoNoLineal() {
     setMensaje("");
     setErrorMsg("");
     setAdvertenciaMsg("");
-    setAnalisisMsg("");
     reiniciarGrafica();
   };
 
@@ -196,7 +199,7 @@ export default function PuntoFijoNoLineal() {
     setDimension(String(n));
     setVariablesInput(ejemplo.variables);
     setFuncionesInput([...ejemplo.funciones]);
-    setInicialInput(ejemplo.inicial);
+    setInicialInput(ejemplo.inicial.split(","));
     setToleranciaInput(ejemplo.tolerancia);
     setIteracionesInput(ejemplo.iteraciones);
     setDecimalesInput(ejemplo.decimales);
@@ -225,35 +228,9 @@ export default function PuntoFijoNoLineal() {
     limpiarResultados();
   };
 
-  const analizarConvergencia = (errores) => {
-    if (errores.length < 3) {
-      return "Se necesitan más iteraciones para analizar el comportamiento de convergencia.";
-    }
-
-    let disminuciones = 0;
-    let aumentos = 0;
-
-    for (let i = 1; i < errores.length; i++) {
-      if (errores[i] < errores[i - 1]) disminuciones++;
-      if (errores[i] > errores[i - 1]) aumentos++;
-    }
-
-    const ultimo = errores[errores.length - 1];
-    const primero = errores[0];
-
-    if (disminuciones >= errores.length - 2 && ultimo < primero) {
-      return "El error disminuye de forma estable. El método presenta comportamiento convergente.";
-    }
-
-    if (aumentos >= Math.ceil(errores.length / 2)) {
-      return "El error aumenta en varias iteraciones. El método puede estar divergiendo o el despeje G(X) no es adecuado.";
-    }
-
-    if (ultimo < primero) {
-      return "El error general disminuye, aunque no de forma completamente uniforme. El método parece converger lentamente u oscilar.";
-    }
-
-    return "El error no muestra una reducción clara. Conviene revisar las funciones G(X), el vector inicial o la tolerancia.";
+  const cambiarValorInicial = (index, value) => {
+    setInicialInput((prev) => prev.map((valor, i) => i === index ? value : valor));
+    limpiarResultados();
   };
 
   const calcularPuntoFijo = (e) => {
@@ -278,13 +255,26 @@ export default function PuntoFijoNoLineal() {
       return;
     }
 
+    if (new Set(variables).size !== variables.length) {
+      setErrorMsg("Las variables deben ser distintas. Por ejemplo: x,y; no uses x,x.");
+      return;
+    }
+
     if (funcionesInput.length !== n || funcionesInput.some((f) => !f.trim())) {
       setErrorMsg(`Debes ingresar exactamente ${n} funciones G.`);
       return;
     }
 
     if (vectorInicial.length !== n) {
-      setErrorMsg(`El vector inicial debe tener exactamente ${n} valores.`);
+      setErrorMsg(`El vector inicial debe tener exactamente ${n} valores numéricos.`);
+      return;
+    }
+
+    const inicialInvalido = vectorInicial.findIndex((valor) => !Number.isFinite(valor));
+    if (inicialInvalido !== -1) {
+      setErrorMsg(inicialInput[inicialInvalido].trim() === ""
+        ? `El campo inicial de ${variables[inicialInvalido]} está vacío.`
+        : `El valor inicial de ${variables[inicialInvalido]} debe ser numérico y finito.`);
       return;
     }
 
@@ -336,8 +326,8 @@ export default function PuntoFijoNoLineal() {
 
         nuevasFilas.push({
           iteracion: k,
-          valoresActuales,
-          valoresSiguientes,
+          valoresActuales: [...valoresActuales],
+          valoresSiguientes: [...valoresSiguientes],
           errores,
           error
         });
@@ -374,9 +364,6 @@ export default function PuntoFijoNoLineal() {
     if (nuevasFilas.length === 0) return;
 
     const ultimaFila = nuevasFilas[nuevasFilas.length - 1];
-    const erroresGlobales = nuevasFilas.map((fila) => fila.error);
-
-    setAnalisisMsg(analizarConvergencia(erroresGlobales));
 
     setMensaje(
       encontrado
@@ -394,7 +381,7 @@ export default function PuntoFijoNoLineal() {
       "n",
       ...variables,
       ...variables.map((v) => `E_${v}`),
-      "Error"
+      "Error absoluto"
     ];
 
     const contenido = filas.map((fila) => {
@@ -525,7 +512,7 @@ export default function PuntoFijoNoLineal() {
 
   const width = 760;
   const height = 360;
-  const marginLeft = 75;
+  const marginLeft = 120;
   const marginRight = 30;
   const marginTop = 35;
   const marginBottom = 70;
@@ -568,16 +555,11 @@ export default function PuntoFijoNoLineal() {
   });
 
   return (
-    <div className="bisection-grid">
+    <div className="bisection-grid sistemas-no-lineales">
       <div className="bisection-form">
         <h3>Método de Punto Fijo No Lineal {dimension}x{dimension}</h3>
 
-        <p className="bisection-hint">
-          Resuelve sistemas cuadrados de la forma <strong>X = G(X)</strong>.
-          Cada función G calcula una nueva variable del sistema.
-        </p>
-
-        <form onSubmit={calcularPuntoFijo}>
+        <form onSubmit={calcularPuntoFijo} noValidate>
           <div className="bisection-form-row">
             <label>Tamaño del sistema =</label>
 
@@ -626,21 +608,28 @@ export default function PuntoFijoNoLineal() {
             ))}
           </div>
 
-          <div className="method-two-columns">
-            <div className="bisection-form-row">
-              <label>Vector inicial =</label>
-
-              <input
-                type="text"
-                value={inicialInput}
-                onChange={(e) => {
-                  setInicialInput(e.target.value);
-                  limpiarResultados();
-                }}
-                placeholder="Ej: 0.1,0.25"
-              />
+          <div className="method-section">
+            <h4>Vector inicial</h4>
+            <div className="method-vector-grid">
+              {inicialInput.map((valor, index) => (
+                <div className="bisection-form-row" key={index}>
+                  <label htmlFor={`punto-fijo-inicial-${index}`}>
+                    {variables[index] || `x${index + 1}`}<sub>0</sub> =
+                  </label>
+                  <input
+                    id={`punto-fijo-inicial-${index}`}
+                    type="number"
+                    step="any"
+                    value={valor}
+                    onChange={(e) => cambiarValorInicial(index, e.target.value)}
+                    placeholder="Valor inicial"
+                  />
+                </div>
+              ))}
             </div>
+          </div>
 
+          <div className="method-two-columns">
             <div className="bisection-form-row">
               <label>Tolerancia =</label>
 
@@ -692,7 +681,6 @@ export default function PuntoFijoNoLineal() {
 
         {mensaje && <p className="bisection-message">{mensaje}</p>}
         {advertenciaMsg && <p className="bisection-warning">{advertenciaMsg}</p>}
-        {analisisMsg && <p className="bisection-warning">{analisisMsg}</p>}
         {errorMsg && <p className="bisection-error">{errorMsg}</p>}
       </div>
 
@@ -714,25 +702,12 @@ export default function PuntoFijoNoLineal() {
         </div>
 
         <div className="graph-card">
-          <h4 className="graph-title">Vector inicial</h4>
-
-          <div className="system-preview">
-            {variables.map((variable, index) => {
-              const vectorInicial = leerVector(inicialInput);
-
-              return (
-                <p key={`x0-${variable}`}>
-                  <strong>
-                    {variable}
-                    <sub>0</sub> =
-                  </strong>{" "}
-                  {Number.isFinite(vectorInicial[index])
-                    ? vectorInicial[index]
-                    : "—"}
-                </p>
-              );
-            })}
-          </div>
+          <h4 className="graph-title">Vector inicial utilizado</h4>
+          <p className="system-preview" data-testid="punto-fijo-vector-utilizado">
+            {filas.length > 0
+              ? `X₀ = (${filas[0].valoresActuales.join(", ")})`
+              : "Presiona CALCULAR para comprobar el vector inicial utilizado."}
+          </p>
         </div>
 
         <div className="graph-card">
@@ -793,7 +768,7 @@ export default function PuntoFijoNoLineal() {
                 >
                   <rect x="0" y="0" width={width} height={height} fill="white" />
 
-                  <text x={width / 2 - 80} y="22" className="chart-title-text">
+                  <text x={width / 2} y="22" textAnchor="middle" className="chart-title-text">
                     Error vs Iteración
                   </text>
 
@@ -823,7 +798,7 @@ export default function PuntoFijoNoLineal() {
                         className="chart-grid-line"
                       />
 
-                      <text x="8" y={tick.y + 4} className="chart-label">
+                      <text x={marginLeft - 10} y={tick.y + 4} textAnchor="end" className="chart-label">
                         {formatearNumero(tick.value)}
                       </text>
                     </g>
@@ -850,7 +825,8 @@ export default function PuntoFijoNoLineal() {
                   ))}
 
                   <text
-                    x={width / 2 - 40}
+                    x={width / 2}
+                    textAnchor="middle"
                     y={height - 18}
                     className="chart-axis-title"
                   >
@@ -929,7 +905,7 @@ export default function PuntoFijoNoLineal() {
                       </th>
                     ))}
 
-                    <th>Error</th>
+                    <th>Error absoluto</th>
                   </tr>
                 </thead>
 

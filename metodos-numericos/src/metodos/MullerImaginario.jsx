@@ -238,7 +238,7 @@ export default function MullerNoReal() {
     return Number.isFinite(value) ? value.toFixed(d) : "NaN";
   };
 
-  const compiledF = useMemo(() => buildCompiled(fxInput), [fxInput]);
+  const compiledF = useMemo(() => buildCompiled(fxInput), [fxInput, buildCompiled]);
 
   const evalF = (x) => {
     if (!compiledF) return math.complex(NaN, NaN);
@@ -402,7 +402,9 @@ export default function MullerNoReal() {
 
         const denom1 = math.add(b, D);
         const denom2 = math.subtract(b, D);
-        const E = absVal(denom1) >= absVal(denom2) ? denom1 : denom2;
+        // Ambos denominadores son igual de estables en un empate; usar el segundo
+        // fija la elección entre las raíces conjugadas para puntos iniciales reales.
+        const E = absVal(denom1) > absVal(denom2) ? denom1 : denom2;
 
         if (absVal(E) < EPS) {
           setErrorMsg("Denominador cercano a cero. Cambia los valores iniciales.");
@@ -465,7 +467,7 @@ export default function MullerNoReal() {
   const exportCSV = () => {
     if (rows.length === 0) return;
 
-    const headers = ["n", "x0", "x1", "x2", "p", "Error"];
+    const headers = ["n", "x0", "x1", "x2", "p", "Error absoluto"];
 
     const csvRows = rows.map((row) => [
       row.n,
@@ -650,7 +652,8 @@ export default function MullerNoReal() {
       xTicks: ticks(xMin, xMax),
       yTicks: ticks(yMin, yMax),
     };
-  }, [fxInput, rows, x0Input, x1Input, x2Input, realZoom, realPan]);
+  }, [compiledF, esPolinomioValido, evalF, buildRange, parseX, graphWidth, graphHeight,
+    fxInput, rows, x0Input, x1Input, x2Input, realZoom, realPan]);
 
   const complexGraph = useMemo(() => {
     const values = [];
@@ -694,7 +697,7 @@ export default function MullerNoReal() {
       xTicks: ticks(xMin, xMax),
       yTicks: ticks(yMin, yMax),
     };
-  }, [rows, x0Input, x1Input, x2Input, complexZoom, complexPan]);
+  }, [buildRange, parseX, graphWidth, graphHeight, rows, x0Input, x1Input, x2Input, complexZoom, complexPan]);
 
   const xToSvg = (x, graph) => {
     if (graph.xMax === graph.xMin) return marginLeft + graphWidth / 2;
@@ -793,6 +796,7 @@ export default function MullerNoReal() {
   <div className="bisection-grid">
     <div className="bisection-form">
       <h3>Método de Muller Imaginario</h3>
+      <p className="bisection-hint">Error absoluto: E = |p − x₂|, usando el módulo de la diferencia compleja.</p>
 
       <p className="bisection-hint">
         Este módulo trabaja con <strong>polinomios</strong> y permite raíces
@@ -1071,7 +1075,7 @@ export default function MullerNoReal() {
                   <th>x₁</th>
                   <th>x₂</th>
                   <th>p</th>
-                  <th>Error</th>
+                  <th>Error absoluto</th>
                 </tr>
               </thead>
 

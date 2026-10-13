@@ -31,6 +31,7 @@ import Jacobi from "./metodos/Jacobi";
 import GaussSeidel from "./metodos/GaussSeidel";
 import PuntoFijoNoLineal from "./metodos/PuntoFijoNoLineal";
 import NewtonNoLineal from "./metodos/NewtonNoLineal";
+import ValoresVectoresPropios from "./metodos/ValoresVectoresPropios";
 import ManualExpresiones from "./Manual";
 
 import "./App.css";
@@ -191,6 +192,17 @@ const METHODS = [
     type: "Sistema no lineal",
   },
 
+  // Aplicada 3 - Unidad 6
+  {
+    id: "valores-vectores-propios",
+    name: "Valores y Vectores Propios",
+    course: "Aplicada 3",
+    unit: "Unidad 6",
+    description:
+      "Cálculo de eigenvalores y eigenvectores de matrices cuadradas con GeoGebra CAS. Incluye instrucciones para ingresar la matriz y relacionar cada eigenvalor con su eigenvector.",
+    type: "Valores y vectores propios",
+  },
+
   // Ayuda
   {
     id: "manual-expresiones",
@@ -220,6 +232,7 @@ const METHOD_COMPONENTS = {
   "gauss-seidel": GaussSeidel,
   "punto-fijo-no-lineal": PuntoFijoNoLineal,
   "newton-no-lineal": NewtonNoLineal,
+  "valores-vectores-propios": ValoresVectoresPropios,
   "manual-expresiones": ManualExpresiones,
 };
 

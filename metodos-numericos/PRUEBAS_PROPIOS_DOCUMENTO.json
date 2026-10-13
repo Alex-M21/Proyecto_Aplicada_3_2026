@@ -1,0 +1,338 @@
+{
+  "fecha": "2026-10-13",
+  "url": "http://localhost:5173/Proyecto_Aplicada_3_2026/",
+  "aprobado": true,
+  "casos": [
+    {
+      "nombre": "PDF caso 1",
+      "matriz": [
+        [
+          5,
+          -4,
+          0
+        ],
+        [
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          2,
+          5
+        ]
+      ],
+      "ui": {
+        "error": null,
+        "polinomio": "-x³ + 10x² - 25x",
+        "factorizado": "-x (x - 5)²",
+        "grupos": [
+          {
+            "valor": "0",
+            "multiplicidad": 1,
+            "vectores": [
+              "{-2, -5 / 2, 1}"
+            ]
+          },
+          {
+            "valor": "5",
+            "multiplicidad": 2,
+            "vectores": [
+              "{-2, 0, 1}"
+            ]
+          }
+        ],
+        "avisos": [
+          "λ = 5 se repite 2 veces y tiene un eigenvector independiente. No hay una base completa de eigenvectores."
+        ]
+      },
+      "comprobaciones": [
+        {
+          "lambda": "0",
+          "vector": "{-2, -5 / 2, 1}",
+          "residuo": "{{0}, {0}, {0}}"
+        },
+        {
+          "lambda": "5",
+          "vector": "{-2, 0, 1}",
+          "residuo": "{{0}, {0}, {0}}"
+        }
+      ],
+      "csv": "\"Concepto\",\"Resultado\"\r\n\"A\",\"{{5,-4,0},{1,0,2},{0,2,5}}\"\r\n\"ValoresPropios(A)\",\"{0, 5, 5}\"\r\n\"VectoresPropios(A)\",\"?\"\r\n\"p(λ) = det(A − λI)\",\"-λ³ + 10λ² - 25λ\"\r\n\"Polinomio factorizado\",\"-λ (λ - 5)²\"\r\n\"λ = 0: multiplicidad\",\"1\"\r\n\"λ = 0: eigenvector 1\",\"{-2, -5 / 2, 1}\"\r\n\"λ = 5: multiplicidad\",\"2\"\r\n\"λ = 5: eigenvector 1\",\"{-2, 0, 1}\""
+    },
+    {
+      "nombre": "PDF caso 2",
+      "matriz": [
+        [
+          3,
+          -1,
+          -1
+        ],
+        [
+          1,
+          1,
+          -1
+        ],
+        [
+          1,
+          -1,
+          1
+        ]
+      ],
+      "ui": {
+        "error": null,
+        "polinomio": "-x³ + 5x² - 8x + 4",
+        "factorizado": "-(x - 1) (x - 2)²",
+        "grupos": [
+          {
+            "valor": "2",
+            "multiplicidad": 2,
+            "vectores": [
+              "{1, 0, 1}",
+              "{0, 1, -1}"
+            ]
+          },
+          {
+            "valor": "1",
+            "multiplicidad": 1,
+            "vectores": [
+              "{-1, -1, -1}"
+            ]
+          }
+        ],
+        "avisos": []
+      },
+      "comprobaciones": [
+        {
+          "lambda": "2",
+          "vector": "{1, 0, 1}",
+          "residuo": "{{0}, {0}, {0}}"
+        },
+        {
+          "lambda": "2",
+          "vector": "{0, 1, -1}",
+          "residuo": "{{0}, {0}, {0}}"
+        },
+        {
+          "lambda": "1",
+          "vector": "{-1, -1, -1}",
+          "residuo": "{{0}, {0}, {0}}"
+        }
+      ],
+      "csv": "\"Concepto\",\"Resultado\"\r\n\"A\",\"{{3,-1,-1},{1,1,-1},{1,-1,1}}\"\r\n\"ValoresPropios(A)\",\"{2, 2, 1}\"\r\n\"VectoresPropios(A)\",\"{{1, 0, -1}, {0, 1, -1}, {1, -1, -1}}\"\r\n\"p(λ) = det(A − λI)\",\"-λ³ + 5λ² - 8λ + 4\"\r\n\"Polinomio factorizado\",\"-(λ - 1) (λ - 2)²\"\r\n\"λ = 2: multiplicidad\",\"2\"\r\n\"λ = 2: eigenvector 1\",\"{1, 0, 1}\"\r\n\"λ = 2: eigenvector 2\",\"{0, 1, -1}\"\r\n\"λ = 1: multiplicidad\",\"1\"\r\n\"λ = 1: eigenvector 1\",\"{-1, -1, -1}\""
+    },
+    {
+      "nombre": "Matriz real con eigenvalores imaginarios",
+      "matriz": [
+        [
+          0,
+          -1
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "ui": {
+        "error": null,
+        "polinomio": "x² + 1",
+        "factorizado": "x² + 1",
+        "grupos": [
+          {
+            "valor": "-ί",
+            "multiplicidad": 1,
+            "vectores": [
+              "{-ί, 1}"
+            ]
+          },
+          {
+            "valor": "ί",
+            "multiplicidad": 1,
+            "vectores": [
+              "{ί, 1}"
+            ]
+          }
+        ],
+        "avisos": []
+      },
+      "comprobaciones": [
+        {
+          "lambda": "-ί",
+          "vector": "{-ί, 1}",
+          "residuo": "{{0}, {0}}"
+        },
+        {
+          "lambda": "ί",
+          "vector": "{ί, 1}",
+          "residuo": "{{0}, {0}}"
+        }
+      ],
+      "csv": "\"Concepto\",\"Resultado\"\r\n\"A\",\"{{0,-1},{1,0}}\"\r\n\"ValoresPropios(A)\",\"{-ί, ί}\"\r\n\"VectoresPropios(A)\",\"{{-ί, ί}, {1, 1}}\"\r\n\"p(λ) = det(A − λI)\",\"λ² + 1\"\r\n\"Polinomio factorizado\",\"λ² + 1\"\r\n\"λ = -ί: multiplicidad\",\"1\"\r\n\"λ = -ί: eigenvector 1\",\"{-ί, 1}\"\r\n\"λ = ί: multiplicidad\",\"1\"\r\n\"λ = ί: eigenvector 1\",\"{ί, 1}\""
+    },
+    {
+      "nombre": "Entradas puramente imaginarias",
+      "matriz": [
+        [
+          "i",
+          1
+        ],
+        [
+          0,
+          "2i"
+        ]
+      ],
+      "ui": {
+        "error": null,
+        "polinomio": "x² - 2 - 3ί x",
+        "factorizado": "(x - 2ί) (x - ί)",
+        "grupos": [
+          {
+            "valor": "2ί",
+            "multiplicidad": 1,
+            "vectores": [
+              "{1, ί}"
+            ]
+          },
+          {
+            "valor": "ί",
+            "multiplicidad": 1,
+            "vectores": [
+              "{-ί, 0}"
+            ]
+          }
+        ],
+        "avisos": []
+      },
+      "comprobaciones": [
+        {
+          "lambda": "2ί",
+          "vector": "{1, ί}",
+          "residuo": "{{0}, {0}}"
+        },
+        {
+          "lambda": "ί",
+          "vector": "{-ί, 0}",
+          "residuo": "{{0}, {0}}"
+        }
+      ],
+      "csv": "\"Concepto\",\"Resultado\"\r\n\"A\",\"{{ί,1},{0,2ί}}\"\r\n\"ValoresPropios(A)\",\"{2ί, ί}\"\r\n\"VectoresPropios(A)\",\"{{1, -ί}, {ί, 0}}\"\r\n\"p(λ) = det(A − λI)\",\"λ² - 2 - 3ί λ\"\r\n\"Polinomio factorizado\",\"(λ - 2ί) (λ - ί)\"\r\n\"λ = 2ί: multiplicidad\",\"1\"\r\n\"λ = 2ί: eigenvector 1\",\"{1, ί}\"\r\n\"λ = ί: multiplicidad\",\"1\"\r\n\"λ = ί: eigenvector 1\",\"{-ί, 0}\""
+    },
+    {
+      "nombre": "Entradas complejas y fracciones",
+      "matriz": [
+        [
+          "1+2i",
+          "1/2"
+        ],
+        [
+          0,
+          3
+        ]
+      ],
+      "ui": {
+        "error": null,
+        "polinomio": "x² - 4x + 3 - 2ί x + 6ί",
+        "factorizado": "(x - 3) (x - 1 - 2ί)",
+        "grupos": [
+          {
+            "valor": "3",
+            "multiplicidad": 1,
+            "vectores": [
+              "{1, 4 - 4ί}"
+            ]
+          },
+          {
+            "valor": "1 + 2ί",
+            "multiplicidad": 1,
+            "vectores": [
+              "{ί, 0}"
+            ]
+          }
+        ],
+        "avisos": []
+      },
+      "comprobaciones": [
+        {
+          "lambda": "3",
+          "vector": "{1, 4 - 4ί}",
+          "residuo": "{{0}, {0}}"
+        },
+        {
+          "lambda": "1 + 2ί",
+          "vector": "{ί, 0}",
+          "residuo": "{{0}, {0}}"
+        }
+      ],
+      "csv": "\"Concepto\",\"Resultado\"\r\n\"A\",\"{{1+2ί,1/2},{0,3}}\"\r\n\"ValoresPropios(A)\",\"{3, 1 + 2ί}\"\r\n\"VectoresPropios(A)\",\"{{1, ί}, {4 - 4ί, 0}}\"\r\n\"p(λ) = det(A − λI)\",\"λ² - 4λ + 3 - 2ί λ + 6ί\"\r\n\"Polinomio factorizado\",\"(λ - 3) (λ - 1 - 2ί)\"\r\n\"λ = 3: multiplicidad\",\"1\"\r\n\"λ = 3: eigenvector 1\",\"{1, 4 - 4ί}\"\r\n\"λ = 1 + 2ί: multiplicidad\",\"1\"\r\n\"λ = 1 + 2ί: eigenvector 1\",\"{ί, 0}\""
+    },
+    {
+      "nombre": "i² es menos uno",
+      "matriz": [
+        [
+          "i^2"
+        ]
+      ],
+      "ui": {
+        "error": null,
+        "polinomio": "-x - 1",
+        "factorizado": "-x - 1",
+        "grupos": [
+          {
+            "valor": "-1",
+            "multiplicidad": 1,
+            "vectores": [
+              "{1}"
+            ]
+          }
+        ],
+        "avisos": []
+      },
+      "comprobaciones": [
+        {
+          "lambda": "-1",
+          "vector": "{1}",
+          "residuo": "{{0}}"
+        }
+      ],
+      "csv": "\"Concepto\",\"Resultado\"\r\n\"A\",\"{{ί^2}}\"\r\n\"ValoresPropios(A)\",\"{-1}\"\r\n\"VectoresPropios(A)\",\"{{1}}\"\r\n\"p(λ) = det(A − λI)\",\"-λ - 1\"\r\n\"Polinomio factorizado\",\"-λ - 1\"\r\n\"λ = -1: multiplicidad\",\"1\"\r\n\"λ = -1: eigenvector 1\",\"{1}\""
+    },
+    {
+      "nombre": "Raíz repetida con entradas complejas",
+      "matriz": [
+        [
+          "i",
+          1
+        ],
+        [
+          1,
+          "-i"
+        ]
+      ],
+      "ui": {
+        "error": null,
+        "polinomio": "x²",
+        "factorizado": "x²",
+        "grupos": [
+          {
+            "valor": "0",
+            "multiplicidad": 2,
+            "vectores": [
+              "{ί, 1}"
+            ]
+          }
+        ],
+        "avisos": [
+          "λ = 0 se repite 2 veces y tiene un eigenvector independiente. No hay una base completa de eigenvectores."
+        ]
+      },
+      "comprobaciones": [
+        {
+          "lambda": "0",
+          "vector": "{ί, 1}",
+          "residuo": "{{0}, {0}}"
+        }
+      ],
+      "csv": "\"Concepto\",\"Resultado\"\r\n\"A\",\"{{ί,1},{1,-ί}}\"\r\n\"ValoresPropios(A)\",\"{0, 0}\"\r\n\"VectoresPropios(A)\",\"?\"\r\n\"p(λ) = det(A − λI)\",\"λ²\"\r\n\"Polinomio factorizado\",\"λ²\"\r\n\"λ = 0: multiplicidad\",\"2\"\r\n\"λ = 0: eigenvector 1\",\"{ί, 1}\""
+    }
+  ]
+}
