@@ -362,11 +362,21 @@ node --test --test-concurrency=1 tests/*.test.js
 no tiene DOM y omite efectos de las gráficas. Los informes distinguen esas
 pruebas de los casos verificados en navegador real.
 
-Hay múltiples archivos modificados y sin seguimiento pendientes de Git. No se
-hicieron commits ni publicación remota. Conservar ese trabajo al empezar la
-próxima tarea y actualizar este contexto cuando cambie el estado.
+## Subida al repositorio del 13 de octubre de 2026
 
-Al cerrar esta actualización se ejecutó `npm run dev`. Vite inició en
-`http://localhost:5174/Proyecto_Aplicada_3_2026/` porque el puerto 5173 ya estaba
-ocupado. Se comprobó respuesta HTTP 200. Los puertos son un dato de esta sesión;
-en futuras ejecuciones consultar la URL que imprima Vite.
+A petición del usuario se creó el commit `b70e7fa` y se subió correctamente a
+`origin/main` en `Alex-M21/Proyecto_Aplicada_3_2026`. Incluye el código fuente,
+las pruebas, los informes y la copia estática actualizada desde `dist/`.
+Antes de subir se repitieron las 80 pruebas en serie y la compilación;
+ambas verificaciones pasaron. La rama local y `origin/main` estaban alineadas
+antes del commit. Las menciones anteriores a ausencia de publicación describen
+el estado durante aquellas verificaciones. No se ejecutó un despliegue manual
+de `gh-pages` en esta tarea.
+
+Se conservan sin seguimiento los recursos locales de compilaciones intermedias
+en `assets/`; sólo se incorporaron los recursos de la compilación actual.
+No borrarlos ni añadirlos todos por defecto en tareas futuras.
+
+El servidor local activo de esta sesión sirve
+`http://localhost:5173/Proyecto_Aplicada_3_2026/`. Los puertos son un dato de
+esta sesión; en futuras ejecuciones consultar la URL que imprima Vite.
