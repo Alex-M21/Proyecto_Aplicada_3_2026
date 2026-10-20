@@ -1,6 +1,6 @@
 # Contexto de la aplicación para futuras sesiones de IA
 
-Última actualización: 13 de octubre de 2026, America/Guatemala.
+Última actualización: 20 de octubre de 2026, America/Guatemala.
 
 ## Proyecto y archivos importantes
 
@@ -380,3 +380,14 @@ No borrarlos ni añadirlos todos por defecto en tareas futuras.
 El servidor local activo de esta sesión sirve
 `http://localhost:5173/Proyecto_Aplicada_3_2026/`. Los puertos son un dato de
 esta sesión; en futuras ejecuciones consultar la URL que imprima Vite.
+
+## Incorporación de recursos pendientes del 20 de octubre de 2026
+
+El usuario pidió explícitamente subir todos los cambios, incluidos los recursos
+de compilaciones intermedias que antes se conservaban sin seguimiento. Se
+incorporan los 37 archivos JavaScript y CSS pendientes de `assets/` y esta nota.
+Esta solicitud reemplaza, para estos archivos, la indicación anterior de no
+añadirlos por defecto. No se modifican el código fuente ni el `index.html`
+activo. Se verificó que `main` y `origin/main` coincidían antes del commit.
+No se repitieron pruebas ni compilación porque sólo se incorporan recursos
+generados ya existentes y documentación.

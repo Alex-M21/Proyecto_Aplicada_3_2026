@@ -1,0 +1,1 @@
+import{t as e}from"./index-Dv2zambq.js";export default e();

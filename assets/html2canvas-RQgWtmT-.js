@@ -1,0 +1,1 @@
+import{t as e}from"./index-BU36BGVE.js";export default e();
